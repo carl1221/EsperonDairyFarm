@@ -1,0 +1,40 @@
+{
+    "name": "esperon/dairy-farm-backend",
+    "description": "Backend API for Esperon Dairy Farm management system",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "your.email@example.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "vlucas/phpdotenv": "^5.4",
+        "google/apiclient": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Esperon\\": "dairy_farm_backend/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Esperon\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "start": "php -S localhost:8000 -t dairy_farm_backend/api"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "disable-tls": false,
+        "secure-http": false
+    }
+}

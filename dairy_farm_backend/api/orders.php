@@ -1,0 +1,83 @@
+<?php
+// ============================================================
+// api/orders.php
+// Endpoint: /api/orders.php
+//
+// GET    /api/orders.php              → list all orders (full join via view)
+// GET    /api/orders.php?id=1         → get one order
+// GET    /api/orders.php?customer=1   → get orders by customer ID
+// POST   /api/orders.php              → create order
+// PUT    /api/orders.php?id=1         → update order
+// DELETE /api/orders.php?id=1         → delete order
+// ============================================================
+
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../models/Order.php';
+
+requireAuth();
+requireCsrf();
+
+$order  = new Order();
+$method = $_SERVER['REQUEST_METHOD'];
+$id     = isset($_GET['id'])       ? (int) $_GET['id']       : null;
+$cid    = isset($_GET['customer']) ? (int) $_GET['customer'] : null;
+
+try {
+    switch ($method) {
+
+        case 'GET':
+            if ($id) {
+                $row = $order->getById($id);
+                $row
+                    ? sendSuccess('Order found.', $row)
+                    : sendError('Order not found.', 404);
+            } elseif ($cid) {
+                sendSuccess('Orders retrieved.', $order->getByCustomer($cid));
+            } else {
+                sendSuccess('Orders retrieved.', $order->getAll());
+            }
+            break;
+
+        case 'POST':
+            $data = getRequestBody();
+            validateRequired($data, ['CID', 'Cow_ID', 'Worker_ID', 'Order_Type', 'Order_Date']);
+
+            $validatedData = [
+                'CID' => validateInteger($data['CID'], 'CID'),
+                'Cow_ID' => validateInteger($data['Cow_ID'], 'Cow_ID'),
+                'Worker_ID' => validateInteger($data['Worker_ID'], 'Worker_ID'),
+                'Order_Type' => validateString($data['Order_Type'], 'Order_Type', 100),
+                'Order_Date' => validateDate($data['Order_Date'], 'Order_Date')
+            ];
+
+            $newId = $order->create($validatedData);
+            sendSuccess('Order created.', ['Order_ID' => $newId], 201);
+            break;
+
+        case 'PUT':
+            if (!$id) sendError('Order ID is required for update.');
+            $data     = getRequestBody();
+            $required = ['CID', 'Cow_ID', 'Worker_ID', 'Order_Type', 'Order_Date'];
+            foreach ($required as $field) {
+                if (empty($data[$field])) {
+                    sendError("Missing required field: $field");
+                }
+            }
+            $order->update($id, $data)
+                ? sendSuccess('Order updated.')
+                : sendError('Order not found or no changes made.', 404);
+            break;
+
+        case 'DELETE':
+            if (!$id) sendError('Order ID is required for delete.');
+            $order->delete($id)
+                ? sendSuccess('Order deleted.')
+                : sendError('Order not found.', 404);
+            break;
+
+        default:
+            sendError('Method not allowed.', 405);
+    }
+} catch (PDOException $e) {
+    sendError('A database error occurred. Please try again later.', 500);
+}
