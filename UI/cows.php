@@ -11,6 +11,20 @@
 
 <nav class="nav" id="app-nav"></nav>
 
+<!-- Reminders Section (replaces Health Alerts) -->
+<div class="card" style="max-width: 500px; margin: 24px auto 0 auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center;">
+      <span style="color: #e74c3c; margin-right: 8px;">
+        <span class="material-symbols-outlined" style="vertical-align: middle;">warning</span>
+      </span>
+      <span style="font-weight: bold;">Reminders</span>
+    </div>
+    <button id="addReminderBtn" style="background: #e74c3c; color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.95rem;">Add Reminder</button>
+  </div>
+  <div id="remindersList" style="margin-top: 12px;"></div>
+</div>
+
 <main class="main">
   <div class="page-header">
     <div>
@@ -73,6 +87,36 @@
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
+// --- Reminders Functionality ---
+let reminders = [];
+function renderReminders() {
+  const list = document.getElementById('remindersList');
+  list.innerHTML = '';
+  reminders.forEach((reminder, idx) => {
+    const div = document.createElement('div');
+    div.style.background = '#fdeaea';
+    div.style.border = '1px solid #e74c3c';
+    div.style.borderRadius = '8px';
+    div.style.padding = '12px';
+    div.style.marginBottom = '10px';
+    div.style.color = '#e74c3c';
+    div.style.cursor = 'pointer';
+    div.innerHTML = `<strong>REMINDER</strong><br>${reminder}`;
+    div.onclick = () => { alert(reminder); };
+    list.appendChild(div);
+  });
+}
+document.getElementById('addReminderBtn').onclick = function() {
+  const text = prompt('Enter reminder text:');
+  if (text && text.trim() !== '') {
+    reminders.push(text.trim());
+    renderReminders();
+    alert(text.trim());
+  }
+};
+renderReminders();
+// --- End Reminders ---
+
 let editingId = null;
 
 async function loadCows() {
