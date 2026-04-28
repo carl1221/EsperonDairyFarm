@@ -198,8 +198,6 @@
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
-const API_BASE = '../dairy_farm_backend/api';
-
 // ── Reminders / Task System (Database-powered) ───────────────
 let reminders = [];
 
@@ -246,7 +244,7 @@ async function loadReminders() {
   list.innerHTML = '<p style="color: var(--text-light); font-size: 0.85rem;"><span class="spinner"></span> Loading...</p>';
   
   try {
-    const res = await fetch('<?php echo API_BASE; ?>/reminders.php', {
+    const res = await fetch('../dairy_farm_backend/api/reminders.php', {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const data = await res.json();
@@ -340,7 +338,7 @@ document.getElementById('addReminderBtn').onclick = async function() {
   const description = prompt('Enter description (optional):', '');
   
   try {
-    const res = await fetch('<?php echo API_BASE; ?>/reminders.php', {
+    const res = await fetch('../dairy_farm_backend/api/reminders.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -371,7 +369,7 @@ async function markComplete(id) {
   if (!confirm('Mark this task as completed?')) return;
   
   try {
-    const res = await fetch('<?php echo API_BASE; ?>/reminders.php?id=' + id, {
+    const res = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -396,7 +394,7 @@ async function deleteReminder(id) {
   if (!confirm('Delete this task?')) return;
   
   try {
-    const res = await fetch('<?php echo API_BASE; ?>/reminders.php?id=' + id, {
+    const res = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
@@ -448,42 +446,51 @@ function renderGreeting() {
 
 // ── Dashboard data ────────────────────────────────────────
 async function loadDashboard() {
-  try {
-    const [customers, cows, workers, orders] = await Promise.all([
-      API.customers.getAll(),
-      API.cows.getAll(),
-      API.workers.getAll(),
-      API.orders.getAll(),
-    ]);
+  // Fetch all four in parallel; use allSettled so one failure doesn't block the rest
+  const [customersResult, cowsResult, workersResult, ordersResult] = await Promise.allSettled([
+    API.customers.getAll(),
+    API.cows.getAll(),
+    API.workers.getAll(),
+    API.orders.getAll(),
+  ]);
 
-    document.getElementById('stat-customers').textContent = customers.length;
-    document.getElementById('stat-cows').textContent      = cows.length;
-    document.getElementById('stat-workers').textContent   = workers.length;
-    document.getElementById('stat-orders').textContent    = orders.length;
+  const customers = customersResult.status === 'fulfilled' && Array.isArray(customersResult.value) ? customersResult.value : [];
+  const cows      = cowsResult.status      === 'fulfilled' && Array.isArray(cowsResult.value)      ? cowsResult.value      : [];
+  const workers   = workersResult.status   === 'fulfilled' && Array.isArray(workersResult.value)   ? workersResult.value   : [];
+  const orders    = ordersResult.status    === 'fulfilled' && Array.isArray(ordersResult.value)    ? ordersResult.value    : [];
 
-    const tbody  = document.getElementById('recent-orders-body');
-    const recent = orders.slice(-5).reverse();
+  document.getElementById('stat-customers').textContent = customers.length;
+  document.getElementById('stat-cows').textContent      = cows.length;
+  document.getElementById('stat-workers').textContent   = workers.length;
+  document.getElementById('stat-orders').textContent    = orders.length;
 
-    if (!recent.length) {
-      UI.setEmpty(tbody, 7);
-      return;
+  // Log any individual failures for debugging
+  [customersResult, cowsResult, workersResult, ordersResult].forEach((r, i) => {
+    if (r.status === 'rejected') {
+      const names = ['customers', 'cows', 'workers', 'orders'];
+      console.error(`[Dashboard] Failed to load ${names[i]}:`, r.reason?.message || r.reason);
     }
+  });
 
-    tbody.innerHTML = recent.map(o => `
-      <tr>
-        <td><strong>#${o.Order_ID}</strong></td>
-        <td>${o.Customer_Name}</td>
-        <td><span class="badge badge--green">${o.Order_Type}</span></td>
-        <td>${o.Cow}</td>
-        <td>${o.Production}</td>
-        <td>${o.Worker} <span class="badge badge--muted">${o.Worker_Role}</span></td>
-        <td>${o.Order_Date}</td>
-      </tr>
-    `).join('');
+  const tbody  = document.getElementById('recent-orders-body');
+  const recent = orders.slice(-5).reverse();
 
-  } catch (err) {
-    UI.toast('Failed to load dashboard data. Please check your connection.', 'error');
+  if (!recent.length) {
+    UI.setEmpty(tbody, 7);
+    return;
   }
+
+  tbody.innerHTML = recent.map(o => `
+    <tr>
+      <td><strong>#${o.Order_ID}</strong></td>
+      <td>${o.Customer_Name}</td>
+      <td><span class="badge badge--green">${o.Order_Type}</span></td>
+      <td>${o.Cow}</td>
+      <td>${o.Production}</td>
+      <td>${o.Worker} <span class="badge badge--muted">${o.Worker_Role}</span></td>
+      <td>${o.Order_Date}</td>
+    </tr>
+  `).join('');
 }
 
 // ── Init ──────────────────────────────────────────────────
