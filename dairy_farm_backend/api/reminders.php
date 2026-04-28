@@ -14,6 +14,7 @@ require_once __DIR__ . '/../config/bootstrap.php';
 require_once __DIR__ . '/../models/Reminder.php';
 
 requireAuth();
+requireCsrf();
 
 $reminder = new Reminder();
 $method   = $_SERVER['REQUEST_METHOD'];

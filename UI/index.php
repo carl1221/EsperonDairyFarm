@@ -245,7 +245,7 @@ async function loadReminders() {
   
   try {
     const res = await fetch('../dairy_farm_backend/api/reminders.php', {
-      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      credentials: 'include'
     });
     const data = await res.json();
     
@@ -258,6 +258,7 @@ async function loadReminders() {
       list.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem;">Failed to load reminders.</p>';
     }
   } catch (e) {
+    console.error('Error loading reminders:', e);
     list.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem;">Error loading reminders.</p>';
   }
 }
@@ -332,18 +333,20 @@ document.getElementById('addReminderBtn').onclick = async function() {
   const title = prompt('Enter task title:');
   if (!title || !title.trim()) return;
   
-  const dueDate = prompt('Enter due date (YYYY-MM-DD HH:MM):', new Date().toISOString().slice(0, 16));
+  const dueDate = prompt('Enter due date (YYYY-MM-DD HH:MM):', new Date().toISOString().slice(0, 16).replace('T', ' '));
   if (!dueDate) return;
   
   const description = prompt('Enter description (optional):', '');
   
   try {
+    const csrfToken = localStorage.getItem('csrf_token');
     const res = await fetch('../dairy_farm_backend/api/reminders.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
+        'X-CSRF-Token': csrfToken
       },
+      credentials: 'include',
       body: JSON.stringify({
         title: title.trim(),
         description: description?.trim() || null,
@@ -360,6 +363,7 @@ document.getElementById('addReminderBtn').onclick = async function() {
       alert('Failed to create task: ' + data.message);
     }
   } catch (e) {
+    console.error('Error creating task:', e);
     alert('Error creating task.');
   }
 };
@@ -369,12 +373,14 @@ async function markComplete(id) {
   if (!confirm('Mark this task as completed?')) return;
   
   try {
+    const csrfToken = localStorage.getItem('csrf_token');
     const res = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
+        'X-CSRF-Token': csrfToken
       },
+      credentials: 'include',
       body: JSON.stringify({ status: 'completed' })
     });
     const data = await res.json();
@@ -382,9 +388,10 @@ async function markComplete(id) {
     if (data.success) {
       loadReminders();
     } else {
-      alert('Failed to update task.');
+      alert('Failed to update task: ' + data.message);
     }
   } catch (e) {
+    console.error('Error updating task:', e);
     alert('Error updating task.');
   }
 };
@@ -394,18 +401,21 @@ async function deleteReminder(id) {
   if (!confirm('Delete this task?')) return;
   
   try {
+    const csrfToken = localStorage.getItem('csrf_token');
     const res = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
       method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      headers: { 'X-CSRF-Token': csrfToken },
+      credentials: 'include'
     });
     const data = await res.json();
     
     if (data.success) {
       loadReminders();
     } else {
-      alert('Failed to delete task.');
+      alert('Failed to delete task: ' + data.message);
     }
   } catch (e) {
+    console.error('Error deleting task:', e);
     alert('Error deleting task.');
   }
 };
