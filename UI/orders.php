@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/guard.php';
-requireAuthPage();  // All authenticated users can view orders
+requireAuthPage();
+$_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -10,6 +11,9 @@ requireAuthPage();  // All authenticated users can view orders
   <title>Orders — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
+  <?php if (!$_isAdmin): ?>
+  <style>.admin-only { display: none !important; }</style>
+  <?php endif; ?>
 </head>
 <body>
 
@@ -103,14 +107,6 @@ requireAuthPage();  // All authenticated users can view orders
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
-// ── Role-based UI: hide admin-only elements for Staff ─────
-(function() {
-  const role = (JSON.parse(localStorage.getItem('user') || '{}')).role || '';
-  if (role !== 'Admin') {
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-  }
-})();
-
 let editingId  = null;
 let allOrders  = [];
 let customers  = [];

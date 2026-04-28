@@ -1,10 +1,21 @@
 <?php
 require_once __DIR__ . '/guard.php';
-requireAuthPage();  // All authenticated users can view the dashboard
+requireAuthPage();
+$_userRole = $_SESSION['user']['role'] ?? 'Staff';
+$_isAdmin  = $_userRole === 'Admin';
 ?>
-<!DOCTYPE html>  <title>Dashboard — Esperon Dairy Farm</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
+  <?php if (!$_isAdmin): ?>
+  <!-- Hide admin-only elements immediately — no JS flash -->
+  <style>.admin-only { display: none !important; }</style>
+  <?php endif; ?>
 </head>
 <body>
 
@@ -33,7 +44,7 @@ requireAuthPage();  // All authenticated users can view the dashboard
 
   <!-- Stat Cards -->
   <div class="stats-grid">
-    <div class="stat-card stat-card--admin-only">
+    <div class="stat-card stat-card--admin-only admin-only">
       <div class="stat-card__icon">
         <span class="material-symbols-outlined">people</span>
       </div>
@@ -42,7 +53,7 @@ requireAuthPage();  // All authenticated users can view the dashboard
         <div class="stat-card__label">Total Customers</div>
       </div>
     </div>
-    <div class="stat-card stat-card--gold stat-card--admin-only">
+    <div class="stat-card stat-card--gold stat-card--admin-only admin-only">
       <div class="stat-card__icon">
         <span class="material-symbols-outlined">pets</span>
       </div>
@@ -51,7 +62,7 @@ requireAuthPage();  // All authenticated users can view the dashboard
         <div class="stat-card__label">Total Cows</div>
       </div>
     </div>
-    <div class="stat-card stat-card--admin-only">
+    <div class="stat-card stat-card--admin-only admin-only">
       <div class="stat-card__icon">
         <span class="material-symbols-outlined">badge</span>
       </div>
@@ -74,7 +85,7 @@ requireAuthPage();  // All authenticated users can view the dashboard
   <!-- Info Cards Row -->
   <div class="info-cards-row">
     <!-- Feed Inventory -->
-    <div class="card">
+    <div class="card admin-only">
       <div class="card__header">
         <span class="card__title" style="display: flex; align-items: center; gap: 8px;">
           <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--olive);">lunch_dining</span>
@@ -164,7 +175,7 @@ requireAuthPage();  // All authenticated users can view the dashboard
   </div>
 
   <!-- Recent Orders -->
-  <div class="card">
+  <div class="card admin-only">
     <div class="card__header">
       <span class="card__title" style="display: flex; align-items: center; gap: 8px;">
         <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--olive);">receipt_long</span>
@@ -871,13 +882,9 @@ async function loadDashboard() {
   // Re-render greeting with freshest data
   renderGreeting();
 
-  // Hide Admin-only elements for Staff users
+  // Hide Admin-only elements for Staff users — already handled by PHP/CSS
+  // but keep JS sync for localStorage-driven nav
   const role = (JSON.parse(localStorage.getItem('user') || '{}')).role || '';
-  if (role !== 'Admin') {
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-    const adminCards = document.querySelectorAll('.stat-card--admin-only');
-    adminCards.forEach(c => c.style.display = 'none');
-  }
 
   // Load dashboard data
   await loadDashboard();
