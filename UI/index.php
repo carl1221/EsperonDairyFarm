@@ -113,28 +113,17 @@
       </div>
     </div>
 
-    <!-- Health Alerts -->
+    <!-- Reminders (replaces Health Alerts) -->
     <div class="card">
       <div class="card__header">
         <span class="card__title" style="display: flex; align-items: center; gap: 8px;">
           <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--danger);">warning</span>
-          Health Alerts
+          Reminders
         </span>
-        <span class="badge badge--red" style="font-size: 0.7rem;">3 Urgent</span>
+        <button id="addReminderBtn" style="background: var(--danger); color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.75rem;">Add Reminder</button>
       </div>
-      <div style="padding: 16px 24px;">
-        <div style="background: var(--danger-lt); border-radius: 8px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--danger);">
-          <span style="font-size: 0.75rem; color: var(--danger); font-weight: 700; text-transform: uppercase;">URGENT</span>
-          <p style="font-size: 0.85rem; color: var(--text); margin-top: 4px; margin-bottom: 0;">Cow #102: Mastitis Check</p>
-        </div>
-        <div style="background: var(--danger-lt); border-radius: 8px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--danger);">
-          <span style="font-size: 0.75rem; color: var(--danger); font-weight: 700; text-transform: uppercase;">URGENT</span>
-          <p style="font-size: 0.85rem; color: var(--text); margin-top: 4px; margin-bottom: 0;">Cow #144: Lameness Check</p>
-        </div>
-        <div style="background: var(--danger-lt); border-radius: 8px; padding: 12px; border-left: 3px solid var(--danger);">
-          <span style="font-size: 0.75rem; color: var(--danger); font-weight: 700; text-transform: uppercase;">URGENT</span>
-          <p style="font-size: 0.85rem; color: var(--text); margin-top: 4px; margin-bottom: 0;">Cow #210: Urgent Check</p>
-        </div>
+      <div id="remindersList" style="padding: 16px 24px;">
+        <!-- Reminders will be displayed here -->
       </div>
     </div>
 
@@ -208,6 +197,39 @@
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
+// ── Reminders Functionality ───────────────────────────────
+let reminders = [];
+function renderReminders() {
+  const list = document.getElementById('remindersList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (reminders.length === 0) {
+    list.innerHTML = '<p style="color: var(--text-light); font-size: 0.85rem;">No reminders yet. Click "Add Reminder" to create one.</p>';
+    return;
+  }
+  reminders.forEach((reminder, idx) => {
+    const div = document.createElement('div');
+    div.style.background = 'var(--danger-lt)';
+    div.style.borderRadius = '8px';
+    div.style.padding = '12px';
+    div.style.marginBottom = '10px';
+    div.style.borderLeft = '3px solid var(--danger)';
+    div.style.cursor = 'pointer';
+    div.innerHTML = `<span style="font-size: 0.75rem; color: var(--danger); font-weight: 700; text-transform: uppercase;">REMINDER</span><p style="font-size: 0.85rem; color: var(--text); margin-top: 4px; margin-bottom: 0;">${reminder}</p>`;
+    div.onclick = () => { alert(reminder); };
+    list.appendChild(div);
+  });
+}
+document.getElementById('addReminderBtn').onclick = function() {
+  const text = prompt('Enter reminder text:');
+  if (text && text.trim() !== '') {
+    reminders.push(text.trim());
+    renderReminders();
+    alert(text.trim());
+  }
+};
+renderReminders();
+// ── End Reminders ─────────────────────────────────────────
 
 // ── Helpers ───────────────────────────────────────────────
 function getStoredUser() {
