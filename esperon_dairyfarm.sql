@@ -154,6 +154,25 @@ CREATE INDEX idx_customer_name ON Customer(Customer_Name);
 -- Index for worker role filtering
 CREATE INDEX idx_worker_role ON Worker(Worker_Role);
 
+-- ------------------------------------------------------------
+-- Table: Reminders (Task/Assignment System)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS Reminders (
+    reminder_id  INT           NOT NULL AUTO_INCREMENT,
+    title        VARCHAR(255)  NOT NULL,
+    description  TEXT          NULL,
+    due_date     DATETIME      NOT NULL,
+    status       ENUM('pending', 'completed') NOT NULL DEFAULT 'pending',
+    created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_reminders PRIMARY KEY (reminder_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Index for sorting by due date
+CREATE INDEX idx_reminders_due_date ON Reminders(due_date);
+
+-- Index for filtering by status
+CREATE INDEX idx_reminders_status ON Reminders(status);
+
 -- ============================================================
 -- END OF SCRIPT
 -- ============================================================

@@ -113,17 +113,18 @@
       </div>
     </div>
 
-    <!-- Reminders (replaces Health Alerts) -->
+    <!-- Reminders / Task System -->
     <div class="card">
       <div class="card__header">
         <span class="card__title" style="display: flex; align-items: center; gap: 8px;">
           <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--danger);">warning</span>
           Reminders
+          <span id="reminderBadge" class="badge badge--red" style="display: none; font-size: 0.65rem; margin-left: 8px;">0</span>
         </span>
-        <button id="addReminderBtn" style="background: var(--danger); color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.75rem;">Add Reminder</button>
+        <button id="addReminderBtn" style="background: var(--danger); color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.75rem;">+ Add Task</button>
       </div>
       <div id="remindersList" style="padding: 16px 24px;">
-        <!-- Reminders will be displayed here -->
+        <!-- Reminders loaded from database -->
       </div>
     </div>
 
@@ -197,66 +198,222 @@
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
-// ── Reminders Functionality (Improved) ─────────────────────
-let reminders = JSON.parse(localStorage.getItem('reminders') || '[]');
+const API_BASE = '../dairy_farm_backend/api';
 
-function saveReminders() {
-  localStorage.setItem('reminders', JSON.stringify(reminders));
+// ── Reminders / Task System (Database-powered) ───────────────
+let reminders = [];
+
+// Get status color based on due date
+function getStatusInfo(dueDate, status) {
+  if (status === 'completed') {
+    return { color: 'var(--olive)', bg: 'var(--olive-light)', label: 'Completed', urgent: false };
+  }
+  const now = new Date();
+  const due = new Date(dueDate);
+  const hoursUntilDue = (due - now) / (1000 * 60 * 60);
+  
+  if (hoursUntilDue < 0) {
+    return { color: 'var(--danger)', bg: 'var(--danger-lt)', label: 'Overdue', urgent: true };
+  } else if (hoursUntilDue <= 24) {
+    return { color: '#f39c12', bg: '#fef9e7', label: 'Due Soon', urgent: true };
+  } else {
+    return { color: 'var(--olive)', bg: 'var(--olive-light)', label: 'Pending', urgent: false };
+  }
 }
 
-function formatDate(timestamp) {
-  const date = new Date(timestamp);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+// Format date nicely
+function formatDueDate(dateStr) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const isToday = date.toDateString() === now.toDateString();
+  const isTomorrow = date.toDateString() === tomorrow.toDateString();
+  
+  let timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  if (isToday) return `Today, ${timeStr}`;
+  if (isTomorrow) return `Tomorrow, ${timeStr}`;
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + `, ${timeStr}`;
 }
 
+// Load reminders from API
+async function loadReminders() {
+  const list = document.getElementById('remindersList');
+  if (!list) return;
+  
+  list.innerHTML = '<p style="color: var(--text-light); font-size: 0.85rem;"><span class="spinner"></span> Loading...</p>';
+  
+  try {
+    const res = await fetch('<?php echo API_BASE; ?>/reminders.php', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      reminders = data.data || [];
+      renderReminders();
+      updateBadge();
+      checkNotifications();
+    } else {
+      list.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem;">Failed to load reminders.</p>';
+    }
+  } catch (e) {
+    list.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem;">Error loading reminders.</p>';
+  }
+}
+
+// Render reminders in the UI
 function renderReminders() {
   const list = document.getElementById('remindersList');
   if (!list) return;
-  list.innerHTML = '';
+  
   if (reminders.length === 0) {
-    list.innerHTML = '<p style="color: var(--text-light); font-size: 0.85rem;">No reminders yet. Click "Add Reminder" to create one.</p>';
+    list.innerHTML = '<p style="color: var(--text-light); font-size: 0.85rem;">No tasks yet. Click "+ Add Task" to create one.</p>';
     return;
   }
-  reminders.forEach((reminder, idx) => {
-    const div = document.createElement('div');
-    div.style.background = 'var(--danger-lt)';
-    div.style.borderRadius = '8px';
-    div.style.padding = '12px';
-    div.style.marginBottom = '10px';
-    div.style.borderLeft = '3px solid var(--danger)';
-    div.style.position = 'relative';
-    div.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <div style="flex: 1; cursor: pointer;" onclick="alert('${reminder.text.replace(/'/g, "\\'")}')">
-          <span style="font-size: 0.75rem; color: var(--danger); font-weight: 700; text-transform: uppercase;">REMINDER</span>
-          <p style="font-size: 0.85rem; color: var(--text); margin-top: 4px; margin-bottom: 4px;">${reminder.text}</p>
-          <span style="font-size: 0.7rem; color: var(--text-light);">${formatDate(reminder.timestamp)}</span>
+  
+  // Sort by due date (nearest first)
+  const sorted = [...reminders].sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+  
+  list.innerHTML = sorted.map(r => {
+    const status = getStatusInfo(r.due_date, r.status);
+    const isCompleted = r.status === 'completed';
+    return `
+      <div style="background: ${status.bg}; border-radius: 8px; padding: 12px; margin-bottom: 10px; border-left: 3px solid ${status.color};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="flex: 1;">
+            <span style="font-size: 0.7rem; color: ${status.color}; font-weight: 700; text-transform: uppercase;">${status.label}</span>
+            <p style="font-size: 0.9rem; color: var(--text); margin: 4px 0; ${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${r.title}</p>
+            <span style="font-size: 0.7rem; color: var(--text-light);">Due: ${formatDueDate(r.due_date)}</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            ${!isCompleted ? `<button onclick="markComplete(${r.reminder_id})" style="background: var(--olive); color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.7rem;">✓</button>` : ''}
+            <button onclick="deleteReminder(${r.reminder_id})" style="background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px 8px; font-size: 0.9rem;">✕</button>
+          </div>
         </div>
-        <button onclick="deleteReminder(${idx})" style="background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px 8px; font-size: 1rem; opacity: 0.6;" title="Delete">✕</button>
       </div>
     `;
-    list.appendChild(div);
-  });
+  }).join('');
 }
 
-function deleteReminder(idx) {
-  if (confirm('Delete this reminder?')) {
-    reminders.splice(idx, 1);
-    saveReminders();
-    renderReminders();
+// Update badge counter
+function updateBadge() {
+  const badge = document.getElementById('reminderBadge');
+  if (!badge) return;
+  
+  const urgentCount = reminders.filter(r => {
+    if (r.status === 'completed') return false;
+    const status = getStatusInfo(r.due_date, r.status);
+    return status.urgent;
+  }).length;
+  
+  if (urgentCount > 0) {
+    badge.textContent = urgentCount;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
   }
 }
 
-document.getElementById('addReminderBtn').onclick = function() {
-  const text = prompt('Enter reminder text:');
-  if (text && text.trim() !== '') {
-    reminders.unshift({ text: text.trim(), timestamp: Date.now() });
-    saveReminders();
-    renderReminders();
-    alert(text.trim());
+// Check for notifications
+function checkNotifications() {
+  const overdue = reminders.filter(r => r.status === 'pending' && getStatusInfo(r.due_date, r.status).label === 'Overdue');
+  const dueSoon = reminders.filter(r => r.status === 'pending' && getStatusInfo(r.due_date, r.status).label === 'Due Soon');
+  
+  if (overdue.length > 0) {
+    setTimeout(() => alert(`⚠️ You have ${overdue.length} overdue task(s)!`), 500);
+  } else if (dueSoon.length > 0) {
+    setTimeout(() => alert(`⏰ You have ${dueSoon.length} task(s) due within 24 hours!`), 500);
+  }
+}
+
+// Add new reminder
+document.getElementById('addReminderBtn').onclick = async function() {
+  const title = prompt('Enter task title:');
+  if (!title || !title.trim()) return;
+  
+  const dueDate = prompt('Enter due date (YYYY-MM-DD HH:MM):', new Date().toISOString().slice(0, 16));
+  if (!dueDate) return;
+  
+  const description = prompt('Enter description (optional):', '');
+  
+  try {
+    const res = await fetch('<?php echo API_BASE; ?>/reminders.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({
+        title: title.trim(),
+        description: description?.trim() || null,
+        due_date: dueDate,
+        status: 'pending'
+      })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      alert('Task created successfully!');
+      loadReminders();
+    } else {
+      alert('Failed to create task: ' + data.message);
+    }
+  } catch (e) {
+    alert('Error creating task.');
   }
 };
-renderReminders();
+
+// Mark as complete
+async function markComplete(id) {
+  if (!confirm('Mark this task as completed?')) return;
+  
+  try {
+    const res = await fetch('<?php echo API_BASE; ?>/reminders.php?id=' + id, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({ status: 'completed' })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      loadReminders();
+    } else {
+      alert('Failed to update task.');
+    }
+  } catch (e) {
+    alert('Error updating task.');
+  }
+};
+
+// Delete reminder
+async function deleteReminder(id) {
+  if (!confirm('Delete this task?')) return;
+  
+  try {
+    const res = await fetch('<?php echo API_BASE; ?>/reminders.php?id=' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      loadReminders();
+    } else {
+      alert('Failed to delete task.');
+    }
+  } catch (e) {
+    alert('Error deleting task.');
+  }
+};
+
+// Load on page load
+loadReminders();
 // ── End Reminders ─────────────────────────────────────────
 
 // ── Helpers ───────────────────────────────────────────────
