@@ -37,28 +37,27 @@ try {
             break;
 
         case 'POST':
-            $data     = getRequestBody();
-            $required = ['Cow_ID', 'Cow', 'Production'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    sendError("Missing required field: $field");
-                }
-            }
-            $cow->create($data)
+            $data = getRequestBody();
+            validateRequired($data, ['Cow_ID', 'Cow', 'Production']);
+            $validatedData = [
+                'Cow_ID'     => validateInteger($data['Cow_ID'], 'Cow_ID'),
+                'Cow'        => validateString($data['Cow'], 'Cow', 50),
+                'Production' => validateString($data['Production'], 'Production', 20),
+            ];
+            $cow->create($validatedData)
                 ? sendSuccess('Cow created.', null, 201)
                 : sendError('Failed to create cow.', 500);
             break;
 
         case 'PUT':
             if (!$id) sendError('Cow ID is required for update.');
-            $data     = getRequestBody();
-            $required = ['Cow', 'Production'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    sendError("Missing required field: $field");
-                }
-            }
-            $cow->update($id, $data)
+            $data = getRequestBody();
+            validateRequired($data, ['Cow', 'Production']);
+            $validatedData = [
+                'Cow'        => validateString($data['Cow'], 'Cow', 50),
+                'Production' => validateString($data['Production'], 'Production', 20),
+            ];
+            $cow->update($id, $validatedData)
                 ? sendSuccess('Cow updated.')
                 : sendError('Cow not found or no changes made.', 404);
             break;

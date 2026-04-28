@@ -39,22 +39,21 @@ try {
             break;
 
         case 'POST':
-            $data     = getRequestBody();
-            $required = ['title', 'due_date'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    sendError("Missing required field: $field");
-                }
-            }
-            $reminder->create($data)
+            $data = getRequestBody();
+            validateRequired($data, ['title', 'due_date']);
+            $validatedData = [
+                'title'       => validateString($data['title'], 'title', 255),
+                'description' => isset($data['description']) ? validateString($data['description'], 'description', 1000) : null,
+                'due_date'    => $data['due_date'],
+                'status'      => isset($data['status']) ? validateString($data['status'], 'status', 20) : 'pending',
+            ];
+            $reminder->create($validatedData)
                 ? sendSuccess('Reminder created.', null, 201)
                 : sendError('Failed to create reminder.', 500);
             break;
 
         case 'PUT':
-            if (!$id) {
-                sendError('Reminder ID required.');
-            }
+            if (!$id) sendError('Reminder ID required.');
             $data = getRequestBody();
             $reminder->update($id, $data)
                 ? sendSuccess('Reminder updated.')
@@ -62,9 +61,7 @@ try {
             break;
 
         case 'DELETE':
-            if (!$id) {
-                sendError('Reminder ID required.');
-            }
+            if (!$id) sendError('Reminder ID required.');
             $reminder->delete($id)
                 ? sendSuccess('Reminder deleted.')
                 : sendError('Failed to delete reminder.', 500);
