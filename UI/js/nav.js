@@ -1,16 +1,20 @@
 // ============================================================
 // js/nav.js
-// Injects sidebar navigation into every authenticated page.
-// Reads the current user from localStorage to display their
-// name, role, and email without an extra server round-trip.
+// Injects sidebar navigation + profile edit modal into every page.
 // ============================================================
 
 (function () {
-  // Load Material Icons font if not already loaded
+
+  // ── Detect base path (works from any UI/*.php page) ──────
+  // All pages live in UI/, so the API is always one level up.
+  const BASE_API = '../dairy_farm_backend/api';
+  const BASE_UI  = '';   // relative to current page (same folder)
+
+  // ── Load Material Icons font ──────────────────────────────
   if (!document.getElementById('material-icons-font')) {
     const link = document.createElement('link');
-    link.id = 'material-icons-font';
-    link.rel = 'stylesheet';
+    link.id   = 'material-icons-font';
+    link.rel  = 'stylesheet';
     link.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0';
     document.head.appendChild(link);
   }
@@ -18,74 +22,84 @@
   const nav = document.getElementById('app-nav');
   if (!nav) return;
 
-  // ── Get the stored user (set by login.php after auth) ──
+  // ── Read stored user ──────────────────────────────────────
   let currentUser = {};
-  try {
-    currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  } catch {
-    currentUser = {};
-  }
+  try { currentUser = JSON.parse(localStorage.getItem('user') || '{}'); } catch {}
 
-  const displayName  = currentUser.name   || 'Unknown User';
-  const displayRole  = currentUser.role   || '';
-  const displayEmail = currentUser.email  || '';
+  const displayName   = currentUser.name   || 'Unknown User';
+  const displayRole   = currentUser.role   || '';
+  const displayEmail  = currentUser.email  || '';
   const displayAvatar = currentUser.avatar || '';
 
-  // Role badge colour
   const roleBadgeClass = displayRole === 'Admin' ? 'badge--green' : 'badge--muted';
 
-  // Avatar: photo or initial
-  const avatarHTML = displayAvatar
-    ? `<img src="${displayAvatar}" alt="${displayName}" style="
-        width:44px; height:44px; border-radius:50%; object-fit:cover;
+  function buildAvatarHTML(src, name, size = 44) {
+    if (src) {
+      return `<img src="${src}?t=${Date.now()}" alt="${name}" style="
+        width:${size}px; height:${size}px; border-radius:50%; object-fit:cover;
         border:2px solid rgba(255,255,255,0.5); box-shadow:0 2px 8px rgba(0,0,0,0.12);
-      " />`
-    : `<div class="nav__user-avatar" id="nav-avatar-initial">${displayName.charAt(0).toUpperCase()}</div>`;
+        display:block;
+      " onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <div style="display:none; width:${size}px; height:${size}px; border-radius:50%;
+        background:linear-gradient(135deg,#4e6040,#6b8a5c);
+        align-items:center; justify-content:center;
+        font-size:${Math.round(size*0.4)}px; font-weight:700; color:#fff;">
+        ${name.charAt(0).toUpperCase()}
+      </div>`;
+    }
+    return `<div class="nav__user-avatar">${name.charAt(0).toUpperCase()}</div>`;
+  }
 
-  // ── Render nav HTML ─────────────────────────────────────
+  // ── Render sidebar ────────────────────────────────────────
   nav.innerHTML = `
-
     <!-- Brand -->
     <div class="nav__brand">
-      <img src="assets/Esperon Logo.png" alt="Esperon Logo" class="nav__brand-logo-img" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;" />
-      <div class="nav__brand-name">Esperon<br>Dairy Farm</div>
-      <div class="nav__brand-sub">Management System</div>
+      <img src="${BASE_UI}assets/Esperon Logo.png" alt="Esperon Logo"
+        class="nav__brand-logo-img"
+        style="width:40px;height:40px;border-radius:8px;object-fit:cover;"
+        onerror="this.style.display='none'" />
+      <div>
+        <div class="nav__brand-name">Esperon<br>Dairy Farm</div>
+        <div class="nav__brand-sub">Management System</div>
+      </div>
     </div>
 
-    <!-- Logged-in user card — click to edit profile -->
-    <div class="nav__user" id="nav-profile-btn" title="Edit profile" style="cursor:pointer; transition: background 0.2s;">
-      <div id="nav-avatar-wrap" style="flex-shrink:0;">
-        ${avatarHTML}
+    <!-- User card — click to open profile modal -->
+    <div class="nav__user" id="nav-profile-btn" title="Edit profile"
+      style="cursor:pointer; transition:background 0.2s; user-select:none;">
+      <div id="nav-avatar-wrap" style="flex-shrink:0; position:relative;">
+        ${buildAvatarHTML(displayAvatar, displayName)}
       </div>
-      <div class="nav__user-info">
+      <div class="nav__user-info" style="flex:1; min-width:0;">
         <div class="nav__user-name" id="nav-display-name">${displayName}</div>
         <div class="nav__user-meta">
           <span class="badge ${roleBadgeClass}" style="font-size:.68rem;">${displayRole}</span>
         </div>
-        ${displayEmail
-          ? `<div class="nav__user-email" title="${displayEmail}">${displayEmail}</div>`
-          : ''}
+        ${displayEmail ? `<div class="nav__user-email" title="${displayEmail}">${displayEmail}</div>` : ''}
       </div>
-      <span class="material-symbols-outlined" style="font-size:1rem; color:var(--muted); margin-left:auto; flex-shrink:0;">edit</span>
+      <span class="material-symbols-outlined"
+        style="font-size:1rem;color:var(--muted);margin-left:auto;flex-shrink:0;opacity:0.7;">
+        edit
+      </span>
     </div>
 
-    <!-- Navigation links -->
+    <!-- Nav links -->
     <span class="nav__section">Overview</span>
-    <a href="index.php" class="nav__link">
+    <a href="${BASE_UI}index.php" class="nav__link">
       <span class="nav__link-icon material-symbols-outlined">dashboard</span><span>Dashboard</span>
     </a>
 
     <span class="nav__section">Records</span>
-    <a href="customers.php" class="nav__link">
+    <a href="${BASE_UI}customers.php" class="nav__link">
       <span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span>
     </a>
-    <a href="cows.php" class="nav__link">
+    <a href="${BASE_UI}cows.php" class="nav__link">
       <span class="nav__link-icon material-symbols-outlined">pets</span><span>Cows</span>
     </a>
-    <a href="workers.php" class="nav__link">
+    <a href="${BASE_UI}workers.php" class="nav__link">
       <span class="nav__link-icon material-symbols-outlined">badge</span><span>Workers</span>
     </a>
-    <a href="orders.php" class="nav__link">
+    <a href="${BASE_UI}orders.php" class="nav__link">
       <span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span>
     </a>
 
@@ -97,347 +111,364 @@
     <div class="nav__footer">Esperon Farm © 2026</div>
   `;
 
-  // ── Highlight the active link ───────────────────────────
   UI.setActiveNav();
 
-  // ── Logout ─────────────────────────────────────────────
+  // ── Logout ────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async () => {
     try {
       await API.auth.logout();
       localStorage.removeItem('csrf_token');
       localStorage.removeItem('user');
       window.location.href = 'login.php';
-    } catch (e) {
-      UI.toast('Logout failed. Please try again.', 'error');
-    }
+    } catch { UI.toast('Logout failed. Please try again.', 'error'); }
   });
 
-  // ── Profile hover effect ────────────────────────────────
+  // ── Hover effect on user card ─────────────────────────────
   const profileBtn = document.getElementById('nav-profile-btn');
-  profileBtn.addEventListener('mouseenter', () => {
-    profileBtn.style.background = 'rgba(255,255,255,0.45)';
-  });
-  profileBtn.addEventListener('mouseleave', () => {
-    profileBtn.style.background = '';
-  });
+  profileBtn.addEventListener('mouseenter', () => profileBtn.style.background = 'rgba(255,255,255,0.45)');
+  profileBtn.addEventListener('mouseleave', () => profileBtn.style.background = '');
 
-  // ── Profile Modal ───────────────────────────────────────
-  const modalHTML = `
-  <div id="profileModal" style="
-    display:none; position:fixed; inset:0; z-index:9999;
-    background:rgba(42,31,21,0.45); backdrop-filter:blur(4px);
-    -webkit-backdrop-filter:blur(4px);
-    align-items:center; justify-content:center;
-  ">
-    <div style="
-      background:rgba(255,255,255,0.95); backdrop-filter:blur(20px);
-      -webkit-backdrop-filter:blur(20px);
-      border:1px solid rgba(255,255,255,0.7);
-      border-radius:20px; box-shadow:0 12px 48px rgba(0,0,0,0.18);
-      width:100%; max-width:420px; margin:16px;
-      animation:profileSlideIn 0.25s ease;
-      font-family:'Lato',sans-serif;
+  // ══════════════════════════════════════════════════════════
+  // PROFILE MODAL
+  // ══════════════════════════════════════════════════════════
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="profileModal" style="
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(42,31,21,0.5); backdrop-filter:blur(5px);
+      -webkit-backdrop-filter:blur(5px);
+      align-items:center; justify-content:center; padding:16px;
     ">
-      <!-- Header -->
-      <div style="
-        display:flex; align-items:center; justify-content:space-between;
-        padding:20px 24px 16px; border-bottom:1px solid rgba(212,201,184,0.4);
+      <div id="profileModalBox" style="
+        background:#faf6f0; border:1px solid rgba(255,255,255,0.8);
+        border-radius:20px; box-shadow:0 16px 56px rgba(0,0,0,0.2);
+        width:100%; max-width:400px;
+        animation:pmSlideIn 0.25s cubic-bezier(.34,1.56,.64,1);
+        font-family:'Lato',sans-serif; overflow:hidden;
       ">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="material-symbols-outlined" style="color:#4e6040; font-size:1.3rem;">manage_accounts</span>
-          <span style="font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; color:#2a1f15;">Edit Profile</span>
+
+        <!-- Modal header -->
+        <div style="
+          display:flex; align-items:center; justify-content:space-between;
+          padding:18px 22px 14px;
+          background:linear-gradient(135deg,#4e6040,#6b8a5c);
+        ">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.9);font-size:1.2rem;">manage_accounts</span>
+            <span style="font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; color:#fff;">Edit Profile</span>
+          </div>
+          <button id="pmClose" style="
+            background:rgba(255,255,255,0.15); border:none; cursor:pointer;
+            width:30px; height:30px; border-radius:50%; color:#fff;
+            display:flex; align-items:center; justify-content:center;
+            transition:background 0.15s;
+          "
+          onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;">close</span>
+          </button>
         </div>
-        <button id="profileModalClose" style="
-          background:none; border:none; cursor:pointer; color:#8a7f72;
-          width:32px; height:32px; border-radius:50%; display:flex;
-          align-items:center; justify-content:center;
-          transition:background 0.15s, color 0.15s;
-        "
-        onmouseover="this.style.background='#fdf0ef';this.style.color='#c0392b'"
-        onmouseout="this.style.background='none';this.style.color='#8a7f72'">
-          <span class="material-symbols-outlined" style="font-size:1.2rem;">close</span>
-        </button>
-      </div>
 
-      <!-- Body -->
-      <div style="padding:24px;">
-
-        <!-- Avatar upload -->
-        <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:24px;">
-          <div id="pm_avatar_wrap" style="position:relative; width:88px; height:88px; margin-bottom:12px;">
-            <div id="pm_avatar_preview" style="
-              width:88px; height:88px; border-radius:50%;
+        <!-- Avatar section -->
+        <div style="
+          display:flex; flex-direction:column; align-items:center;
+          padding:24px 22px 16px;
+          background:linear-gradient(180deg, rgba(78,96,64,0.06) 0%, transparent 100%);
+          border-bottom:1px solid #e8dfd2;
+        ">
+          <!-- Clickable avatar circle -->
+          <div id="pmAvatarRing" style="
+            position:relative; width:96px; height:96px;
+            cursor:pointer; margin-bottom:10px;
+          " title="Click to change photo">
+            <!-- Avatar display -->
+            <div id="pmAvatarCircle" style="
+              width:96px; height:96px; border-radius:50%; overflow:hidden;
               background:linear-gradient(135deg,#4e6040,#6b8a5c);
               display:flex; align-items:center; justify-content:center;
-              font-size:2rem; font-weight:700; color:#fff;
-              border:3px solid rgba(255,255,255,0.7);
-              box-shadow:0 4px 16px rgba(0,0,0,0.12);
-              overflow:hidden;
+              border:3px solid #fff; box-shadow:0 4px 16px rgba(0,0,0,0.15);
+              font-size:2.2rem; font-weight:700; color:#fff;
             "></div>
-            <label for="pm_avatar_input" style="
-              position:absolute; bottom:0; right:0;
-              width:28px; height:28px; border-radius:50%;
-              background:#4e6040; color:#fff; cursor:pointer;
-              display:flex; align-items:center; justify-content:center;
-              box-shadow:0 2px 8px rgba(0,0,0,0.2);
-              border:2px solid #fff;
-              transition:background 0.15s;
-            "
-            onmouseover="this.style.background='#2d3b22'"
-            onmouseout="this.style.background='#4e6040'">
-              <span class="material-symbols-outlined" style="font-size:0.85rem;">photo_camera</span>
-            </label>
-            <input type="file" id="pm_avatar_input" accept="image/*" style="display:none;" />
+            <!-- Camera overlay -->
+            <div style="
+              position:absolute; inset:0; border-radius:50%;
+              background:rgba(0,0,0,0); display:flex; align-items:center;
+              justify-content:center; transition:background 0.2s;
+            " id="pmAvatarOverlay"
+            onmouseover="this.style.background='rgba(0,0,0,0.35)';document.getElementById('pmCameraIcon').style.opacity='1'"
+            onmouseout="this.style.background='rgba(0,0,0,0)';document.getElementById('pmCameraIcon').style.opacity='0'">
+              <span id="pmCameraIcon" class="material-symbols-outlined" style="
+                color:#fff; font-size:1.6rem; opacity:0; transition:opacity 0.2s;
+              ">photo_camera</span>
+            </div>
+            <!-- Hidden file input -->
+            <input type="file" id="pmFileInput" accept="image/jpeg,image/png,image/webp,image/gif"
+              style="display:none;" />
           </div>
-          <span style="font-size:0.75rem; color:#8a7f72;">Click the camera icon to change photo</span>
-          <div id="pm_avatar_err" style="display:none; color:#c0392b; font-size:0.75rem; margin-top:4px;"></div>
+
+          <span style="font-size:0.75rem; color:#8a7f72; margin-bottom:4px;">
+            Click avatar to change photo &nbsp;·&nbsp; JPG, PNG, WebP (max 2 MB)
+          </span>
+          <div id="pmAvatarErr" style="display:none; color:#c0392b; font-size:0.75rem; margin-top:2px;"></div>
         </div>
 
-        <!-- Name -->
-        <div style="margin-bottom:16px;">
-          <label style="display:block; font-size:0.78rem; font-weight:700; color:#4a3f35; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
-            Display Name <span style="color:#c0392b;">*</span>
-          </label>
-          <input id="pm_name" type="text" placeholder="Your name"
-            style="
+        <!-- Form fields -->
+        <div style="padding:20px 22px;">
+
+          <!-- Name -->
+          <div style="margin-bottom:14px;">
+            <label style="
+              display:block; font-size:0.72rem; font-weight:700; color:#4a3f35;
+              text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px;
+            ">Display Name <span style="color:#c0392b;">*</span></label>
+            <input id="pmName" type="text" placeholder="Your name" autocomplete="off" style="
               width:100%; padding:10px 14px; border:1.5px solid #e8dfd2;
               border-radius:10px; font-size:0.9rem; font-family:'Lato',sans-serif;
-              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none;
+              color:#2a1f15; background:#fff; outline:none; box-sizing:border-box;
               transition:border-color 0.15s, box-shadow 0.15s;
             "
             onfocus="this.style.borderColor='#4e6040';this.style.boxShadow='0 0 0 3px rgba(78,96,64,0.12)'"
-            onblur="this.style.borderColor='#e8dfd2';this.style.boxShadow='none'"
-          />
-          <div id="pm_name_err" style="display:none; color:#c0392b; font-size:0.75rem; margin-top:4px;">
-            <span class="material-symbols-outlined" style="font-size:0.85rem; vertical-align:middle;">error</span>
-            Name is required.
+            onblur="this.style.borderColor='#e8dfd2';this.style.boxShadow='none'" />
+            <div id="pmNameErr" style="display:none; color:#c0392b; font-size:0.75rem; margin-top:5px;">
+              <span class="material-symbols-outlined" style="font-size:0.8rem;vertical-align:middle;">error</span>
+              Name cannot be empty.
+            </div>
           </div>
+
+          <!-- Role (read-only) -->
+          <div>
+            <label style="
+              display:block; font-size:0.72rem; font-weight:700; color:#4a3f35;
+              text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px;
+            ">Role</label>
+            <div id="pmRole" style="
+              padding:10px 14px; border:1.5px solid #e8dfd2; border-radius:10px;
+              font-size:0.88rem; color:#8a7f72; background:#f5ede0;
+            "></div>
+          </div>
+
         </div>
 
-        <!-- Role (read-only) -->
-        <div style="margin-bottom:8px;">
-          <label style="display:block; font-size:0.78rem; font-weight:700; color:#4a3f35; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
-            Role
-          </label>
-          <div id="pm_role_display" style="
-            padding:10px 14px; border:1.5px solid #e8dfd2; border-radius:10px;
-            font-size:0.9rem; color:#8a7f72; background:rgba(232,217,197,0.3);
-          "></div>
+        <!-- Footer buttons -->
+        <div style="
+          display:flex; justify-content:flex-end; gap:10px;
+          padding:0 22px 20px;
+        ">
+          <button id="pmCancel" style="
+            padding:10px 20px; border:1.5px solid #d4c9b8; border-radius:10px;
+            background:#fff; color:#4a3f35; font-family:'Lato',sans-serif;
+            font-size:0.88rem; font-weight:600; cursor:pointer;
+            transition:background 0.15s, border-color 0.15s;
+          "
+          onmouseover="this.style.background='#f5ede0'"
+          onmouseout="this.style.background='#fff'">Cancel</button>
+
+          <button id="pmSave" style="
+            padding:10px 22px; border:none; border-radius:10px;
+            background:linear-gradient(135deg,#4e6040,#6b8a5c); color:#fff;
+            font-family:'Lato',sans-serif; font-size:0.88rem; font-weight:700;
+            cursor:pointer; box-shadow:0 2px 8px rgba(78,96,64,0.3);
+            display:flex; align-items:center; gap:6px;
+            transition:opacity 0.15s, transform 0.15s;
+          "
+          onmouseover="this.style.opacity='0.88';this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.opacity='1';this.style.transform='none'">
+            <span class="material-symbols-outlined" style="font-size:1rem;">save</span>
+            Save Changes
+          </button>
         </div>
 
-      </div>
-
-      <!-- Footer -->
-      <div style="display:flex; justify-content:flex-end; gap:10px; padding:0 24px 20px;">
-        <button id="profileModalCancel" style="
-          padding:10px 20px; border:1.5px solid #d4c9b8; border-radius:10px;
-          background:rgba(255,255,255,0.5); color:#4a3f35; font-family:'Lato',sans-serif;
-          font-size:0.88rem; font-weight:600; cursor:pointer;
-          transition:background 0.15s;
-        "
-        onmouseover="this.style.background='rgba(255,255,255,0.8)'"
-        onmouseout="this.style.background='rgba(255,255,255,0.5)'">
-          Cancel
-        </button>
-        <button id="profileModalSubmit" style="
-          padding:10px 24px; border:none; border-radius:10px;
-          background:linear-gradient(135deg,#4e6040,#6b8a5c); color:#fff;
-          font-family:'Lato',sans-serif; font-size:0.88rem; font-weight:700;
-          cursor:pointer; box-shadow:0 2px 8px rgba(78,96,64,0.25);
-          transition:opacity 0.15s, transform 0.15s;
-          display:flex; align-items:center; gap:6px;
-        "
-        onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
-        onmouseout="this.style.opacity='1';this.style.transform='none'">
-          <span class="material-symbols-outlined" style="font-size:1rem;">save</span>
-          Save Changes
-        </button>
       </div>
     </div>
-  </div>
 
-  <style>
-    @keyframes profileSlideIn {
-      from { opacity:0; transform:translateY(-16px) scale(0.97); }
-      to   { opacity:1; transform:translateY(0) scale(1); }
-    }
-  </style>
-  `;
+    <style>
+      @keyframes pmSlideIn {
+        from { opacity:0; transform:translateY(-20px) scale(0.96); }
+        to   { opacity:1; transform:translateY(0)     scale(1);    }
+      }
+      @keyframes pmSpin {
+        to { transform:rotate(360deg); }
+      }
+    </style>
+  `);
 
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  // ── Element refs ──────────────────────────────────────────
+  const modal       = document.getElementById('profileModal');
+  const pmClose     = document.getElementById('pmClose');
+  const pmCancel    = document.getElementById('pmCancel');
+  const pmSave      = document.getElementById('pmSave');
+  const pmName      = document.getElementById('pmName');
+  const pmNameErr   = document.getElementById('pmNameErr');
+  const pmRole      = document.getElementById('pmRole');
+  const pmAvatarCircle = document.getElementById('pmAvatarCircle');
+  const pmAvatarRing   = document.getElementById('pmAvatarRing');
+  const pmFileInput    = document.getElementById('pmFileInput');
+  const pmAvatarErr    = document.getElementById('pmAvatarErr');
 
-  const modal        = document.getElementById('profileModal');
-  const closeBtn     = document.getElementById('profileModalClose');
-  const cancelBtn    = document.getElementById('profileModalCancel');
-  const submitBtn    = document.getElementById('profileModalSubmit');
-  const nameInput    = document.getElementById('pm_name');
-  const nameErr      = document.getElementById('pm_name_err');
-  const avatarErr    = document.getElementById('pm_avatar_err');
-  const avatarInput  = document.getElementById('pm_avatar_input');
-  const avatarPreview = document.getElementById('pm_avatar_preview');
-  const roleDisplay  = document.getElementById('pm_role_display');
+  let pendingFile = null;
 
-  let pendingAvatarFile = null;
-
-  // ── Render avatar preview ─────────────────────────────
-  function renderAvatarPreview(src, name) {
+  // ── Avatar circle renderer ────────────────────────────────
+  function setAvatarCircle(src, name) {
     if (src) {
-      avatarPreview.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;" />`;
+      pmAvatarCircle.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
     } else {
-      avatarPreview.innerHTML = `<span style="font-size:2rem;font-weight:700;color:#fff;">${(name||'?').charAt(0).toUpperCase()}</span>`;
+      pmAvatarCircle.innerHTML = `<span style="font-size:2.2rem;font-weight:700;color:#fff;">${(name||'?').charAt(0).toUpperCase()}</span>`;
     }
   }
 
-  // ── Open modal ────────────────────────────────────────
+  // ── Open modal ────────────────────────────────────────────
   async function openModal() {
-    pendingAvatarFile = null;
-    nameErr.style.display   = 'none';
-    avatarErr.style.display = 'none';
+    pendingFile = null;
+    pmFileInput.value = '';
+    pmNameErr.style.display   = 'none';
+    pmAvatarErr.style.display = 'none';
+    pmName.style.borderColor  = '#e8dfd2';
 
-    // Load fresh data from server
+    // Prefill from localStorage immediately (fast)
+    pmName.value = currentUser.name || '';
+    pmRole.textContent = currentUser.role || '';
+    setAvatarCircle(currentUser.avatar || '', currentUser.name || '');
+
+    modal.style.display = 'flex';
+    setTimeout(() => pmName.focus(), 60);
+
+    // Then refresh from server in background
     try {
-      const res  = await fetch('../dairy_farm_backend/api/profile.php', { credentials: 'include' });
+      const res  = await fetch(`${BASE_API}/profile.php`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         const u = data.data;
-        nameInput.value = u.Worker || '';
-        roleDisplay.textContent = u.Worker_Role || '';
-        renderAvatarPreview(u.Avatar || '', u.Worker);
+        pmName.value = u.Worker || '';
+        pmRole.textContent = u.Worker_Role || '';
+        setAvatarCircle(u.Avatar || '', u.Worker || '');
       }
-    } catch (e) {
-      // Fall back to localStorage
-      const u = currentUser;
-      nameInput.value = u.name || '';
-      roleDisplay.textContent = u.role || '';
-      renderAvatarPreview(u.avatar || '', u.name);
-    }
-
-    modal.style.display = 'flex';
-    setTimeout(() => nameInput.focus(), 50);
+    } catch { /* keep localStorage values */ }
   }
 
   function closeModal() {
     modal.style.display = 'none';
-    pendingAvatarFile = null;
+    pendingFile = null;
+    pmFileInput.value = '';
   }
 
-  // ── Avatar file picker ────────────────────────────────
-  avatarInput.addEventListener('change', () => {
-    const file = avatarInput.files[0];
+  // ── Click avatar circle → trigger file input ──────────────
+  pmAvatarRing.addEventListener('click', () => pmFileInput.click());
+
+  // ── File selected ─────────────────────────────────────────
+  pmFileInput.addEventListener('change', () => {
+    const file = pmFileInput.files[0];
     if (!file) return;
 
-    avatarErr.style.display = 'none';
+    pmAvatarErr.style.display = 'none';
 
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(file.type)) {
+      pmAvatarErr.textContent = 'Only JPG, PNG, WebP or GIF images are allowed.';
+      pmAvatarErr.style.display = 'block';
+      pmFileInput.value = '';
+      return;
+    }
     if (file.size > 2 * 1024 * 1024) {
-      avatarErr.textContent = 'Image must be under 2 MB.';
-      avatarErr.style.display = 'block';
-      avatarInput.value = '';
-      return;
-    }
-    if (!file.type.startsWith('image/')) {
-      avatarErr.textContent = 'Please select a valid image file.';
-      avatarErr.style.display = 'block';
-      avatarInput.value = '';
+      pmAvatarErr.textContent = 'Image must be under 2 MB.';
+      pmAvatarErr.style.display = 'block';
+      pmFileInput.value = '';
       return;
     }
 
-    pendingAvatarFile = file;
+    pendingFile = file;
     const reader = new FileReader();
     reader.onload = e => {
-      avatarPreview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+      pmAvatarCircle.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
     };
     reader.readAsDataURL(file);
   });
 
-  // ── Submit ────────────────────────────────────────────
-  submitBtn.addEventListener('click', async () => {
-    nameErr.style.display   = 'none';
-    avatarErr.style.display = 'none';
+  // ── Save ──────────────────────────────────────────────────
+  pmSave.addEventListener('click', async () => {
+    pmNameErr.style.display   = 'none';
+    pmAvatarErr.style.display = 'none';
 
-    const newName = nameInput.value.trim();
+    const newName = pmName.value.trim();
     if (!newName) {
-      nameErr.style.display = 'block';
-      nameInput.style.borderColor = '#c0392b';
+      pmNameErr.style.display = 'block';
+      pmName.style.borderColor = '#c0392b';
+      pmName.focus();
       return;
     }
-    nameInput.style.borderColor = '#e8dfd2';
+    pmName.style.borderColor = '#e8dfd2';
 
-    if (!pendingAvatarFile && newName === currentUser.name) {
+    // Nothing changed
+    if (!pendingFile && newName === (currentUser.name || '')) {
       closeModal();
       return;
     }
 
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem;animation:spin 0.8s linear infinite">progress_activity</span> Saving…';
+    // Loading state
+    pmSave.disabled = true;
+    pmSave.innerHTML = `
+      <span class="material-symbols-outlined" style="font-size:1rem;animation:pmSpin 0.7s linear infinite;">progress_activity</span>
+      Saving…`;
 
     try {
-      const formData = new FormData();
-      formData.append('name', newName);
-      if (pendingAvatarFile) {
-        formData.append('avatar', pendingAvatarFile);
-      }
+      const fd = new FormData();
+      fd.append('name', newName);
+      if (pendingFile) fd.append('avatar', pendingFile);
 
-      const csrfToken = localStorage.getItem('csrf_token');
-      const res  = await fetch('../dairy_farm_backend/api/profile.php', {
+      const csrf = localStorage.getItem('csrf_token') || '';
+      const res  = await fetch(`${BASE_API}/profile.php`, {
         method: 'POST',
-        headers: { 'X-CSRF-Token': csrfToken },
+        headers: { 'X-CSRF-Token': csrf },
         credentials: 'include',
-        body: formData,
+        body: fd,
       });
       const data = await res.json();
 
       if (data.success) {
-        const updated = data.data;
+        const u = data.data;
 
-        // Update localStorage
+        // ── Update localStorage ───────────────────────────
         const stored = JSON.parse(localStorage.getItem('user') || '{}');
-        stored.name   = updated.Worker;
-        if (updated.Avatar) stored.avatar = updated.Avatar;
+        stored.name = u.Worker;
+        if (u.Avatar) stored.avatar = u.Avatar;
         localStorage.setItem('user', JSON.stringify(stored));
+        currentUser = stored;
 
-        // Update nav in-place without full reload
+        // ── Update sidebar name ───────────────────────────
         const nameEl = document.getElementById('nav-display-name');
-        if (nameEl) nameEl.textContent = updated.Worker;
+        if (nameEl) nameEl.textContent = u.Worker;
 
-        const avatarWrap = document.getElementById('nav-avatar-wrap');
-        if (avatarWrap) {
-          if (updated.Avatar) {
-            avatarWrap.innerHTML = `<img src="${updated.Avatar}?t=${Date.now()}" alt="${updated.Worker}" style="
-              width:44px; height:44px; border-radius:50%; object-fit:cover;
-              border:2px solid rgba(255,255,255,0.5); box-shadow:0 2px 8px rgba(0,0,0,0.12);
-            " />`;
-          } else {
-            avatarWrap.innerHTML = `<div class="nav__user-avatar">${updated.Worker.charAt(0).toUpperCase()}</div>`;
-          }
-        }
+        // ── Update sidebar avatar ─────────────────────────
+        const wrap = document.getElementById('nav-avatar-wrap');
+        if (wrap) wrap.innerHTML = buildAvatarHTML(u.Avatar || '', u.Worker);
 
-        // Update greeting on dashboard if present
-        const greetingEl = document.getElementById('page-greeting');
-        if (greetingEl) {
-          const hour = new Date().getHours();
-          const timeOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-          greetingEl.innerHTML = `${timeOfDay}, ${updated.Worker}! <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.5rem;">waving_hand</span>`;
+        // ── Update dashboard greeting if on index ─────────
+        const greet = document.getElementById('page-greeting');
+        if (greet) {
+          const h = new Date().getHours();
+          const tod = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+          greet.innerHTML = `${tod}, ${u.Worker}! <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.5rem;">waving_hand</span>`;
         }
 
         closeModal();
-        UI.toast('Profile updated successfully!', 'success');
+        UI.toast('Profile updated!', 'success');
       } else {
-        UI.toast('Failed to update: ' + data.message, 'error');
+        UI.toast('Error: ' + (data.message || 'Could not save.'), 'error');
       }
-    } catch (e) {
-      console.error('Profile update error:', e);
+    } catch (err) {
+      console.error('[Profile] save error:', err);
       UI.toast('Network error. Please try again.', 'error');
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem;">save</span> Save Changes';
+      pmSave.disabled = false;
+      pmSave.innerHTML = `<span class="material-symbols-outlined" style="font-size:1rem;">save</span> Save Changes`;
     }
   });
 
-  // ── Wire up open/close ────────────────────────────────
+  // ── Wire close actions ────────────────────────────────────
   profileBtn.addEventListener('click', openModal);
-  closeBtn.addEventListener('click', closeModal);
-  cancelBtn.addEventListener('click', closeModal);
+  pmClose.addEventListener('click',  closeModal);
+  pmCancel.addEventListener('click', closeModal);
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+  });
 
 })();
