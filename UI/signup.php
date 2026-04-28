@@ -758,7 +758,19 @@ form.addEventListener('submit', async (e) => {
       }, 2500);
     } else {
       showError(data.message || 'Signup failed. Please try again.');
-      if (typeof grecaptcha !== 'undefined') {
+      // If username/email conflict (409), highlight the relevant fields
+      if (response.status === 409) {
+        const msg = (data.message || '').toLowerCase();
+        if (msg.includes('username') || msg.includes('email') || msg.includes('taken')) {
+          const usernameInput = document.getElementById('username');
+          const emailInput    = document.getElementById('email');
+          usernameInput.classList.add('error');
+          emailInput.classList.add('error');
+          document.getElementById('username-error').textContent = 'Username or email already in use.';
+          document.getElementById('username-error').classList.add('visible');
+        }
+      }
+      if (typeof grecaptcha !== 'undefined' && document.querySelector('.g-recaptcha iframe')) {
         grecaptcha.reset();
       }
     }
@@ -775,8 +787,8 @@ form.addEventListener('submit', async (e) => {
 
 // ── Reset reCAPTCHA on focus ──
 document.getElementById('username').addEventListener('focus', () => {
-  if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse()) {
-    grecaptcha.reset();
+  if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse && grecaptcha.getResponse()) {
+    try { grecaptcha.reset(); } catch(e) {}
   }
 });
 
