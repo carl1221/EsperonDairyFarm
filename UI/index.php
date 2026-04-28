@@ -1,9 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — Esperon Dairy Farm</title>
+<?php
+require_once __DIR__ . '/guard.php';
+requireAuthPage();  // All authenticated users can view the dashboard
+?>
+<!DOCTYPE html>  <title>Dashboard — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -34,7 +33,7 @@
 
   <!-- Stat Cards -->
   <div class="stats-grid">
-    <div class="stat-card">
+    <div class="stat-card stat-card--admin-only">
       <div class="stat-card__icon">
         <span class="material-symbols-outlined">people</span>
       </div>
@@ -43,7 +42,7 @@
         <div class="stat-card__label">Total Customers</div>
       </div>
     </div>
-    <div class="stat-card stat-card--gold">
+    <div class="stat-card stat-card--gold stat-card--admin-only">
       <div class="stat-card__icon">
         <span class="material-symbols-outlined">pets</span>
       </div>
@@ -52,7 +51,7 @@
         <div class="stat-card__label">Total Cows</div>
       </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card stat-card--admin-only">
       <div class="stat-card__icon">
         <span class="material-symbols-outlined">badge</span>
       </div>
@@ -431,39 +430,37 @@ function checkNotifications() {
             <label style="display:block; font-size:0.78rem; font-weight:700; color:#4a3f35; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
               Time <span style="color:#c0392b;">*</span>
             </label>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <select id="rm_time_hour" style="
-                flex:2; min-width:0; padding:10px 6px; border:1.5px solid #e8dfd2;
-                border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
-                color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
-                transition: border-color 0.15s;
-              "
-              onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
-                ${Array.from({length:12},(_,i)=>{const h=i+1;return `<option value="${h}">${h}</option>`;}).join('')}
-              </select>
-              <select id="rm_time_min" style="
-                flex:2; min-width:0; padding:10px 6px; border:1.5px solid #e8dfd2;
-                border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
-                color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
-                transition: border-color 0.15s;
-              "
-              onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
-                <option value="00">00</option>
-                <option value="15">15</option>
-                <option value="30">30</option>
-                <option value="45">45</option>
-              </select>
-              <select id="rm_time_ampm" style="
-                flex:2; min-width:0; padding:10px 6px; border:1.5px solid #e8dfd2;
-                border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
-                color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
-                transition: border-color 0.15s;
-              "
-              onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
-            </div>
+            <select id="rm_time_hour" style="
+              width:48%; padding:10px 6px; border:1.5px solid #e8dfd2;
+              border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
+              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
+              transition: border-color 0.15s;
+            "
+            onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
+              ${Array.from({length:12},(_,i)=>{const h=i+1;return `<option value="${h}">${h}</option>`;}).join('')}
+            </select>
+            <select id="rm_time_min" style="
+              width:28%; padding:10px 4px; border:1.5px solid #e8dfd2;
+              border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
+              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
+              margin-left:4%; transition: border-color 0.15s;
+            "
+            onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
+              <option value="00">00</option>
+              <option value="15">15</option>
+              <option value="30">30</option>
+              <option value="45">45</option>
+            </select>
+            <select id="rm_time_ampm" style="
+              width:18%; padding:10px 2px; border:1.5px solid #e8dfd2;
+              border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
+              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
+              margin-left:2%; transition: border-color 0.15s;
+            "
+            onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
           </div>
         </div>
 
@@ -770,19 +767,23 @@ function renderGreeting() {
   document.getElementById('page-greeting').innerHTML =
     `${timeOfDay}, ${name}! <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 1.5rem;">waving_hand</span>`;
 
+  const roleLabel = role === 'Admin' ? 'Admin' : role || 'Staff';
   document.getElementById('page-subtitle').textContent =
     role
-      ? `Logged in as ${role} · Here's a snapshot of the farm.`
+      ? `Welcome ${roleLabel} · Here's a snapshot of the farm.`
       : "Here's a snapshot of the farm.";
 }
 
 // ── Dashboard data ────────────────────────────────────────
 async function loadDashboard() {
+  const role = (JSON.parse(localStorage.getItem('user') || '{}')).role || '';
+  const isAdmin = role === 'Admin';
+
   // Fetch all four in parallel; use allSettled so one failure doesn't block the rest
   const [customersResult, cowsResult, workersResult, ordersResult] = await Promise.allSettled([
-    API.customers.getAll(),
-    API.cows.getAll(),
-    API.workers.getAll(),
+    isAdmin ? API.customers.getAll() : Promise.resolve([]),
+    isAdmin ? API.cows.getAll()      : Promise.resolve([]),
+    isAdmin ? API.workers.getAll()   : Promise.resolve([]),
     API.orders.getAll(),
   ]);
 
@@ -791,10 +792,12 @@ async function loadDashboard() {
   const workers   = workersResult.status   === 'fulfilled' && Array.isArray(workersResult.value)   ? workersResult.value   : [];
   const orders    = ordersResult.status    === 'fulfilled' && Array.isArray(ordersResult.value)    ? ordersResult.value    : [];
 
-  document.getElementById('stat-customers').textContent = customers.length;
-  document.getElementById('stat-cows').textContent      = cows.length;
-  document.getElementById('stat-workers').textContent   = workers.length;
-  document.getElementById('stat-orders').textContent    = orders.length;
+  if (isAdmin) {
+    document.getElementById('stat-customers').textContent = customers.length;
+    document.getElementById('stat-cows').textContent      = cows.length;
+    document.getElementById('stat-workers').textContent   = workers.length;
+  }
+  document.getElementById('stat-orders').textContent = orders.length;
 
   // Log any individual failures for debugging
   [customersResult, cowsResult, workersResult, ordersResult].forEach((r, i) => {
@@ -830,6 +833,14 @@ async function loadDashboard() {
   // Show a personalised greeting right away using localStorage
   renderGreeting();
 
+  // Show access-denied toast if redirected from a restricted page
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('access_denied') === '1') {
+    UI.toast('Access denied. You do not have permission to view that page.', 'error');
+    // Clean the URL without reloading
+    history.replaceState({}, '', 'index.php');
+  }
+
   // Then confirm the session is still valid server-side
   try {
     const res = await fetch('../dairy_farm_backend/api/auth.php?action=status', {
@@ -856,6 +867,13 @@ async function loadDashboard() {
 
   // Re-render greeting with freshest data
   renderGreeting();
+
+  // Hide Admin-only stat cards for Staff users
+  const role = (JSON.parse(localStorage.getItem('user') || '{}')).role || '';
+  if (role !== 'Admin') {
+    const adminCards = document.querySelectorAll('.stat-card--admin-only');
+    adminCards.forEach(c => c.style.display = 'none');
+  }
 
   // Load dashboard data
   await loadDashboard();

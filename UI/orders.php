@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/guard.php';
+requireAuthPage();  // All authenticated users can view orders
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +21,7 @@
       <h1 class="page-title">Orders</h1>
       <p class="page-subtitle">Full order history with customer, cow, and worker details.</p>
     </div>
-    <button class="btn btn--primary" onclick="openModal()">＋ New Order</button>
+    <button class="btn btn--primary admin-only" onclick="openModal()">＋ New Order</button>
   </div>
 
   <div class="card">
@@ -99,6 +103,14 @@
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
+// ── Role-based UI: hide admin-only elements for Staff ─────
+(function() {
+  const role = (JSON.parse(localStorage.getItem('user') || '{}')).role || '';
+  if (role !== 'Admin') {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  }
+})();
+
 let editingId  = null;
 let allOrders  = [];
 let customers  = [];
@@ -152,8 +164,8 @@ function renderOrders(rows) {
       <td>${o.Worker}</td>
       <td><span class="badge ${o.Worker_Role === 'Admin' ? 'badge--gold' : 'badge--muted'}">${o.Worker_Role}</span></td>
       <td class="actions">
-        <button class="btn btn--icon btn--edit" onclick="openModal(${o.Order_ID})">✏</button>
-        <button class="btn btn--icon btn--del"  onclick="deleteOrder(${o.Order_ID})">🗑</button>
+        <button class="btn btn--icon btn--edit admin-only" onclick="openModal(${o.Order_ID})">✏</button>
+        <button class="btn btn--icon btn--del  admin-only" onclick="deleteOrder(${o.Order_ID})">🗑</button>
       </td>
     </tr>
   `).join('');

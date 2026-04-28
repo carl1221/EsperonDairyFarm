@@ -15,6 +15,8 @@ require_once __DIR__ . '/../models/Customer.php';
 
 requireAuth();
 requireCsrf();
+// Customer management is Admin-only
+requireRole(['Admin']);
 
 $customer = new Customer();
 $method   = $_SERVER['REQUEST_METHOD'];

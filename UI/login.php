@@ -611,8 +611,10 @@ form.addEventListener('submit', async (e) => {
       localStorage.setItem('csrf_token', data.data.csrf_token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
-      // Show success message briefly before redirect
-      showAlert('Login successful! Redirecting…', 'success', 1000);
+      // Role-based redirect: all roles go to index.php (dashboard adapts by role)
+      const role = data.data.user?.role || '';
+      const greeting = role === 'Admin' ? 'Welcome Admin!' : `Welcome ${role || 'back'}!`;
+      showAlert(greeting + ' Redirecting…', 'success', 1000);
       setTimeout(() => {
         window.location.href = 'index.php';
       }, 800);

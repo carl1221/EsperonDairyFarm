@@ -16,6 +16,10 @@ require_once __DIR__ . '/../models/Order.php';
 
 requireAuth();
 requireCsrf();
+// Staff can view orders (GET), only Admin can create/update/delete
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+    requireRole(['Admin']);
+}
 
 $order  = new Order();
 $method = $_SERVER['REQUEST_METHOD'];

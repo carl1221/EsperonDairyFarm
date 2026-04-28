@@ -15,6 +15,8 @@ require_once __DIR__ . '/../models/Worker.php';
 
 requireAuth();
 requireCsrf();
+// Workers management is Admin-only
+requireRole(['Admin']);
 
 $worker = new Worker();
 $method = $_SERVER['REQUEST_METHOD'];

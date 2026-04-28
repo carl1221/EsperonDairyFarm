@@ -1,3 +1,8 @@
+<?php
+require_once __DIR__ . '/guard.php';
+requireAuthPage();
+requireAdminPage();  // Cows page is Admin-only
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

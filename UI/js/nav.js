@@ -43,6 +43,10 @@
   }
 
   // ── Render sidebar ────────────────────────────────────────
+  const isAdmin = uRole === 'Admin';
+  const roleBadgeColor = isAdmin ? '#4e6040' : '#8a7f72';
+  const roleBadgeBg    = isAdmin ? 'rgba(78,96,64,0.12)' : 'rgba(138,127,114,0.12)';
+
   nav.innerHTML =
     '<div class="nav__brand">'
     + '<img src="assets/Esperon Logo.png" alt="Esperon Logo" class="nav__brand-logo-img"'
@@ -59,8 +63,11 @@
     + '<div style="flex:1;min-width:0;">'
     + '<div id="nav-display-name" style="font-weight:700;font-size:0.92rem;color:var(--text);'
     + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + uName + '</div>'
-    + '<div style="font-size:0.75rem;color:var(--muted);margin-top:1px;'
-    + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + uRole + '</div>'
+    + '<div style="display:flex;align-items:center;gap:5px;margin-top:3px;">'
+    + '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:700;'
+    + 'letter-spacing:0.06em;text-transform:uppercase;background:' + roleBadgeBg + ';color:' + roleBadgeColor + ';">'
+    + uRole + '</span>'
+    + '</div>'
     + '</div>'
     + '<span class="material-symbols-outlined" style="font-size:1.15rem;color:var(--muted);flex-shrink:0;opacity:0.65;">expand_more</span>'
     + '</div>'
@@ -70,11 +77,16 @@
     + '<span class="nav__section">Overview</span>'
     + '<a href="index.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">dashboard</span><span>Dashboard</span></a>'
 
-    + '<span class="nav__section">Records</span>'
-    + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'
-    + '<a href="cows.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">pets</span><span>Cows</span></a>'
-    + '<a href="workers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">badge</span><span>Workers</span></a>'
-    + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
+    // Admin-only records section
+    + (isAdmin
+      ? '<span class="nav__section">Records</span>'
+        + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'
+        + '<a href="cows.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">pets</span><span>Cows</span></a>'
+        + '<a href="workers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">badge</span><span>Workers</span></a>'
+        + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
+      : '<span class="nav__section">My Work</span>'
+        + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
+    )
 
     + '<span class="nav__section">Account</span>'
     + '<button id="logout-btn" class="nav__link nav__logout">'

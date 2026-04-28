@@ -91,6 +91,19 @@ function requireAuth(): void {
     }
 }
 
+/**
+ * Abort with 403 if the current user's role is not in the allowed list.
+ * Call after requireAuth().
+ *
+ * @param string[] $roles  Allowed roles, e.g. ['Admin']
+ */
+function requireRole(array $roles): void {
+    $userRole = $_SESSION['user']['role'] ?? '';
+    if (!in_array($userRole, $roles, true)) {
+        sendError('Access denied. Insufficient permissions.', 403);
+    }
+}
+
 // ── CSRF helpers ──────────────────────────────────────────
 
 /**
