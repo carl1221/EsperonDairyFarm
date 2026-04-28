@@ -33,21 +33,27 @@
 
   const roleBadgeClass = displayRole === 'Admin' ? 'badge--green' : 'badge--muted';
 
-  function buildAvatarHTML(src, name, size = 44) {
+  function buildAvatarHTML(src, name, size = 46) {
+    const initial = (name || '?').charAt(0).toUpperCase();
+    const initDiv = `<div style="
+      width:${size}px; height:${size}px; border-radius:50%;
+      background:linear-gradient(135deg,#4e6040,#6b8a5c);
+      display:flex; align-items:center; justify-content:center;
+      font-size:${Math.round(size * 0.38)}px; font-weight:700; color:#fff;
+      border:2.5px solid rgba(255,255,255,0.6);
+      box-shadow:0 2px 10px rgba(0,0,0,0.15);
+      flex-shrink:0;
+    ">${initial}</div>`;
+
     if (src) {
       return `<img src="${src}?t=${Date.now()}" alt="${name}" style="
         width:${size}px; height:${size}px; border-radius:50%; object-fit:cover;
-        border:2px solid rgba(255,255,255,0.5); box-shadow:0 2px 8px rgba(0,0,0,0.12);
-        display:block;
-      " onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div style="display:none; width:${size}px; height:${size}px; border-radius:50%;
-        background:linear-gradient(135deg,#4e6040,#6b8a5c);
-        align-items:center; justify-content:center;
-        font-size:${Math.round(size*0.4)}px; font-weight:700; color:#fff;">
-        ${name.charAt(0).toUpperCase()}
-      </div>`;
+        border:2.5px solid rgba(255,255,255,0.6);
+        box-shadow:0 2px 10px rgba(0,0,0,0.15);
+        display:block; flex-shrink:0;
+      " onerror="this.replaceWith(this.nextElementSibling)" />${initDiv}`;
     }
-    return `<div class="nav__user-avatar">${name.charAt(0).toUpperCase()}</div>`;
+    return initDiv;
   }
 
   // ── Render sidebar ────────────────────────────────────────
@@ -64,24 +70,40 @@
       </div>
     </div>
 
-    <!-- User card — click to open profile modal -->
-    <div class="nav__user" id="nav-profile-btn" title="Edit profile"
-      style="cursor:pointer; transition:background 0.2s; user-select:none;">
-      <div id="nav-avatar-wrap" style="flex-shrink:0; position:relative;">
-        ${buildAvatarHTML(displayAvatar, displayName)}
+    <!-- User card — big avatar + name + role + chevron (matches reference design) -->
+    <div id="nav-profile-btn" title="Edit profile" style="
+      display:flex; align-items:center; gap:11px;
+      padding:10px 14px; margin:2px 10px 6px;
+      border-radius:14px; cursor:pointer;
+      transition:background 0.18s; user-select:none;
+    "
+    onmouseover="this.style.background='rgba(255,255,255,0.45)'"
+    onmouseout="this.style.background='transparent'">
+
+      <!-- Avatar -->
+      <div id="nav-avatar-wrap" style="flex-shrink:0;">
+        ${buildAvatarHTML(displayAvatar, displayName, 46)}
       </div>
-      <div class="nav__user-info" style="flex:1; min-width:0;">
-        <div class="nav__user-name" id="nav-display-name">${displayName}</div>
-        <div class="nav__user-meta">
-          <span class="badge ${roleBadgeClass}" style="font-size:.68rem;">${displayRole}</span>
-        </div>
-        ${displayEmail ? `<div class="nav__user-email" title="${displayEmail}">${displayEmail}</div>` : ''}
+
+      <!-- Name + role text -->
+      <div style="flex:1; min-width:0;">
+        <div id="nav-display-name" style="
+          font-weight:700; font-size:0.92rem; color:var(--text);
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3;
+        ">${displayName}</div>
+        <div style="
+          font-size:0.75rem; color:var(--muted); margin-top:1px;
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        ">${displayRole}</div>
       </div>
-      <span class="material-symbols-outlined"
-        style="font-size:1rem;color:var(--muted);margin-left:auto;flex-shrink:0;opacity:0.7;">
-        edit
-      </span>
+
+      <!-- Chevron -->
+      <span class="material-symbols-outlined" style="
+        font-size:1.15rem; color:var(--muted); flex-shrink:0; opacity:0.65;
+      ">expand_more</span>
     </div>
+
+    <div style="height:1px; background:var(--border-light); margin:0 14px 6px;"></div>
 
     <!-- Nav links -->
     <span class="nav__section">Overview</span>
