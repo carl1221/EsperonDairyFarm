@@ -9,7 +9,7 @@
 USE esperon_dairy_farm;
 
 -- Create Reminders table
-CREATE TABLE IF NOT EXISTS Reminders (
+CREATE TABLE IF NOT EXISTS reminders (
     reminder_id  INT           NOT NULL AUTO_INCREMENT,
     title        VARCHAR(255)  NOT NULL,
     description  TEXT          NULL,
@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS Reminders (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Index for sorting by due date
-CREATE INDEX IF NOT EXISTS idx_reminders_due_date ON Reminders(due_date);
+CREATE INDEX IF NOT EXISTS idx_reminders_due_date ON reminders(due_date);
 
 -- Index for filtering by status
-CREATE INDEX IF NOT EXISTS idx_reminders_status ON Reminders(status);
+CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
 
 -- ============================================================
 -- END OF MIGRATION
