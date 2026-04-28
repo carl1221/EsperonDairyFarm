@@ -66,3 +66,8 @@ composer.lock
 # Temporary files
 tmp/
 temp/
+
+# Uploaded avatars (keep folder, ignore files)
+UI/uploads/avatars/*
+!UI/uploads/avatars/.htaccess
+!UI/uploads/avatars/.gitkeep
