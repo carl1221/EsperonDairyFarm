@@ -27,13 +27,13 @@ function requireAuthPage(): void {
 }
 
 /**
- * Redirect to dashboard with an access-denied flag if role is not Admin.
+ * Redirect to staff dashboard with an access-denied flag if role is not Admin.
  * Call after requireAuthPage().
  */
 function requireAdminPage(): void {
     $role = $_SESSION['user']['role'] ?? '';
     if ($role !== 'Admin') {
-        header('Location: index.php?access_denied=1');
+        header('Location: dashboard_staff.php?access_denied=1');
         exit;
     }
 }
