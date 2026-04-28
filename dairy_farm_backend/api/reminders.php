@@ -15,6 +15,10 @@ require_once __DIR__ . '/../models/Reminder.php';
 
 requireAuth();
 requireCsrf();
+// Staff can view reminders (GET), only Admin can create/update/delete
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+    requireRole(['Admin']);
+}
 
 $reminder = new Reminder();
 $method   = $_SERVER['REQUEST_METHOD'];

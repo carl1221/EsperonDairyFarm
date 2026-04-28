@@ -120,7 +120,7 @@ requireAuthPage();  // All authenticated users can view the dashboard
           Reminders
           <span id="reminderBadge" class="badge badge--red" style="display: none; font-size: 0.65rem; margin-left: 8px;">0</span>
         </span>
-        <button id="addReminderBtn" style="background: var(--danger); color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.75rem;">+ Add Task</button>
+        <button id="addReminderBtn" style="background: var(--danger); color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.75rem;" class="admin-only">+ Add Task</button>
       </div>
       <div id="remindersList" style="padding: 16px 24px;">
         <!-- Reminders loaded from database -->
@@ -277,6 +277,8 @@ function renderReminders() {
   // Sort by due date (nearest first)
   const sorted = [...reminders].sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
   
+  const _isAdmin = (JSON.parse(localStorage.getItem('user') || '{}')).role === 'Admin';
+
   list.innerHTML = sorted.map(r => {
     const status = getStatusInfo(r.due_date, r.status);
     const isCompleted = r.status === 'completed';
@@ -288,10 +290,11 @@ function renderReminders() {
             <p style="font-size: 0.9rem; color: var(--text); margin: 4px 0; ${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${r.title}</p>
             <span style="font-size: 0.7rem; color: var(--text-light);">Due: ${formatDueDate(r.due_date)}</span>
           </div>
+          ${_isAdmin ? `
           <div style="display: flex; gap: 4px;">
             ${!isCompleted ? `<button onclick="markComplete(${r.reminder_id})" style="background: var(--olive); color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.7rem;">✓</button>` : ''}
             <button onclick="deleteReminder(${r.reminder_id})" style="background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px 8px; font-size: 0.9rem;">✕</button>
-          </div>
+          </div>` : ''}
         </div>
       </div>
     `;
@@ -868,9 +871,10 @@ async function loadDashboard() {
   // Re-render greeting with freshest data
   renderGreeting();
 
-  // Hide Admin-only stat cards for Staff users
+  // Hide Admin-only elements for Staff users
   const role = (JSON.parse(localStorage.getItem('user') || '{}')).role || '';
   if (role !== 'Admin') {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
     const adminCards = document.querySelectorAll('.stat-card--admin-only');
     adminCards.forEach(c => c.style.display = 'none');
   }
