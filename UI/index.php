@@ -431,37 +431,39 @@ function checkNotifications() {
             <label style="display:block; font-size:0.78rem; font-weight:700; color:#4a3f35; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
               Time <span style="color:#c0392b;">*</span>
             </label>
-            <select id="rm_time_hour" style="
-              width:48%; padding:10px 6px; border:1.5px solid #e8dfd2;
-              border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
-              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
-              transition: border-color 0.15s;
-            "
-            onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
-              ${Array.from({length:12},(_,i)=>{const h=i+1;return `<option value="${h}">${h}</option>`;}).join('')}
-            </select>
-            <select id="rm_time_min" style="
-              width:28%; padding:10px 4px; border:1.5px solid #e8dfd2;
-              border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
-              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
-              margin-left:4%; transition: border-color 0.15s;
-            "
-            onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
-              <option value="00">00</option>
-              <option value="15">15</option>
-              <option value="30">30</option>
-              <option value="45">45</option>
-            </select>
-            <select id="rm_time_ampm" style="
-              width:18%; padding:10px 2px; border:1.5px solid #e8dfd2;
-              border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
-              color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
-              margin-left:2%; transition: border-color 0.15s;
-            "
-            onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
-              <option value="AM">AM</option>
-              <option value="PM">PM</option>
-            </select>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <select id="rm_time_hour" style="
+                flex:2; min-width:0; padding:10px 6px; border:1.5px solid #e8dfd2;
+                border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
+                color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
+                transition: border-color 0.15s;
+              "
+              onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
+                ${Array.from({length:12},(_,i)=>{const h=i+1;return `<option value="${h}">${h}</option>`;}).join('')}
+              </select>
+              <select id="rm_time_min" style="
+                flex:2; min-width:0; padding:10px 6px; border:1.5px solid #e8dfd2;
+                border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
+                color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
+                transition: border-color 0.15s;
+              "
+              onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
+                <option value="00">00</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+                <option value="45">45</option>
+              </select>
+              <select id="rm_time_ampm" style="
+                flex:2; min-width:0; padding:10px 6px; border:1.5px solid #e8dfd2;
+                border-radius:10px; font-size:0.88rem; font-family:'Lato',sans-serif;
+                color:#2a1f15; background:rgba(255,255,255,0.7); outline:none; cursor:pointer;
+                transition: border-color 0.15s;
+              "
+              onfocus="this.style.borderColor='#4e6040'" onblur="this.style.borderColor='#e8dfd2'">
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </div>
         </div>
 
