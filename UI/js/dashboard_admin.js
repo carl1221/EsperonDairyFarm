@@ -483,28 +483,223 @@ async function deleteReminder(id) {
   };
 })();
 
+// ── INVENTORY MANAGEMENT ──────────────────────────────────
+var INV_KEY = 'admin_inventory';
+
+var defaultInventory = [
+  { id: 'milk',   name: 'Milk Stock',   pct: 65, unit: 'L',  capacity: 500, icon: 'water_drop' },
+  { id: 'silageA',name: 'Silage A',     pct: 78, unit: 'kg', capacity: 1000, icon: 'grass' },
+  { id: 'siloB',  name: 'Silo B',       pct: 38, unit: 'kg', capacity: 800,  icon: 'silo' },
+  { id: 'hay',    name: 'Hay',          pct: 88, unit: 'kg', capacity: 600,  icon: 'agriculture' },
+  { id: 'feed',   name: 'Animal Feed',  pct: 52, unit: 'kg', capacity: 400,  icon: 'lunch_dining' },
+];
+
+function loadInventory() {
+  try {
+    var stored = localStorage.getItem(INV_KEY);
+    return stored ? JSON.parse(stored) : defaultInventory.map(function(i){ return Object.assign({}, i); });
+  } catch(e) { return defaultInventory.map(function(i){ return Object.assign({}, i); }); }
+}
+
+function saveInventory(items) {
+  localStorage.setItem(INV_KEY, JSON.stringify(items));
+  localStorage.setItem(INV_KEY + '_updated', new Date().toLocaleString());
+}
+
+function resetInventory() {
+  if (!confirm('Reset all inventory levels to defaults?')) return;
+  saveInventory(defaultInventory.map(function(i){ return Object.assign({}, i); }));
+  renderInventoryBars();
+  UI.toast('Inventory reset to defaults.', 'success');
+}
+
+function getBarClass(pct) {
+  return pct < 30 ? 'inv-bar-fill--low' : pct < 60 ? 'inv-bar-fill--mid' : 'inv-bar-fill--ok';
+}
+
+function getLabelColor(pct) {
+  return pct < 30 ? 'var(--danger)' : pct < 60 ? '#7a5a1e' : 'var(--olive-dark)';
+}
+
+function renderInventoryBars() {
+  var container = document.getElementById('inventory-bars');
+  var lastUpdEl = document.getElementById('inv-last-updated');
+  if (!container) return;
+
+  var items   = loadInventory();
+  var updated = localStorage.getItem(INV_KEY + '_updated');
+  if (lastUpdEl) lastUpdEl.textContent = updated ? 'Updated: ' + updated : '';
+
+  container.innerHTML = items.map(function(item) {
+    var warn = item.pct < 30 ? ' <span style="color:var(--danger);font-size:0.75rem;">&#9888; Low</span>' : '';
+    return '<div class="inv-bar-wrap" id="inv-wrap-' + item.id + '">'
+      + '<div class="inv-bar-label">'
+      + '<span style="display:flex;align-items:center;gap:5px;">'
+      + '<span class="material-symbols-outlined" style="font-size:0.9rem;color:var(--muted);">' + item.icon + '</span>'
+      + item.name + warn
+      + '</span>'
+      + '<span style="color:' + getLabelColor(item.pct) + ';font-weight:700;" id="inv-lbl-' + item.id + '">'
+      + item.pct + '% &nbsp;<span style="font-weight:400;font-size:0.72rem;color:var(--muted);">('
+      + Math.round(item.pct / 100 * item.capacity) + ' / ' + item.capacity + ' ' + item.unit + ')</span>'
+      + '</span>'
+      + '</div>'
+      + '<div class="inv-bar"><div class="inv-bar-fill ' + getBarClass(item.pct) + '" id="inv-bar-' + item.id + '" style="width:' + item.pct + '%"></div></div>'
+      + '</div>';
+  }).join('');
+
+  // Update milk stat card from inventory
+  var milkItem = items.find(function(i){ return i.id === 'milk'; });
+  if (milkItem) {
+    var milkEl = document.getElementById('inv-milk-lbl');
+    if (milkEl) milkEl.textContent = Math.round(milkItem.pct / 100 * milkItem.capacity) + 'L';
+    var milkBar = document.getElementById('inv-milk-bar');
+    if (milkBar) { milkBar.style.width = milkItem.pct + '%'; milkBar.className = 'inv-bar-fill ' + getBarClass(milkItem.pct); }
+  }
+}
+
 // ── RESTOCK MODAL ─────────────────────────────────────────
 function openRestockModal() {
   var existing = document.getElementById('restockModal');
   if (existing) { existing.remove(); return; }
-  var items = ['Milk Stock','Silage A','Silo B','Hay','Animal Feed'];
+
+  var items = loadInventory();
   var el = document.createElement('div');
   el.id = 'restockModal';
   el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;';
-  el.innerHTML = '<div style="background:#faf6f0;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,0.18);width:100%;max-width:380px;font-family:\'Lato\',sans-serif;overflow:hidden;">'
+
+  el.innerHTML = '<div style="background:#faf6f0;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,0.18);width:100%;max-width:400px;font-family:\'Lato\',sans-serif;overflow:hidden;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:linear-gradient(135deg,#4e6040,#6b8a5c);">'
-    + '<span style="font-family:\'Playfair Display\',serif;font-size:1rem;font-weight:700;color:#fff;">Restock Inventory</span>'
+    + '<div style="display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="color:#fff;font-size:1.1rem;">add_circle</span>'
+    + '<span style="font-family:\'Playfair Display\',serif;font-size:1rem;font-weight:700;color:#fff;">Restock Inventory</span></div>'
     + '<button onclick="document.getElementById(\'restockModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;width:26px;height:26px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;">'
     + '<span class="material-symbols-outlined" style="font-size:0.95rem;">close</span></button></div>'
     + '<div style="padding:18px 20px;">'
-    + '<p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">Select item and enter new stock level:</p>'
-    + '<select id="restock-item" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-light);border-radius:9px;font-size:0.87rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;margin-bottom:10px;box-sizing:border-box;">'
-    + items.map(function(i){ return '<option>' + i + '</option>'; }).join('')
-    + '</select>'
-    + '<input id="restock-val" type="number" min="0" max="100" placeholder="New level (0-100%)" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-light);border-radius:9px;font-size:0.87rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;" />'
-    + '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Select Item</label>'
+    + '<select id="restock-item" onchange="updateRestockPreview()" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-light);border-radius:9px;font-size:0.87rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;">'
+    + items.map(function(i){ return '<option value="' + i.id + '">' + i.name + ' (currently ' + i.pct + '%)</option>'; }).join('')
+    + '</select></div>'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">New Stock Level (%)</label>'
+    + '<input id="restock-val" type="range" min="0" max="100" value="' + items[0].pct + '" oninput="updateRestockPreview()" style="width:100%;accent-color:var(--olive);cursor:pointer;" />'
+    + '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-top:2px;"><span>0%</span><span>50%</span><span>100%</span></div>'
+    + '</div>'
+    + '<div id="restock-preview" style="background:rgba(232,240,224,0.5);border:1px solid rgba(78,96,64,0.2);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:0.84rem;color:var(--olive-dark);">'
+    + '<span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle;margin-right:4px;">info</span>'
+    + '<span id="restock-preview-text">Select an item to preview</span>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:flex-end;gap:8px;">'
     + '<button onclick="document.getElementById(\'restockModal\').remove()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;">Cancel</button>'
-    + '<button onclick="submitRestock()" style="padding:8px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#4e6040,#6b8a5c);color:#fff;font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;">Update Stock</button>'
+    + '<button onclick="submitRestock()" style="padding:8px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#4e6040,#6b8a5c);color:#fff;font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.9rem;">save</span> Save</button>'
+    + '</div></div></div>';
+
+  document.body.appendChild(el);
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+  updateRestockPreview();
+}
+
+function updateRestockPreview() {
+  var itemSel  = document.getElementById('restock-item');
+  var valInput = document.getElementById('restock-val');
+  var previewEl = document.getElementById('restock-preview-text');
+  if (!itemSel || !valInput || !previewEl) return;
+
+  var items   = loadInventory();
+  var item    = items.find(function(i){ return i.id === itemSel.value; });
+  if (!item) return;
+
+  var newPct  = parseInt(valInput.value, 10);
+  var newAmt  = Math.round(newPct / 100 * item.capacity);
+  var oldAmt  = Math.round(item.pct / 100 * item.capacity);
+  var diff    = newAmt - oldAmt;
+  var diffStr = diff >= 0 ? '+' + diff : '' + diff;
+
+  previewEl.textContent = item.name + ': ' + item.pct + '% \u2192 ' + newPct + '% ('
+    + oldAmt + ' \u2192 ' + newAmt + ' ' + item.unit + ', ' + diffStr + ' ' + item.unit + ')';
+}
+
+function submitRestock() {
+  var itemSel  = document.getElementById('restock-item');
+  var valInput = document.getElementById('restock-val');
+  if (!itemSel || !valInput) return;
+
+  var newPct = parseInt(valInput.value, 10);
+  var items  = loadInventory();
+  var item   = items.find(function(i){ return i.id === itemSel.value; });
+  if (!item) return;
+
+  item.pct = newPct;
+  saveInventory(items);
+  renderInventoryBars();
+
+  // Re-check alerts
+  alertItems = alertItems.filter(function(a){ return !a.msg.includes(item.name); });
+  if (newPct < 30) addAlert(item.name + ' is critically low (' + newPct + '%) \u2014 restock urgently.', 'danger');
+  else if (newPct < 50) addAlert(item.name + ' is below 50% (' + newPct + '%).', 'warning');
+  renderAlerts();
+
+  document.getElementById('restockModal').remove();
+  UI.toast(item.name + ' updated to ' + newPct + '%.', 'success');
+}
+
+// ── EDIT INVENTORY MODAL (rename / change capacity) ───────
+function openEditInventoryModal() {
+  var existing = document.getElementById('editInvModal');
+  if (existing) { existing.remove(); return; }
+
+  var items = loadInventory();
+  var el = document.createElement('div');
+  el.id = 'editInvModal';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+  var rows = items.map(function(item) {
+    return '<div style="display:grid;grid-template-columns:1fr 80px 70px;gap:8px;margin-bottom:10px;align-items:center;">'
+      + '<input type="text" value="' + item.name + '" data-id="' + item.id + '" data-field="name" style="padding:7px 10px;border:1.5px solid var(--border-light);border-radius:8px;font-size:0.84rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;" />'
+      + '<input type="number" value="' + item.capacity + '" data-id="' + item.id + '" data-field="capacity" min="1" style="padding:7px 8px;border:1.5px solid var(--border-light);border-radius:8px;font-size:0.84rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;" />'
+      + '<input type="text" value="' + item.unit + '" data-id="' + item.id + '" data-field="unit" style="padding:7px 8px;border:1.5px solid var(--border-light);border-radius:8px;font-size:0.84rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;" />'
+      + '</div>';
+  }).join('');
+
+  el.innerHTML = '<div style="background:#faf6f0;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,0.18);width:100%;max-width:440px;font-family:\'Lato\',sans-serif;overflow:hidden;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:linear-gradient(135deg,#4e6040,#6b8a5c);">'
+    + '<div style="display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="color:#fff;font-size:1.1rem;">edit</span>'
+    + '<span style="font-family:\'Playfair Display\',serif;font-size:1rem;font-weight:700;color:#fff;">Edit Inventory Items</span></div>'
+    + '<button onclick="document.getElementById(\'editInvModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;width:26px;height:26px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.95rem;">close</span></button></div>'
+    + '<div style="padding:18px 20px;">'
+    + '<div style="display:grid;grid-template-columns:1fr 80px 70px;gap:8px;margin-bottom:6px;">'
+    + '<span style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;">Item Name</span>'
+    + '<span style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;">Capacity</span>'
+    + '<span style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;">Unit</span>'
+    + '</div>'
+    + rows
+    + '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">'
+    + '<button onclick="document.getElementById(\'editInvModal\').remove()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;">Cancel</button>'
+    + '<button onclick="saveEditInventory()" style="padding:8px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#4e6040,#6b8a5c);color:#fff;font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.9rem;">save</span> Save</button>'
+    + '</div></div></div>';
+
+  document.body.appendChild(el);
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+}
+
+function saveEditInventory() {
+  var items = loadInventory();
+  document.querySelectorAll('#editInvModal input').forEach(function(input) {
+    var id    = input.dataset.id;
+    var field = input.dataset.field;
+    var item  = items.find(function(i){ return i.id === id; });
+    if (!item) return;
+    if (field === 'name')     item.name     = input.value.trim() || item.name;
+    if (field === 'capacity') item.capacity = Math.max(1, parseInt(input.value, 10) || item.capacity);
+    if (field === 'unit')     item.unit     = input.value.trim() || item.unit;
+  });
+  saveInventory(items);
+  renderInventoryBars();
+  document.getElementById('editInvModal').remove();
+  UI.toast('Inventory items updated.', 'success');
+}te Stock</button>'
     + '</div></div></div>';
   document.body.appendChild(el);
   el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
@@ -637,6 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderGreeting();
   loadAdminTasks();
   loadNotes();
+  renderInventoryBars(); // Load inventory from localStorage
 
   // Load all data in parallel, then build alerts and reports
   var results = await Promise.allSettled([
@@ -713,10 +909,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Static inventory alerts
-  addAlert('Silo B feed level is low (38%) \u2014 restock soon.', 'danger');
+  // Dynamic inventory alerts from stored data
+  var invItems = loadInventory();
+  invItems.forEach(function(item) {
+    if (item.pct < 30) addAlert(item.name + ' is critically low (' + item.pct + '%) \u2014 restock urgently.', 'danger');
+    else if (item.pct < 50) addAlert(item.name + ' is below 50% (' + item.pct + '%).', 'warning');
+  });
   addAlert('Milk collection truck scheduled for 4:00 PM today.', 'info');
-  addAlert('Animal Feed at 52% \u2014 monitor closely.', 'warning');
 
   // Reports
   populateReports(cows, orders, customers, workers);

@@ -158,31 +158,23 @@ requireAdminPage();
           <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.2rem;">inventory_2</span>
           Inventory Levels
         </span>
-        <button class="btn-xs btn-xs--primary" onclick="openRestockModal()">
-          <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> Restock
-        </button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-xs btn-xs--ghost" onclick="openEditInventoryModal()">
+            <span class="material-symbols-outlined" style="font-size:0.9rem;">edit</span> Edit
+          </button>
+          <button class="btn-xs btn-xs--primary" onclick="openRestockModal()">
+            <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> Restock
+          </button>
+        </div>
       </div>
-      <div style="padding:16px 20px;">
-        <div class="inv-bar-wrap">
-          <div class="inv-bar-label"><span>Milk Stock</span><span id="inv-milk-lbl" style="color:var(--olive-dark);">—</span></div>
-          <div class="inv-bar"><div class="inv-bar-fill inv-bar-fill--ok" id="inv-milk-bar" style="width:0%"></div></div>
-        </div>
-        <div class="inv-bar-wrap">
-          <div class="inv-bar-label"><span>Silage A</span><span style="color:var(--olive-dark);">78%</span></div>
-          <div class="inv-bar"><div class="inv-bar-fill inv-bar-fill--ok" style="width:78%"></div></div>
-        </div>
-        <div class="inv-bar-wrap">
-          <div class="inv-bar-label"><span>Silo B</span><span style="color:var(--danger);">38% ⚠</span></div>
-          <div class="inv-bar"><div class="inv-bar-fill inv-bar-fill--low" style="width:38%"></div></div>
-        </div>
-        <div class="inv-bar-wrap">
-          <div class="inv-bar-label"><span>Hay</span><span style="color:var(--olive-dark);">88%</span></div>
-          <div class="inv-bar"><div class="inv-bar-fill inv-bar-fill--ok" style="width:88%"></div></div>
-        </div>
-        <div class="inv-bar-wrap">
-          <div class="inv-bar-label"><span>Animal Feed</span><span style="color:#7a5a1e;">52%</span></div>
-          <div class="inv-bar"><div class="inv-bar-fill inv-bar-fill--mid" style="width:52%"></div></div>
-        </div>
+      <div style="padding:16px 20px;" id="inventory-bars">
+        <!-- Rendered by JS -->
+      </div>
+      <div style="padding:0 20px 14px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.72rem;color:var(--muted);" id="inv-last-updated"></span>
+        <button class="btn-xs btn-xs--ghost" onclick="resetInventory()" style="font-size:0.72rem;padding:3px 10px;">
+          <span class="material-symbols-outlined" style="font-size:0.8rem;">restart_alt</span> Reset
+        </button>
       </div>
     </div>
   </div>
