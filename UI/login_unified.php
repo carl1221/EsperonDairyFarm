@@ -86,12 +86,6 @@
       height: 1px; background: #dadce0;
     }
     .divider span { background: rgba(255,255,255,0.55); padding: 0 1rem; position: relative; z-index: 1; }
-    /* Domain hint */
-    .domain-hint {
-      font-size: 0.72rem; color: var(--muted);
-      margin-top: 4px; line-height: 1.5;
-    }
-    .domain-hint span { font-weight: 700; color: var(--text-light); }
   </style>
 </head>
 <body>
@@ -130,12 +124,6 @@
       <div class="role-pill" id="role-pill">
         <span class="material-symbols-outlined" style="font-size:1rem;" id="role-icon">badge</span>
         <span id="role-label">Staff</span>
-      </div>
-      <!-- Domain hint -->
-      <div class="domain-hint">
-        <span>@staffgmail.com</span> = Staff &nbsp;|&nbsp;
-        <span>@admingmail.com</span> = Admin &nbsp;|&nbsp;
-        <span>@gmail.com</span> = Customer
       </div>
     </div>
 
