@@ -377,12 +377,25 @@
     </div>
 
     <div class="form-group">
-      <label for="email">Email Address</label>
-      <div class="input-wrapper">
-        <input type="email" id="email" name="email"
-               placeholder="e.g. juan@esperon.farm"
-               autocomplete="email" required
-               aria-describedby="email-error" />
+      <label for="email">Email Address <span style="font-size:0.72rem;color:var(--muted);font-weight:400;">(auto-generated)</span></label>
+      <div style="position:relative;">
+        <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.7);">
+          <!-- Editable name part -->
+          <input type="text" id="email-name" name="email-name"
+                 placeholder="yourname"
+                 autocomplete="off"
+                 style="flex:1;padding:0.7rem 0.75rem;border:none;outline:none;background:transparent;font-size:0.92rem;font-family:'Lato',sans-serif;color:#2a1f15;min-width:0;"
+                 aria-label="Email name part" />
+          <!-- Domain display (read-only) -->
+          <span id="email-domain-display" style="padding:0.7rem 0.75rem 0.7rem 0;font-size:0.92rem;color:var(--muted);white-space:nowrap;font-family:'Lato',sans-serif;background:transparent;">@staffgmail.com</span>
+        </div>
+        <!-- Hidden actual email field submitted to server -->
+        <input type="hidden" id="email" name="email" />
+        <!-- Live preview pill -->
+        <div id="email-preview" style="display:none;margin-top:6px;padding:6px 12px;background:rgba(78,96,64,0.08);border:1px solid rgba(78,96,64,0.2);border-radius:8px;font-size:0.8rem;color:var(--olive-dark);display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:0.9rem;">mail</span>
+          <span id="email-preview-text"></span>
+        </div>
       </div>
       <span id="email-error" class="field-error"></span>
     </div>
@@ -728,7 +741,68 @@ function updateAccountTypeUI() {
     if (isCustomer) h2.textContent = 'Create Customer Account';
     else h2.textContent = 'Create an Account';
   }
+
+  // Update email domain display
+  updateEmailDomain();
 }
+
+// ── Email auto-generation ─────────────────────────────────────
+function updateEmailDomain() {
+  const type = getAccountType();
+  const domainMap = {
+    'Staff':    '@staffgmail.com',
+    'Admin':    '@admingmail.com',
+    'Customer': '@gmail.com'
+  };
+  const domain = domainMap[type] || '@staffgmail.com';
+  const domainEl = document.getElementById('email-domain-display');
+  if (domainEl) domainEl.textContent = domain;
+  updateGeneratedEmail();
+}
+
+function sanitizeEmailName(name) {
+  return name.toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9._-]/g, '')
+    .substring(0, 30);
+}
+
+function updateGeneratedEmail() {
+  const type     = getAccountType();
+  const nameInput = document.getElementById('email-name');
+  const hiddenEmail = document.getElementById('email');
+  const preview  = document.getElementById('email-preview');
+  const previewText = document.getElementById('email-preview-text');
+
+  if (!nameInput || !hiddenEmail) return;
+
+  const rawName = nameInput.value.trim();
+  if (!rawName) {
+    hiddenEmail.value = '';
+    if (preview) preview.style.display = 'none';
+    return;
+  }
+
+  const sanitized = sanitizeEmailName(rawName);
+  const domainMap = { 'Staff': '@staffgmail.com', 'Admin': '@admingmail.com', 'Customer': '@gmail.com' };
+  const domain    = domainMap[type] || '@staffgmail.com';
+  const fullEmail = sanitized + domain;
+
+  hiddenEmail.value = fullEmail;
+
+  if (preview && previewText) {
+    previewText.textContent = fullEmail;
+    preview.style.display = 'flex';
+  }
+}
+
+// Wire up email name input
+document.addEventListener('DOMContentLoaded', function() {
+  const emailNameInput = document.getElementById('email-name');
+  if (emailNameInput) {
+    emailNameInput.addEventListener('input', updateGeneratedEmail);
+  }
+});
 
 document.querySelectorAll('input[name="account_type"]').forEach(radio => {
   radio.addEventListener('change', updateAccountTypeUI);
@@ -745,6 +819,10 @@ form.addEventListener('submit', async (e) => {
   const accountType     = getAccountType();
   const isCustomer      = accountType === 'Customer';
   const username        = document.getElementById('username').value.trim();
+  const emailNameRaw    = document.getElementById('email-name').value.trim();
+  const emailName       = sanitizeEmailName(emailNameRaw);
+  // Sync the hidden email field before reading it
+  updateGeneratedEmail();
   const email           = document.getElementById('email').value.trim();
   const password        = document.getElementById('password').value;
   const confirmPassword = document.getElementById('confirm-password').value;
@@ -754,6 +832,22 @@ form.addEventListener('submit', async (e) => {
 
   let isValid = true;
 
+  // Validate email name input
+  const emailNameInput = document.getElementById('email-name');
+  const emailErrEl     = document.getElementById('email-error');
+  if (!emailNameRaw) {
+    emailNameInput.style.borderColor = '#c0392b';
+    if (emailErrEl) { emailErrEl.textContent = 'Please enter your name to generate an email.'; emailErrEl.classList.add('visible'); }
+    isValid = false;
+  } else if (emailName.length < 2) {
+    emailNameInput.style.borderColor = '#c0392b';
+    if (emailErrEl) { emailErrEl.textContent = 'Name must be at least 2 characters (letters and numbers only).'; emailErrEl.classList.add('visible'); }
+    isValid = false;
+  } else {
+    emailNameInput.style.borderColor = '';
+    if (emailErrEl) { emailErrEl.textContent = ''; emailErrEl.classList.remove('visible'); }
+  }
+
   if (!isCustomer) {
     isValid = validateField(document.getElementById('username'), 'username-error', (v) => {
       if (!v) return 'Username is required.';
@@ -762,12 +856,6 @@ form.addEventListener('submit', async (e) => {
       return null;
     }) && isValid;
   }
-
-  isValid = validateField(document.getElementById('email'), 'email-error', (v) => {
-    if (!v) return 'Email address is required.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Please enter a valid email address.';
-    return null;
-  }) && isValid;
 
   isValid = validateField(document.getElementById('password'), 'password-error', (v) => {
     if (!v) return 'Password is required.';
@@ -821,8 +909,8 @@ form.addEventListener('submit', async (e) => {
     let response, data;
 
     if (isCustomer) {
-      // Customer signup
-      const custName = email.split('@')[0];
+      // Customer signup — use the sanitized email name as the display name
+      const custName = emailName;
       response = await fetch(`${API_BASE}/customer_auth.php?action=signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
