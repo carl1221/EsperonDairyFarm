@@ -445,19 +445,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px;">
         <label id="type-staff-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
           <input type="radio" name="account_type" id="type-staff" value="Staff" checked style="display:none;" />
-          <span style="font-size:1.5rem;">ðŸ‘·</span>
+          <span class="material-symbols-outlined" style="font-size:1.8rem;color:#4e6040;">badge</span>
           <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Staff</span>
           <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Farm worker account</span>
         </label>
         <label id="type-admin-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
           <input type="radio" name="account_type" id="type-admin" value="Admin" style="display:none;" />
-          <span style="font-size:1.5rem;">ðŸ›¡ï¸</span>
+          <span class="material-symbols-outlined" style="font-size:1.8rem;color:#7a1f2e;">admin_panel_settings</span>
           <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Admin</span>
           <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Full system access</span>
         </label>
         <label id="type-customer-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
           <input type="radio" name="account_type" id="type-customer" value="Customer" style="display:none;" />
-          <span style="font-size:1.5rem;">ðŸ›’</span>
+          <span class="material-symbols-outlined" style="font-size:1.8rem;color:#c8963e;">shopping_cart</span>
           <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Customer</span>
           <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Order dairy products</span>
         </label>
