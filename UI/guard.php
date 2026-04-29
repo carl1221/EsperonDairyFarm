@@ -21,7 +21,7 @@ session_start();
  */
 function requireAuthPage(): void {
     if (!isset($_SESSION['user'])) {
-        header('Location: login_unified.php');
+        header('Location: login.php');
         exit;
     }
 }

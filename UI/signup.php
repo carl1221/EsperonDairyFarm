@@ -1,13 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up - Esperon Dairy Farm</title>
+  <title>Sign Up — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
-    /* â”€â”€ Signup page specific styles â”€â”€ */
+    /* ── Signup page specific styles ── */
     body {
       display: flex;
       align-items: center;
@@ -377,25 +377,12 @@
     </div>
 
     <div class="form-group">
-      <label for="email">Email Address <span style="font-size:0.72rem;color:var(--muted);font-weight:400;">(auto-generated)</span></label>
-      <div style="position:relative;">
-        <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.7);">
-          <!-- Editable name part -->
-          <input type="text" id="email-name" name="email-name"
-                 placeholder="yourname"
-                 autocomplete="off"
-                 style="flex:1;padding:0.7rem 0.75rem;border:none;outline:none;background:transparent;font-size:0.92rem;font-family:'Lato',sans-serif;color:#2a1f15;min-width:0;"
-                 aria-label="Email name part" />
-          <!-- Domain display (read-only) -->
-          <span id="email-domain-display" style="padding:0.7rem 0.75rem 0.7rem 0;font-size:0.92rem;color:var(--muted);white-space:nowrap;font-family:'Lato',sans-serif;background:transparent;">@staffgmail.com</span>
-        </div>
-        <!-- Hidden actual email field submitted to server -->
-        <input type="hidden" id="email" name="email" />
-        <!-- Live preview pill -->
-        <div id="email-preview" style="display:none;margin-top:6px;padding:6px 12px;background:rgba(78,96,64,0.08);border:1px solid rgba(78,96,64,0.2);border-radius:8px;font-size:0.8rem;color:var(--olive-dark);display:flex;align-items:center;gap:6px;">
-          <span class="material-symbols-outlined" style="font-size:0.9rem;">mail</span>
-          <span id="email-preview-text"></span>
-        </div>
+      <label for="email">Email Address</label>
+      <div class="input-wrapper">
+        <input type="email" id="email" name="email"
+               placeholder="e.g. juan@esperon.farm"
+               autocomplete="email" required
+               aria-describedby="email-error" />
       </div>
       <span id="email-error" class="field-error"></span>
     </div>
@@ -454,49 +441,12 @@
     </div>
 
     <div class="form-group">
-      <label for="role">Account Type</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px;">
-        <label id="type-staff-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
-          <input type="radio" name="account_type" id="type-staff" value="Staff" checked style="display:none;" />
-          <span class="material-symbols-outlined" style="font-size:1.8rem;color:#4e6040;">badge</span>
-          <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Staff</span>
-          <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Farm worker account</span>
-        </label>
-        <label id="type-admin-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
-          <input type="radio" name="account_type" id="type-admin" value="Admin" style="display:none;" />
-          <span class="material-symbols-outlined" style="font-size:1.8rem;color:#7a1f2e;">admin_panel_settings</span>
-          <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Admin</span>
-          <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Full system access</span>
-        </label>
-        <label id="type-customer-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
-          <input type="radio" name="account_type" id="type-customer" value="Customer" style="display:none;" />
-          <span class="material-symbols-outlined" style="font-size:1.8rem;color:#c8963e;">shopping_cart</span>
-          <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Customer</span>
-          <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Order dairy products</span>
-        </label>
-      </div>
+      <label for="role">Role</label>
+      <select id="role" name="role" required aria-describedby="role-error">
+        <option value="Staff" selected>Staff</option>
+        <option value="Admin">Admin</option>
+      </select>
       <span id="role-error" class="field-error"></span>
-    </div>
-
-    <!-- Customer-only fields (hidden for Staff/Admin) -->
-    <div id="customer-fields" style="display:none;">
-      <div class="form-group">
-        <label for="phone">Phone Number</label>
-        <div class="input-wrapper">
-          <input type="tel" id="phone" name="phone" placeholder="e.g. 09012345678" autocomplete="tel" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="delivery-address">Delivery Address</label>
-        <div class="input-wrapper">
-          <input type="text" id="delivery-address" name="delivery-address" placeholder="e.g. Casisang, Malaybalay City" autocomplete="street-address" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Staff/Admin-only: username field label note -->
-    <div id="staff-note" style="font-size:0.75rem;color:var(--muted);background:rgba(78,96,64,0.06);border-radius:8px;padding:8px 12px;margin-bottom:4px;">
-      <span style="font-weight:700;color:var(--olive-dark);">Staff/Admin accounts</span> are for farm workers only. Contact your administrator if you need access.
     </div>
 
     <div class="terms-checkbox">
@@ -514,20 +464,20 @@
   </form>
 
   <div class="auth-footer">
-    Already have an account? <a href="login_unified.php">Sign In</a>
+    Already have an account? <a href="login.php">Log in</a>
   </div>
 </div>
 
 <script>
-// â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Config ──────────────────────────────────────────────────
 const API_BASE = '../dairy_farm_backend/api';
 
-// â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DOM refs ─────────────────────────────────────────────────
 const form          = document.getElementById('signup-form');
 const submitBtn     = document.getElementById('submit-btn');
 const alertContainer = document.getElementById('alert-container');
 
-// â”€â”€ Alert helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Alert helpers ────────────────────────────────────────────
 function showAlert(msg, type = 'error', duration = 5000) {
   // Clear existing alerts
   alertContainer.innerHTML = '';
@@ -556,7 +506,7 @@ function showSuccess(msg) {
   showAlert(msg, 'success', 4000);
 }
 
-// â”€â”€ Field validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Field validation ─────────────────────────────────────────
 function validateField(input, errorId, validationFn) {
   const errorEl = document.getElementById(errorId);
   const value = input.value;
@@ -583,7 +533,7 @@ function validateField(input, errorId, validationFn) {
   }
 }
 
-// â”€â”€ Password visibility toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Password visibility toggles ──────────────────────────────
 document.querySelectorAll('.pw-toggle').forEach(button => {
   button.addEventListener('click', () => {
     const targetId = button.getAttribute('data-target');
@@ -599,7 +549,7 @@ document.querySelectorAll('.pw-toggle').forEach(button => {
   });
 });
 
-// â”€â”€ Password strength indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Password strength indicator ──────────────────────────────
 function getPasswordStrength(password) {
   let strength = 0;
   if (password.length >= 8) strength++;
@@ -670,11 +620,11 @@ document.getElementById('password').addEventListener('input', function() {
   }
 });
 
-// â”€â”€ Real-time field validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Real-time field validation ───────────────────────────────
 document.getElementById('username').addEventListener('input', function() {
   validateField(this, 'username-error', (v) => {
     if (!v) return null; // Don't show error if empty
-    if (v.length < 3 || v.length > 50) return 'Username must be 3â€“50 characters.';
+    if (v.length < 3 || v.length > 50) return 'Username must be 3–50 characters.';
     if (!/^[a-zA-Z0-9_\-]+$/.test(v)) return 'Username may only contain letters, numbers, underscores, and hyphens.';
     return null;
   });
@@ -696,7 +646,7 @@ document.getElementById('confirm-password').addEventListener('input', function()
   });
 });
 
-// â”€â”€ Terms link handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Terms link handlers ──────────────────────────────────────
 document.getElementById('terms-link').addEventListener('click', (e) => {
   e.preventDefault();
   showAlert('Terms of Service page coming soon.', 'success', 3000);
@@ -707,165 +657,39 @@ document.getElementById('privacy-link').addEventListener('click', (e) => {
   showAlert('Privacy Policy page coming soon.', 'success', 3000);
 });
 
-// â”€â”€ Account type toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function getAccountType() {
-  const checked = document.querySelector('input[name="account_type"]:checked');
-  return checked ? checked.value : 'Staff';
-}
-
-function updateAccountTypeUI() {
-  const type = getAccountType();
-  const isCustomer = type === 'Customer';
-
-  // Show/hide customer-only fields
-  document.getElementById('customer-fields').style.display = isCustomer ? 'block' : 'none';
-  document.getElementById('staff-note').style.display      = isCustomer ? 'none'  : 'block';
-
-  // Show/hide username field (customers use email as identifier)
-  const usernameGroup = document.getElementById('username').closest('.form-group');
-  if (usernameGroup) usernameGroup.style.display = isCustomer ? 'none' : 'block';
-
-  // Update card highlight styles
-  ['staff', 'admin', 'customer'].forEach(t => {
-    const lbl = document.getElementById('type-' + t + '-lbl');
-    if (!lbl) return;
-    const isSelected = type.toLowerCase() === t;
-    lbl.style.borderColor  = isSelected ? 'var(--olive)' : 'var(--border)';
-    lbl.style.background   = isSelected ? 'rgba(78,96,64,0.1)' : 'rgba(255,255,255,0.5)';
-    lbl.style.boxShadow    = isSelected ? '0 0 0 2px rgba(78,96,64,0.2)' : 'none';
-  });
-
-  // Update page title
-  const h2 = document.querySelector('h2');
-  if (h2) {
-    if (isCustomer) h2.textContent = 'Create Customer Account';
-    else h2.textContent = 'Create an Account';
-  }
-
-  // Update email domain display
-  updateEmailDomain();
-}
-
-// ── Email auto-generation ─────────────────────────────────────
-function updateEmailDomain() {
-  const type = getAccountType();
-  const domainMap = {
-    'Staff':    '@staffgmail.com',
-    'Admin':    '@admingmail.com',
-    'Customer': '@gmail.com'
-  };
-  const domain = domainMap[type] || '@staffgmail.com';
-  const domainEl = document.getElementById('email-domain-display');
-  if (domainEl) domainEl.textContent = domain;
-  updateGeneratedEmail();
-}
-
-function sanitizeEmailName(name) {
-  return name.toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[^a-z0-9._-]/g, '')
-    .substring(0, 30);
-}
-
-function updateGeneratedEmail() {
-  const type     = getAccountType();
-  const nameInput = document.getElementById('email-name');
-  const hiddenEmail = document.getElementById('email');
-  const preview  = document.getElementById('email-preview');
-  const previewText = document.getElementById('email-preview-text');
-
-  if (!nameInput || !hiddenEmail) return;
-
-  const rawName = nameInput.value.trim();
-  if (!rawName) {
-    hiddenEmail.value = '';
-    if (preview) preview.style.display = 'none';
-    return;
-  }
-
-  const sanitized = sanitizeEmailName(rawName);
-  const domainMap = { 'Staff': '@staffgmail.com', 'Admin': '@admingmail.com', 'Customer': '@gmail.com' };
-  const domain    = domainMap[type] || '@staffgmail.com';
-  const fullEmail = sanitized + domain;
-
-  hiddenEmail.value = fullEmail;
-
-  if (preview && previewText) {
-    previewText.textContent = fullEmail;
-    preview.style.display = 'flex';
-  }
-}
-
-// Wire up email name input
-document.addEventListener('DOMContentLoaded', function() {
-  const emailNameInput = document.getElementById('email-name');
-  if (emailNameInput) {
-    emailNameInput.addEventListener('input', updateGeneratedEmail);
-  }
-});
-
-document.querySelectorAll('input[name="account_type"]').forEach(radio => {
-  radio.addEventListener('change', updateAccountTypeUI);
-});
-
-// Run once on load to set initial state
-updateAccountTypeUI();
-
 // ── Submit ────────────────────────────────────────────────────
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   alertContainer.innerHTML = '';
 
-  const accountType     = getAccountType();
-  const isCustomer      = accountType === 'Customer';
   const username        = document.getElementById('username').value.trim();
-  const emailNameRaw    = document.getElementById('email-name').value.trim();
-  const emailName       = sanitizeEmailName(emailNameRaw);
-  // Sync the hidden email field before reading it
-  updateGeneratedEmail();
   const email           = document.getElementById('email').value.trim();
   const password        = document.getElementById('password').value;
   const confirmPassword = document.getElementById('confirm-password').value;
+  const role            = document.getElementById('role').value;
   const termsAccepted   = document.getElementById('terms').checked;
-  const phone           = isCustomer ? document.getElementById('phone').value.trim() : '';
-  const address         = isCustomer ? document.getElementById('delivery-address').value.trim() : '';
 
+  // Validate all fields
   let isValid = true;
 
-  // Validate email name input
-  const emailNameInput = document.getElementById('email-name');
-  const emailErrEl     = document.getElementById('email-error');
-  if (!emailNameRaw) {
-    emailNameInput.style.borderColor = '#c0392b';
-    if (emailErrEl) { emailErrEl.textContent = 'Please enter your name to generate an email.'; emailErrEl.classList.add('visible'); }
-    isValid = false;
-  } else if (emailName.length < 2) {
-    emailNameInput.style.borderColor = '#c0392b';
-    if (emailErrEl) { emailErrEl.textContent = 'Name must be at least 2 characters (letters and numbers only).'; emailErrEl.classList.add('visible'); }
-    isValid = false;
-  } else {
-    emailNameInput.style.borderColor = '';
-    if (emailErrEl) { emailErrEl.textContent = ''; emailErrEl.classList.remove('visible'); }
-  }
+  isValid = validateField(document.getElementById('username'), 'username-error', (v) => {
+    if (!v) return 'Username is required.';
+    if (v.length < 3 || v.length > 50) return 'Username must be 3–50 characters.';
+    if (!/^[a-zA-Z0-9_\-]+$/.test(v)) return 'Username may only contain letters, numbers, underscores, and hyphens.';
+    return null;
+  }) && isValid;
 
-  if (!isCustomer) {
-    isValid = validateField(document.getElementById('username'), 'username-error', (v) => {
-      if (!v) return 'Username is required.';
-      if (v.length < 3 || v.length > 50) return 'Username must be 3-50 characters.';
-      if (!/^[a-zA-Z0-9_\-]+$/.test(v)) return 'Username may only contain letters, numbers, underscores, and hyphens.';
-      return null;
-    }) && isValid;
-  }
+  isValid = validateField(document.getElementById('email'), 'email-error', (v) => {
+    if (!v) return 'Email address is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Please enter a valid email address.';
+    return null;
+  }) && isValid;
 
   isValid = validateField(document.getElementById('password'), 'password-error', (v) => {
     if (!v) return 'Password is required.';
-    if (isCustomer) {
-      if (v.length < 6) return 'Password must be at least 6 characters.';
-    } else {
-      if (v.length < 8) return 'Password must be at least 8 characters.';
-      if (!/[A-Z]/.test(v)) return 'Password must contain at least one uppercase letter.';
-      if (!/[0-9]/.test(v)) return 'Password must contain at least one number.';
-    }
+    if (v.length < 8) return 'Password must be at least 8 characters.';
+    if (!/[A-Z]/.test(v)) return 'Password must contain at least one uppercase letter.';
+    if (!/[0-9]/.test(v)) return 'Password must contain at least one number.';
     return null;
   }) && isValid;
 
@@ -875,6 +699,7 @@ form.addEventListener('submit', async (e) => {
     return null;
   }) && isValid;
 
+  // Validate terms
   const termsErrorEl = document.getElementById('terms-error');
   if (!termsAccepted) {
     termsErrorEl.textContent = 'You must agree to the Terms of Service and Privacy Policy.';
@@ -886,98 +711,88 @@ form.addEventListener('submit', async (e) => {
   }
 
   if (!isValid) {
+    // Focus the first error field
     const firstError = form.querySelector('.error, #terms-error.visible');
-    if (firstError && firstError.id !== 'terms-error') firstError.focus();
+    if (firstError && firstError.id !== 'terms-error') {
+      firstError.focus();
+    }
     return;
   }
 
-  let recaptchaToken = '';
-  if (!isCustomer) {
-    if (typeof grecaptcha === 'undefined') {
-      showError('reCAPTCHA is still loading. Please wait a moment and try again.');
-      return;
-    }
-    recaptchaToken = grecaptcha.getResponse();
-    if (!recaptchaToken) { showError('Please verify the reCAPTCHA.'); return; }
+  // Check if reCAPTCHA is loaded
+  if (typeof grecaptcha === 'undefined') {
+    showError('reCAPTCHA is still loading. Please wait a moment and try again.');
+    return;
   }
 
-  submitBtn.disabled = true;
+  // Get reCAPTCHA token
+  const recaptchaToken = grecaptcha.getResponse();
+  if (!recaptchaToken) {
+    showError('Please verify the reCAPTCHA.');
+    return;
+  }
+
+  // Start loading
+  submitBtn.disabled    = true;
   submitBtn.classList.add('loading');
-  submitBtn.querySelector('.btn-text').textContent = 'Creating account...';
+  submitBtn.querySelector('.btn-text').textContent = 'Creating account…';
 
   try {
-    let response, data;
+    const response = await fetch(`${API_BASE}/signup.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, email, password, role, 'g-recaptcha-response': recaptchaToken }),
+    });
 
-    if (isCustomer) {
-      // Customer signup — use the sanitized email name as the display name
-      const custName = emailName;
-      response = await fetch(`${API_BASE}/customer_auth.php?action=signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: custName, email, phone, address, password }),
-      });
-      data = await response.json();
-      if (data.success) {
-        showSuccess('Customer account created! Redirecting to customer login...');
-        form.reset();
-        document.getElementById('pw-strength').classList.remove('visible');
-        updateAccountTypeUI();
-        setTimeout(() => { window.location.href = 'login_unified.php'; }, 2000);
-      } else {
-        showError(data.message || 'Signup failed. Please try again.');
-        if (response.status === 409) {
-          document.getElementById('email').classList.add('error');
-          document.getElementById('email-error').textContent = 'An account with this email already exists.';
-          document.getElementById('email-error').classList.add('visible');
-        }
-      }
+    const data = await response.json();
+
+    if (data.success) {
+      showSuccess(data.message + ' Redirecting to login…');
+      form.reset();
+      document.getElementById('pw-strength').classList.remove('visible');
+
+      // Redirect to login after a short delay so user can read the message
+      setTimeout(() => {
+        window.location.href = 'login.php';
+      }, 2500);
     } else {
-      // Staff/Admin signup
-      response = await fetch(`${API_BASE}/signup.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, email, password, role: accountType, 'g-recaptcha-response': recaptchaToken }),
-      });
-      data = await response.json();
-      if (data.success) {
-        showSuccess(data.message + ' Redirecting to login...');
-        form.reset();
-        document.getElementById('pw-strength').classList.remove('visible');
-        updateAccountTypeUI();
-        setTimeout(() => { window.location.href = 'login_unified.php'; }, 2500);
-      } else {
-        showError(data.message || 'Signup failed. Please try again.');
-        if (response.status === 409) {
-          document.getElementById('username').classList.add('error');
-          document.getElementById('email').classList.add('error');
+      showError(data.message || 'Signup failed. Please try again.');
+      // If username/email conflict (409), highlight the relevant fields
+      if (response.status === 409) {
+        const msg = (data.message || '').toLowerCase();
+        if (msg.includes('username') || msg.includes('email') || msg.includes('taken')) {
+          const usernameInput = document.getElementById('username');
+          const emailInput    = document.getElementById('email');
+          usernameInput.classList.add('error');
+          emailInput.classList.add('error');
           document.getElementById('username-error').textContent = 'Username or email already in use.';
           document.getElementById('username-error').classList.add('visible');
         }
-        if (typeof grecaptcha !== 'undefined' && document.querySelector('.g-recaptcha iframe')) {
-          try { grecaptcha.reset(); } catch(ex) {}
-        }
+      }
+      if (typeof grecaptcha !== 'undefined' && document.querySelector('.g-recaptcha iframe')) {
+        grecaptcha.reset();
       }
     }
+
   } catch (err) {
     showError('Network error. Please check your connection and try again.');
     console.error('[Signup Error]', err);
   } finally {
-    submitBtn.disabled = false;
+    submitBtn.disabled    = false;
     submitBtn.classList.remove('loading');
     submitBtn.querySelector('.btn-text').textContent = 'Create Account';
   }
 });
 
-// â”€â”€ Reset reCAPTCHA on focus â”€â”€
+// ── Reset reCAPTCHA on focus ──
 document.getElementById('username').addEventListener('focus', () => {
   if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse && grecaptcha.getResponse()) {
     try { grecaptcha.reset(); } catch(e) {}
   }
 });
 
-// â”€â”€ Auto-focus username field â”€â”€
+// ── Auto-focus username field ──
 document.getElementById('username').focus();
 </script>
 
