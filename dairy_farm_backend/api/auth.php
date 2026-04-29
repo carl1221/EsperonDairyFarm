@@ -45,11 +45,15 @@ try {
 
                 $data     = getRequestBody();
                 $username = trim($data['username'] ?? '');
+                $email    = trim($data['email']    ?? '');
                 $password = $data['password'] ?? '';
                 $recaptchaToken = $data['g-recaptcha-response'] ?? '';
 
-                if ($username === '' || $password === '') {
-                    sendError('Username and password are required');
+                // Accept either username or email as the identifier
+                $identifier = $email !== '' ? $email : $username;
+
+                if ($identifier === '' || $password === '') {
+                    sendError('Email/username and password are required');
                 }
 
                 // Verify reCAPTCHA token
@@ -57,20 +61,19 @@ try {
                     sendError('reCAPTCHA verification failed. Please try again.', 400);
                 }
 
-                // Fetch the worker record — Email included so we can
-                // put it in the session for display in the frontend
-                $stmt = $db = getConnection()->prepare(
+                // Fetch the worker record — look up by email OR username
+                $stmt = getConnection()->prepare(
                     'SELECT Worker_ID, Worker, Worker_Role, Email, Avatar, Password
                      FROM Worker
-                     WHERE Worker = ?
+                     WHERE Email = ? OR Worker = ?
                      LIMIT 1'
                 );
-                $stmt->execute([$username]);
+                $stmt->execute([$identifier, $identifier]);
                 $user = $stmt->fetch();
 
                 // password_verify does a constant-time comparison — safe
                 if (!$user || !password_verify($password, $user['Password'])) {
-                    sendError('Invalid username or password', 401);
+                    sendError('Invalid email or password', 401);
                 }
 
                 // Regenerate session ID on privilege escalation (login)
