@@ -1,21 +1,21 @@
-// ============================================================
-// js/customer_dashboard.js  —  Customer Dashboard Logic
+﻿// ============================================================
+// js/customer_dashboard.js  â€”  Customer Dashboard Logic
 // ============================================================
 
 const CAPI = '../dairy_farm_backend/api';
 
-// ── Helpers ───────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getCustomer() {
   try { return JSON.parse(localStorage.getItem('customer') || '{}'); } catch { return {}; }
 }
 function getCsrf() { return localStorage.getItem('csrf_token') || ''; }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function fmtDate(d) {
-  if (!d) return '—';
+  if (!d) return 'â€”';
   return new Date(d).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
 }
 
-// ── Section navigation ────────────────────────────────────
+// â”€â”€ Section navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showSection(id, btn) {
   document.querySelectorAll('.cust-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.cust-nav-link').forEach(b => b.classList.remove('active'));
@@ -29,7 +29,7 @@ function showSection(id, btn) {
   }
 }
 
-// ── Greeting ──────────────────────────────────────────────
+// â”€â”€ Greeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderGreeting() {
   const c = getCustomer();
   const h = new Date().getHours();
@@ -45,14 +45,14 @@ function renderGreeting() {
   if (navInitial) navInitial.textContent = (c.name || 'C').charAt(0).toUpperCase();
 }
 
-// ── Products catalog ──────────────────────────────────────
+// â”€â”€ Products catalog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PRODUCTS = [
-  { id:'fresh-milk',    name:'Fresh Milk',     icon:'\uD83E\uDD5B', detail:'Pasteurized, farm-fresh', price:'₱60/L',  cowType:'Milk' },
-  { id:'flavored-milk', name:'Flavored Milk',  icon:'\uD83C\uDF6B', detail:'Chocolate & Strawberry',  price:'₱75/L',  cowType:'Milk' },
-  { id:'cheese',        name:'Farm Cheese',    icon:'\uD83E\uDDC0', detail:'Soft & aged varieties',   price:'₱180/kg', cowType:'Milk' },
-  { id:'butter',        name:'Fresh Butter',   icon:'\uD83E\uDDC8', detail:'Unsalted, creamy',        price:'₱120/250g', cowType:'Milk' },
-  { id:'yogurt',        name:'Natural Yogurt', icon:'\uD83E\uDD63', detail:'Plain & fruit flavors',   price:'₱90/500g', cowType:'Milk' },
-  { id:'cream',         name:'Fresh Cream',    icon:'\uD83C\uDF68', detail:'Heavy & light cream',     price:'₱95/250ml', cowType:'Milk' },
+  { id:'fresh-milk',    name:'Fresh Milk',     icon:'\uD83E\uDD5B', detail:'Pasteurized, farm-fresh', price:'â‚±60/L',  cowType:'Milk' },
+  { id:'flavored-milk', name:'Flavored Milk',  icon:'\uD83C\uDF6B', detail:'Chocolate & Strawberry',  price:'â‚±75/L',  cowType:'Milk' },
+  { id:'cheese',        name:'Farm Cheese',    icon:'\uD83E\uDDC0', detail:'Soft & aged varieties',   price:'â‚±180/kg', cowType:'Milk' },
+  { id:'butter',        name:'Fresh Butter',   icon:'\uD83E\uDDC8', detail:'Unsalted, creamy',        price:'â‚±120/250g', cowType:'Milk' },
+  { id:'yogurt',        name:'Natural Yogurt', icon:'\uD83E\uDD63', detail:'Plain & fruit flavors',   price:'â‚±90/500g', cowType:'Milk' },
+  { id:'cream',         name:'Fresh Cream',    icon:'\uD83C\uDF68', detail:'Heavy & light cream',     price:'â‚±95/250ml', cowType:'Milk' },
 ];
 
 var selectedProduct = null;
@@ -80,7 +80,7 @@ function selectProduct(id) {
 
   const display = document.getElementById('selected-product-display');
   if (display && selectedProduct) {
-    display.textContent = selectedProduct.icon + ' ' + selectedProduct.name + ' — ' + selectedProduct.price;
+    display.textContent = selectedProduct.icon + ' ' + selectedProduct.name + ' â€” ' + selectedProduct.price;
     display.style.color = 'var(--text)';
     display.style.borderColor = 'var(--olive)';
   }
@@ -94,12 +94,12 @@ function updateOrderSummary() {
   if (!selectedProduct || !date) { if (summary) summary.style.display = 'none'; return; }
   if (summary) summary.style.display = 'block';
   const labels = { cod:'Cash on Delivery', gcash:'GCash', bank:'Bank Transfer' };
-  document.getElementById('summary-product').textContent = selectedProduct.icon + ' ' + selectedProduct.name + ' — ' + selectedProduct.price;
+  document.getElementById('summary-product').textContent = selectedProduct.icon + ' ' + selectedProduct.name + ' â€” ' + selectedProduct.price;
   document.getElementById('summary-date').textContent    = 'Delivery: ' + fmtDate(date);
   document.getElementById('summary-payment').textContent = 'Payment: ' + (labels[payment] || payment);
 }
 
-// ── Orders ────────────────────────────────────────────────
+// â”€â”€ Orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 var myOrders = [];
 var orderFilter = 'all';
 var statusCycle = ['pending', 'processing', 'delivered'];
@@ -192,7 +192,7 @@ function renderOverview() {
   }
 }
 
-// ── Place order ───────────────────────────────────────────
+// â”€â”€ Place order â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function placeOrder() {
   const errEl = document.getElementById('order-err');
   errEl.style.display = 'none';
@@ -206,7 +206,7 @@ async function placeOrder() {
   if (!cow) { errEl.textContent = 'No livestock available. Please contact the farm.'; errEl.style.display = 'block'; return; }
 
   const btn = document.getElementById('place-order-btn');
-  btn.disabled = true; btn.textContent = 'Placing order…';
+  btn.disabled = true; btn.textContent = 'Placing orderâ€¦';
 
   try {
     const res  = await fetch(CAPI + '/customer_orders.php', {
@@ -244,7 +244,7 @@ async function placeOrder() {
   }
 }
 
-// ── Notifications ─────────────────────────────────────────
+// â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 var notifications = [];
 var NOTIF_KEY = 'customer_notifs_' + (getCustomer().id || 'guest');
 
@@ -296,7 +296,7 @@ function renderNotifications() {
   if (fullEl) fullEl.innerHTML = html || '<p style="color:var(--muted);font-size:0.84rem;">No notifications.</p>';
 }
 
-// ── Profile ───────────────────────────────────────────────
+// â”€â”€ Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function loadProfile() {
   const c = getCustomer();
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
@@ -305,7 +305,7 @@ function loadProfile() {
   set('pf-email',   c.email);
   set('pf-address', c.address);
   const cidEl = document.getElementById('pf-cid');
-  if (cidEl) cidEl.textContent = '#' + (c.id || '—');
+  if (cidEl) cidEl.textContent = '#' + (c.id || 'â€”');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const placeBtn = document.getElementById('place-order-btn');
   if (placeBtn) placeBtn.addEventListener('click', placeOrder);
 
-  // Order date / payment change → update summary
+  // Order date / payment change â†’ update summary
   const orderDate = document.getElementById('order-date');
   const payMethod = document.getElementById('payment-method');
   if (orderDate) orderDate.addEventListener('change', updateOrderSummary);
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
       await fetch(CAPI + '/customer_auth.php?action=logout', { method:'POST', credentials:'include' });
       localStorage.removeItem('customer');
       localStorage.removeItem('csrf_token');
-      window.location.href = 'customer_login.php';
+      window.location.href = 'login_unified.php';
     });
   }
 
@@ -393,7 +393,7 @@ function showProfileMsg(msg, type) {
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
-// ── Star rating ───────────────────────────────────────────
+// â”€â”€ Star rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 var currentRating = 0;
 var ratingLabels  = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
 
@@ -422,7 +422,7 @@ function renderFeedbackHistory() {
   }).join('');
 }
 
-// ── Toast ─────────────────────────────────────────────────
+// â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showToast(msg, type) {
   const existing = document.querySelector('.cust-toast');
   if (existing) existing.remove();
@@ -435,7 +435,7 @@ function showToast(msg, type) {
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
-// ── Init ──────────────────────────────────────────────────
+// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 (async function() {
   renderGreeting();
 
@@ -443,12 +443,12 @@ function showToast(msg, type) {
   try {
     const res  = await fetch(CAPI + '/customer_auth.php?action=status', { credentials:'include' });
     const data = await res.json();
-    if (!data.success) { window.location.href = 'customer_login.php'; return; }
+    if (!data.success) { window.location.href = 'login_unified.php'; return; }
     if (data.data) {
       localStorage.setItem('csrf_token', data.data.csrf_token || '');
       if (data.data.customer) localStorage.setItem('customer', JSON.stringify(data.data.customer));
     }
-  } catch(e) { window.location.href = 'customer_login.php'; return; }
+  } catch(e) { window.location.href = 'login_unified.php'; return; }
 
   renderGreeting();
   loadProfile();
@@ -477,3 +477,4 @@ function showToast(msg, type) {
   // Load orders
   await loadMyOrders();
 })();
+

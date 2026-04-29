@@ -501,7 +501,7 @@
   </form>
 
   <div class="auth-footer">
-    Already have an account? <a href="login.php">Staff login</a> &nbsp;Â·&nbsp; <a href="customer_login.php">Customer login</a>
+    Already have an account? <a href="login_unified.php">Sign In</a>
   </div>
 </div>
 
@@ -835,7 +835,7 @@ form.addEventListener('submit', async (e) => {
         form.reset();
         document.getElementById('pw-strength').classList.remove('visible');
         updateAccountTypeUI();
-        setTimeout(() => { window.location.href = 'customer_login.php'; }, 2000);
+        setTimeout(() => { window.location.href = 'login_unified.php'; }, 2000);
       } else {
         showError(data.message || 'Signup failed. Please try again.');
         if (response.status === 409) {
@@ -858,7 +858,7 @@ form.addEventListener('submit', async (e) => {
         form.reset();
         document.getElementById('pw-strength').classList.remove('visible');
         updateAccountTypeUI();
-        setTimeout(() => { window.location.href = 'login.php'; }, 2500);
+        setTimeout(() => { window.location.href = 'login_unified.php'; }, 2500);
       } else {
         showError(data.message || 'Signup failed. Please try again.');
         if (response.status === 409) {

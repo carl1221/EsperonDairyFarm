@@ -1,7 +1,7 @@
 ﻿<?php
 session_set_cookie_params(["lifetime"=>0,"path"=>"/","domain"=>false,"secure"=>false,"httponly"=>true,"samesite"=>"Lax"]);
 session_start();
-if (!isset($_SESSION["customer"])) { header("Location: customer_login.php"); exit; }
+if (!isset($_SESSION["customer"])) { header("Location: login_unified.php"); exit; }
 $c = $_SESSION["customer"];
 ?>
 <!DOCTYPE html>
@@ -403,3 +403,4 @@ $c = $_SESSION["customer"];
 <script src="js/customer_dashboard.js"></script>
 </body>
 </html>
+
