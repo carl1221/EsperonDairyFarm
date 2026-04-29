@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up — Esperon Dairy Farm</title>
+  <title>Sign Up â€” Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
-    /* ── Signup page specific styles ── */
+    /* â”€â”€ Signup page specific styles â”€â”€ */
     body {
       display: flex;
       align-items: center;
@@ -441,12 +441,49 @@
     </div>
 
     <div class="form-group">
-      <label for="role">Role</label>
-      <select id="role" name="role" required aria-describedby="role-error">
-        <option value="Staff" selected>Staff</option>
-        <option value="Admin">Admin</option>
-      </select>
+      <label for="role">Account Type</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px;">
+        <label id="type-staff-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
+          <input type="radio" name="account_type" id="type-staff" value="Staff" checked style="display:none;" />
+          <span style="font-size:1.5rem;">ðŸ‘·</span>
+          <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Staff</span>
+          <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Farm worker account</span>
+        </label>
+        <label id="type-admin-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
+          <input type="radio" name="account_type" id="type-admin" value="Admin" style="display:none;" />
+          <span style="font-size:1.5rem;">ðŸ›¡ï¸</span>
+          <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Admin</span>
+          <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Full system access</span>
+        </label>
+        <label id="type-customer-lbl" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.5);">
+          <input type="radio" name="account_type" id="type-customer" value="Customer" style="display:none;" />
+          <span style="font-size:1.5rem;">ðŸ›’</span>
+          <span style="font-size:0.8rem;font-weight:700;color:var(--text);">Customer</span>
+          <span style="font-size:0.68rem;color:var(--muted);text-align:center;">Order dairy products</span>
+        </label>
+      </div>
       <span id="role-error" class="field-error"></span>
+    </div>
+
+    <!-- Customer-only fields (hidden for Staff/Admin) -->
+    <div id="customer-fields" style="display:none;">
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <div class="input-wrapper">
+          <input type="tel" id="phone" name="phone" placeholder="e.g. 09012345678" autocomplete="tel" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="delivery-address">Delivery Address</label>
+        <div class="input-wrapper">
+          <input type="text" id="delivery-address" name="delivery-address" placeholder="e.g. Casisang, Malaybalay City" autocomplete="street-address" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff/Admin-only: username field label note -->
+    <div id="staff-note" style="font-size:0.75rem;color:var(--muted);background:rgba(78,96,64,0.06);border-radius:8px;padding:8px 12px;margin-bottom:4px;">
+      <span style="font-weight:700;color:var(--olive-dark);">Staff/Admin accounts</span> are for farm workers only. Contact your administrator if you need access.
     </div>
 
     <div class="terms-checkbox">
@@ -464,20 +501,20 @@
   </form>
 
   <div class="auth-footer">
-    Already have an account? <a href="login.php">Log in</a>
+    Already have an account? <a href="login.php">Staff login</a> &nbsp;Â·&nbsp; <a href="customer_login.php">Customer login</a>
   </div>
 </div>
 
 <script>
-// ── Config ──────────────────────────────────────────────────
+// â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const API_BASE = '../dairy_farm_backend/api';
 
-// ── DOM refs ─────────────────────────────────────────────────
+// â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const form          = document.getElementById('signup-form');
 const submitBtn     = document.getElementById('submit-btn');
 const alertContainer = document.getElementById('alert-container');
 
-// ── Alert helpers ────────────────────────────────────────────
+// â”€â”€ Alert helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showAlert(msg, type = 'error', duration = 5000) {
   // Clear existing alerts
   alertContainer.innerHTML = '';
@@ -506,7 +543,7 @@ function showSuccess(msg) {
   showAlert(msg, 'success', 4000);
 }
 
-// ── Field validation ─────────────────────────────────────────
+// â”€â”€ Field validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function validateField(input, errorId, validationFn) {
   const errorEl = document.getElementById(errorId);
   const value = input.value;
@@ -533,7 +570,7 @@ function validateField(input, errorId, validationFn) {
   }
 }
 
-// ── Password visibility toggles ──────────────────────────────
+// â”€â”€ Password visibility toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.querySelectorAll('.pw-toggle').forEach(button => {
   button.addEventListener('click', () => {
     const targetId = button.getAttribute('data-target');
@@ -549,7 +586,7 @@ document.querySelectorAll('.pw-toggle').forEach(button => {
   });
 });
 
-// ── Password strength indicator ──────────────────────────────
+// â”€â”€ Password strength indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getPasswordStrength(password) {
   let strength = 0;
   if (password.length >= 8) strength++;
@@ -620,11 +657,11 @@ document.getElementById('password').addEventListener('input', function() {
   }
 });
 
-// ── Real-time field validation ───────────────────────────────
+// â”€â”€ Real-time field validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.getElementById('username').addEventListener('input', function() {
   validateField(this, 'username-error', (v) => {
     if (!v) return null; // Don't show error if empty
-    if (v.length < 3 || v.length > 50) return 'Username must be 3–50 characters.';
+    if (v.length < 3 || v.length > 50) return 'Username must be 3â€“50 characters.';
     if (!/^[a-zA-Z0-9_\-]+$/.test(v)) return 'Username may only contain letters, numbers, underscores, and hyphens.';
     return null;
   });
@@ -646,7 +683,7 @@ document.getElementById('confirm-password').addEventListener('input', function()
   });
 });
 
-// ── Terms link handlers ──────────────────────────────────────
+// â”€â”€ Terms link handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.getElementById('terms-link').addEventListener('click', (e) => {
   e.preventDefault();
   showAlert('Terms of Service page coming soon.', 'success', 3000);
@@ -657,27 +694,74 @@ document.getElementById('privacy-link').addEventListener('click', (e) => {
   showAlert('Privacy Policy page coming soon.', 'success', 3000);
 });
 
+// â”€â”€ Account type toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function getAccountType() {
+  const checked = document.querySelector('input[name="account_type"]:checked');
+  return checked ? checked.value : 'Staff';
+}
+
+function updateAccountTypeUI() {
+  const type = getAccountType();
+  const isCustomer = type === 'Customer';
+
+  // Show/hide customer-only fields
+  document.getElementById('customer-fields').style.display = isCustomer ? 'block' : 'none';
+  document.getElementById('staff-note').style.display      = isCustomer ? 'none'  : 'block';
+
+  // Show/hide username field (customers use email as identifier)
+  const usernameGroup = document.getElementById('username').closest('.form-group');
+  if (usernameGroup) usernameGroup.style.display = isCustomer ? 'none' : 'block';
+
+  // Update card highlight styles
+  ['staff', 'admin', 'customer'].forEach(t => {
+    const lbl = document.getElementById('type-' + t + '-lbl');
+    if (!lbl) return;
+    const isSelected = type.toLowerCase() === t;
+    lbl.style.borderColor  = isSelected ? 'var(--olive)' : 'var(--border)';
+    lbl.style.background   = isSelected ? 'rgba(78,96,64,0.1)' : 'rgba(255,255,255,0.5)';
+    lbl.style.boxShadow    = isSelected ? '0 0 0 2px rgba(78,96,64,0.2)' : 'none';
+  });
+
+  // Update page title
+  const h2 = document.querySelector('h2');
+  if (h2) {
+    if (isCustomer) h2.textContent = 'Create Customer Account';
+    else h2.textContent = 'Create an Account';
+  }
+}
+
+document.querySelectorAll('input[name="account_type"]').forEach(radio => {
+  radio.addEventListener('change', updateAccountTypeUI);
+});
+
+// Run once on load to set initial state
+updateAccountTypeUI();
+
 // ── Submit ────────────────────────────────────────────────────
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   alertContainer.innerHTML = '';
 
+  const accountType     = getAccountType();
+  const isCustomer      = accountType === 'Customer';
   const username        = document.getElementById('username').value.trim();
   const email           = document.getElementById('email').value.trim();
   const password        = document.getElementById('password').value;
   const confirmPassword = document.getElementById('confirm-password').value;
-  const role            = document.getElementById('role').value;
   const termsAccepted   = document.getElementById('terms').checked;
+  const phone           = isCustomer ? document.getElementById('phone').value.trim() : '';
+  const address         = isCustomer ? document.getElementById('delivery-address').value.trim() : '';
 
-  // Validate all fields
   let isValid = true;
 
-  isValid = validateField(document.getElementById('username'), 'username-error', (v) => {
-    if (!v) return 'Username is required.';
-    if (v.length < 3 || v.length > 50) return 'Username must be 3–50 characters.';
-    if (!/^[a-zA-Z0-9_\-]+$/.test(v)) return 'Username may only contain letters, numbers, underscores, and hyphens.';
-    return null;
-  }) && isValid;
+  if (!isCustomer) {
+    isValid = validateField(document.getElementById('username'), 'username-error', (v) => {
+      if (!v) return 'Username is required.';
+      if (v.length < 3 || v.length > 50) return 'Username must be 3-50 characters.';
+      if (!/^[a-zA-Z0-9_\-]+$/.test(v)) return 'Username may only contain letters, numbers, underscores, and hyphens.';
+      return null;
+    }) && isValid;
+  }
 
   isValid = validateField(document.getElementById('email'), 'email-error', (v) => {
     if (!v) return 'Email address is required.';
@@ -687,9 +771,13 @@ form.addEventListener('submit', async (e) => {
 
   isValid = validateField(document.getElementById('password'), 'password-error', (v) => {
     if (!v) return 'Password is required.';
-    if (v.length < 8) return 'Password must be at least 8 characters.';
-    if (!/[A-Z]/.test(v)) return 'Password must contain at least one uppercase letter.';
-    if (!/[0-9]/.test(v)) return 'Password must contain at least one number.';
+    if (isCustomer) {
+      if (v.length < 6) return 'Password must be at least 6 characters.';
+    } else {
+      if (v.length < 8) return 'Password must be at least 8 characters.';
+      if (!/[A-Z]/.test(v)) return 'Password must contain at least one uppercase letter.';
+      if (!/[0-9]/.test(v)) return 'Password must contain at least one number.';
+    }
     return null;
   }) && isValid;
 
@@ -699,7 +787,6 @@ form.addEventListener('submit', async (e) => {
     return null;
   }) && isValid;
 
-  // Validate terms
   const termsErrorEl = document.getElementById('terms-error');
   if (!termsAccepted) {
     termsErrorEl.textContent = 'You must agree to the Terms of Service and Privacy Policy.';
@@ -711,88 +798,98 @@ form.addEventListener('submit', async (e) => {
   }
 
   if (!isValid) {
-    // Focus the first error field
     const firstError = form.querySelector('.error, #terms-error.visible');
-    if (firstError && firstError.id !== 'terms-error') {
-      firstError.focus();
+    if (firstError && firstError.id !== 'terms-error') firstError.focus();
+    return;
+  }
+
+  let recaptchaToken = '';
+  if (!isCustomer) {
+    if (typeof grecaptcha === 'undefined') {
+      showError('reCAPTCHA is still loading. Please wait a moment and try again.');
+      return;
     }
-    return;
+    recaptchaToken = grecaptcha.getResponse();
+    if (!recaptchaToken) { showError('Please verify the reCAPTCHA.'); return; }
   }
 
-  // Check if reCAPTCHA is loaded
-  if (typeof grecaptcha === 'undefined') {
-    showError('reCAPTCHA is still loading. Please wait a moment and try again.');
-    return;
-  }
-
-  // Get reCAPTCHA token
-  const recaptchaToken = grecaptcha.getResponse();
-  if (!recaptchaToken) {
-    showError('Please verify the reCAPTCHA.');
-    return;
-  }
-
-  // Start loading
-  submitBtn.disabled    = true;
+  submitBtn.disabled = true;
   submitBtn.classList.add('loading');
-  submitBtn.querySelector('.btn-text').textContent = 'Creating account…';
+  submitBtn.querySelector('.btn-text').textContent = 'Creating account...';
 
   try {
-    const response = await fetch(`${API_BASE}/signup.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ username, email, password, role, 'g-recaptcha-response': recaptchaToken }),
-    });
+    let response, data;
 
-    const data = await response.json();
-
-    if (data.success) {
-      showSuccess(data.message + ' Redirecting to login…');
-      form.reset();
-      document.getElementById('pw-strength').classList.remove('visible');
-
-      // Redirect to login after a short delay so user can read the message
-      setTimeout(() => {
-        window.location.href = 'login.php';
-      }, 2500);
+    if (isCustomer) {
+      // Customer signup
+      const custName = email.split('@')[0];
+      response = await fetch(`${API_BASE}/customer_auth.php?action=signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: custName, email, phone, address, password }),
+      });
+      data = await response.json();
+      if (data.success) {
+        showSuccess('Customer account created! Redirecting to customer login...');
+        form.reset();
+        document.getElementById('pw-strength').classList.remove('visible');
+        updateAccountTypeUI();
+        setTimeout(() => { window.location.href = 'customer_login.php'; }, 2000);
+      } else {
+        showError(data.message || 'Signup failed. Please try again.');
+        if (response.status === 409) {
+          document.getElementById('email').classList.add('error');
+          document.getElementById('email-error').textContent = 'An account with this email already exists.';
+          document.getElementById('email-error').classList.add('visible');
+        }
+      }
     } else {
-      showError(data.message || 'Signup failed. Please try again.');
-      // If username/email conflict (409), highlight the relevant fields
-      if (response.status === 409) {
-        const msg = (data.message || '').toLowerCase();
-        if (msg.includes('username') || msg.includes('email') || msg.includes('taken')) {
-          const usernameInput = document.getElementById('username');
-          const emailInput    = document.getElementById('email');
-          usernameInput.classList.add('error');
-          emailInput.classList.add('error');
+      // Staff/Admin signup
+      response = await fetch(`${API_BASE}/signup.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, email, password, role: accountType, 'g-recaptcha-response': recaptchaToken }),
+      });
+      data = await response.json();
+      if (data.success) {
+        showSuccess(data.message + ' Redirecting to login...');
+        form.reset();
+        document.getElementById('pw-strength').classList.remove('visible');
+        updateAccountTypeUI();
+        setTimeout(() => { window.location.href = 'login.php'; }, 2500);
+      } else {
+        showError(data.message || 'Signup failed. Please try again.');
+        if (response.status === 409) {
+          document.getElementById('username').classList.add('error');
+          document.getElementById('email').classList.add('error');
           document.getElementById('username-error').textContent = 'Username or email already in use.';
           document.getElementById('username-error').classList.add('visible');
         }
-      }
-      if (typeof grecaptcha !== 'undefined' && document.querySelector('.g-recaptcha iframe')) {
-        grecaptcha.reset();
+        if (typeof grecaptcha !== 'undefined' && document.querySelector('.g-recaptcha iframe')) {
+          try { grecaptcha.reset(); } catch(ex) {}
+        }
       }
     }
-
   } catch (err) {
     showError('Network error. Please check your connection and try again.');
     console.error('[Signup Error]', err);
   } finally {
-    submitBtn.disabled    = false;
+    submitBtn.disabled = false;
     submitBtn.classList.remove('loading');
     submitBtn.querySelector('.btn-text').textContent = 'Create Account';
   }
 });
 
-// ── Reset reCAPTCHA on focus ──
+// â”€â”€ Reset reCAPTCHA on focus â”€â”€
 document.getElementById('username').addEventListener('focus', () => {
   if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse && grecaptcha.getResponse()) {
     try { grecaptcha.reset(); } catch(e) {}
   }
 });
 
-// ── Auto-focus username field ──
+// â”€â”€ Auto-focus username field â”€â”€
 document.getElementById('username').focus();
 </script>
 
