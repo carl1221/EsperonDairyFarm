@@ -50,9 +50,16 @@ if (file_exists($envFile)) {
 header('Content-Type: application/json');
 
 // ── CORS ──────────────────────────────────────────────────
+// Allow any localhost origin (handles subdirectories and different ports).
 // Restrict to your actual frontend origin in production.
-// e.g. 'https://yourapp.com' instead of 'http://localhost'
-header('Access-Control-Allow-Origin: http://localhost');
+$allowedOrigins = ['http://localhost', 'http://127.0.0.1'];
+$requestOrigin  = $_SERVER['HTTP_ORIGIN'] ?? '';
+// Accept any localhost/127.0.0.1 origin (with or without port)
+if (preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#', $requestOrigin)) {
+    header('Access-Control-Allow-Origin: ' . $requestOrigin);
+} else {
+    header('Access-Control-Allow-Origin: http://localhost');
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
 header('Access-Control-Allow-Credentials: true');

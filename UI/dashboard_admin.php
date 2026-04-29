@@ -144,7 +144,12 @@ requireAdminPage();
           <span class="material-symbols-outlined" style="color:var(--danger);font-size:1.2rem;">campaign</span>
           Alerts &amp; Notifications
         </span>
-        <span id="alerts-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="alerts-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0</span>
+          <button class="btn-xs btn-xs--danger" onclick="openAddAlertModal()">
+            <span class="material-symbols-outlined" style="font-size:0.9rem;">add_alert</span> Add Alert
+          </button>
+        </div>
       </div>
       <div id="alerts-list" style="padding:14px 20px;">
         <p style="color:var(--muted);font-size:0.84rem;">Checking alerts…</p>

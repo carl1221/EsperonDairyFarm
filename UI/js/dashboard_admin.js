@@ -25,10 +25,46 @@ function renderGreeting() {
 }
 
 // ── ALERTS ────────────────────────────────────────────────
-var alertItems = [];
+var ALERTS_KEY        = 'admin_alerts_custom';
+var DISMISSED_KEY     = 'admin_alerts_dismissed';
+var alertItems        = [];   // system-generated (rebuilt each load)
+var customAlerts      = [];   // user-created, persisted
+var dismissedAlerts   = [];   // ids of dismissed system alerts
 
+// Load persisted data
+function loadAlertStorage() {
+  try { customAlerts    = JSON.parse(localStorage.getItem(ALERTS_KEY)    || '[]'); } catch(e) { customAlerts    = []; }
+  try { dismissedAlerts = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'); } catch(e) { dismissedAlerts = []; }
+}
+
+function saveAlertStorage() {
+  localStorage.setItem(ALERTS_KEY,    JSON.stringify(customAlerts));
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissedAlerts));
+}
+
+// Called by data-loading functions to queue a system alert
 function addAlert(msg, type) {
-  alertItems.push({ msg: msg, type: type || 'warning' });
+  // Generate a stable id from the message so dismissal persists across reloads
+  var id = 'sys_' + msg.replace(/\W+/g, '_').toLowerCase().slice(0, 40);
+  alertItems.push({ id: id, msg: msg, type: type || 'warning', system: true });
+}
+
+function dismissAlert(id, isCustom) {
+  if (isCustom) {
+    customAlerts = customAlerts.filter(function(a) { return a.id !== id; });
+  } else {
+    if (dismissedAlerts.indexOf(id) === -1) dismissedAlerts.push(id);
+  }
+  saveAlertStorage();
+  renderAlerts();
+}
+
+function addCustomAlert(msg, type) {
+  var id = 'custom_' + Date.now();
+  customAlerts.unshift({ id: id, msg: msg, type: type || 'warning', custom: true });
+  if (customAlerts.length > 20) customAlerts.pop();
+  saveAlertStorage();
+  renderAlerts();
 }
 
 function renderAlerts() {
@@ -37,27 +73,103 @@ function renderAlerts() {
   var statEl    = document.getElementById('stat-alerts');
   if (!container) return;
 
-  var count = alertItems.length;
+  // Filter out dismissed system alerts
+  var visible = alertItems.filter(function(a) {
+    return dismissedAlerts.indexOf(a.id) === -1;
+  }).concat(customAlerts);
+
+  var count = visible.length;
   if (statEl) statEl.textContent = count;
 
   if (!count) {
     container.innerHTML = '<div class="alert-row alert-row--success"><span class="material-symbols-outlined" style="font-size:1rem;flex-shrink:0;">check_circle</span><span>No active alerts. All systems normal.</span></div>';
     if (badge) badge.style.display = 'none';
+    var dot = document.getElementById('notif-dot');
+    if (dot) dot.style.display = 'none';
     return;
   }
 
   if (badge) { badge.textContent = count; badge.style.display = 'inline-block'; }
-
-  var icons = { danger: 'warning', warning: 'info', info: 'info', success: 'check_circle' };
-  container.innerHTML = alertItems.map(function(a) {
-    return '<div class="alert-row alert-row--' + a.type + '">'
-      + '<span class="material-symbols-outlined" style="font-size:1rem;flex-shrink:0;">' + (icons[a.type] || 'info') + '</span>'
-      + '<span>' + a.msg + '</span></div>';
-  }).join('');
-
-  // Show notification dot
   var dot = document.getElementById('notif-dot');
   if (dot) dot.style.display = 'block';
+
+  var icons = { danger: 'warning', warning: 'info', info: 'info', success: 'check_circle' };
+  container.innerHTML = visible.map(function(a) {
+    var isCustom = !!a.custom;
+    return '<div class="alert-row alert-row--' + a.type + '" style="justify-content:space-between;align-items:flex-start;">'
+      + '<div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0;">'
+      + '<span class="material-symbols-outlined" style="font-size:1rem;flex-shrink:0;">' + (icons[a.type] || 'info') + '</span>'
+      + '<span style="flex:1;">' + a.msg + (isCustom ? ' <span style="font-size:0.65rem;opacity:0.6;font-weight:700;text-transform:uppercase;margin-left:4px;">custom</span>' : '') + '</span>'
+      + '</div>'
+      + '<button onclick="dismissAlert(\'' + a.id + '\',' + isCustom + ')" title="Dismiss" '
+      + 'style="background:none;border:none;cursor:pointer;padding:0 0 0 8px;flex-shrink:0;opacity:0.5;line-height:1;" '
+      + 'onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'0.5\'">'
+      + '<span class="material-symbols-outlined" style="font-size:0.95rem;">close</span>'
+      + '</button>'
+      + '</div>';
+  }).join('');
+}
+
+// ── ADD ALERT MODAL ───────────────────────────────────────
+function openAddAlertModal() {
+  var existing = document.getElementById('addAlertModal');
+  if (existing) { existing.remove(); return; }
+
+  var el = document.createElement('div');
+  el.id = 'addAlertModal';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;';
+  el.innerHTML = ''
+    + '<div style="background:#faf6f0;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,0.18);width:100%;max-width:420px;font-family:\'Lato\',sans-serif;overflow:hidden;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:linear-gradient(135deg,#c0392b,#e74c3c);">'
+    + '<div style="display:flex;align-items:center;gap:8px;">'
+    + '<span class="material-symbols-outlined" style="color:#fff;font-size:1.1rem;">add_alert</span>'
+    + '<span style="font-family:\'Playfair Display\',serif;font-size:1rem;font-weight:700;color:#fff;">Add Custom Alert</span>'
+    + '</div>'
+    + '<button onclick="document.getElementById(\'addAlertModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;width:26px;height:26px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.95rem;">close</span></button>'
+    + '</div>'
+    + '<div style="padding:18px 20px;">'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Alert Message <span style="color:#c0392b;">*</span></label>'
+    + '<textarea id="alert-msg-input" rows="3" placeholder="e.g. Vet arriving at 2 PM — prepare Cow #7" style="width:100%;padding:9px 13px;border:1.5px solid #e8dfd2;border-radius:9px;font-size:0.88rem;font-family:\'Lato\',sans-serif;color:#2a1f15;background:#fff;outline:none;resize:vertical;box-sizing:border-box;"></textarea>'
+    + '<div id="alert-msg-err" style="display:none;color:#c0392b;font-size:0.73rem;margin-top:3px;">Message is required.</div>'
+    + '</div>'
+    + '<div style="margin-bottom:16px;">'
+    + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;">Severity</label>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:0.84rem;"><input type="radio" name="alert-type" value="danger"  style="accent-color:#c0392b;"> <span style="color:#c0392b;font-weight:600;">Danger</span></label>'
+    + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:0.84rem;"><input type="radio" name="alert-type" value="warning" checked style="accent-color:#f39c12;"> <span style="color:#7a5a1e;font-weight:600;">Warning</span></label>'
+    + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:0.84rem;"><input type="radio" name="alert-type" value="info"    style="accent-color:#2980b9;"> <span style="color:#2d4f5e;font-weight:600;">Info</span></label>'
+    + '</div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:flex-end;gap:8px;">'
+    + '<button onclick="document.getElementById(\'addAlertModal\').remove()" style="padding:8px 16px;border:1.5px solid #d4c9b8;border-radius:9px;background:#fff;color:#4a3f35;font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;">Cancel</button>'
+    + '<button onclick="submitCustomAlert()" style="padding:8px 18px;border:none;border-radius:9px;background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.9rem;">add_alert</span> Post Alert</button>'
+    + '</div>'
+    + '</div></div>';
+
+  document.body.appendChild(el);
+  el.addEventListener('click', function(e) { if (e.target === el) el.remove(); });
+  document.addEventListener('keydown', function onEsc(e) {
+    if (e.key === 'Escape') { el.remove(); document.removeEventListener('keydown', onEsc); }
+  });
+  setTimeout(function() { var t = document.getElementById('alert-msg-input'); if (t) t.focus(); }, 50);
+}
+
+function submitCustomAlert() {
+  var msgEl = document.getElementById('alert-msg-input');
+  var errEl = document.getElementById('alert-msg-err');
+  var msg   = msgEl ? msgEl.value.trim() : '';
+  if (!msg) { if (errEl) errEl.style.display = 'block'; return; }
+  if (errEl) errEl.style.display = 'none';
+
+  var typeEl = document.querySelector('input[name="alert-type"]:checked');
+  var type   = typeEl ? typeEl.value : 'warning';
+
+  addCustomAlert(msg, type);
+  document.getElementById('addAlertModal').remove();
+  if (typeof UI !== 'undefined') UI.toast('Alert posted!', 'success');
 }
 
 // ── MILK STAT ─────────────────────────────────────────────
@@ -487,28 +599,39 @@ async function deleteReminder(id) {
 var INV_KEY = 'admin_inventory';
 
 var defaultInventory = [
-  { id: 'milk',   name: 'Milk Stock',   pct: 65, unit: 'L',  capacity: 500, icon: 'water_drop' },
-  { id: 'silageA',name: 'Silage A',     pct: 78, unit: 'kg', capacity: 1000, icon: 'grass' },
-  { id: 'siloB',  name: 'Silo B',       pct: 38, unit: 'kg', capacity: 800,  icon: 'silo' },
-  { id: 'hay',    name: 'Hay',          pct: 88, unit: 'kg', capacity: 600,  icon: 'agriculture' },
-  { id: 'feed',   name: 'Animal Feed',  pct: 52, unit: 'kg', capacity: 400,  icon: 'lunch_dining' },
+  { id: 'milk',    name: 'Milk Stock',  pct: 65, unit: 'L',  capacity: 500,  icon: 'water_drop'  },
+  { id: 'silageA', name: 'Silage A',    pct: 78, unit: 'kg', capacity: 1000, icon: 'grass'        },
+  { id: 'siloB',   name: 'Silo B',      pct: 38, unit: 'kg', capacity: 800,  icon: 'silo'         },
+  { id: 'hay',     name: 'Hay',         pct: 88, unit: 'kg', capacity: 600,  icon: 'agriculture'  },
+  { id: 'feed',    name: 'Animal Feed', pct: 52, unit: 'kg', capacity: 400,  icon: 'lunch_dining' },
 ];
 
 function loadInventory() {
   try {
     var stored = localStorage.getItem(INV_KEY);
-    return stored ? JSON.parse(stored) : defaultInventory.map(function(i){ return Object.assign({}, i); });
-  } catch(e) { return defaultInventory.map(function(i){ return Object.assign({}, i); }); }
+    if (!stored) return defaultInventory.map(function(i){ return Object.assign({}, i); });
+    var parsed = JSON.parse(stored);
+    // Validate it's a non-empty array with the right shape
+    if (!Array.isArray(parsed) || parsed.length === 0 || typeof parsed[0].pct === 'undefined') {
+      return defaultInventory.map(function(i){ return Object.assign({}, i); });
+    }
+    return parsed;
+  } catch(e) {
+    return defaultInventory.map(function(i){ return Object.assign({}, i); });
+  }
 }
 
 function saveInventory(items) {
-  localStorage.setItem(INV_KEY, JSON.stringify(items));
-  localStorage.setItem(INV_KEY + '_updated', new Date().toLocaleString());
+  try {
+    localStorage.setItem(INV_KEY, JSON.stringify(items));
+    localStorage.setItem(INV_KEY + '_updated', new Date().toLocaleString());
+  } catch(e) { console.error('Failed to save inventory:', e); }
 }
 
 function resetInventory() {
   if (!confirm('Reset all inventory levels to defaults?')) return;
-  saveInventory(defaultInventory.map(function(i){ return Object.assign({}, i); }));
+  localStorage.removeItem(INV_KEY);
+  localStorage.removeItem(INV_KEY + '_updated');
   renderInventoryBars();
   UI.toast('Inventory reset to defaults.', 'success');
 }
@@ -524,35 +647,42 @@ function getLabelColor(pct) {
 function renderInventoryBars() {
   var container = document.getElementById('inventory-bars');
   var lastUpdEl = document.getElementById('inv-last-updated');
-  if (!container) return;
+  if (!container) { console.warn('inventory-bars element not found'); return; }
 
   var items   = loadInventory();
   var updated = localStorage.getItem(INV_KEY + '_updated');
   if (lastUpdEl) lastUpdEl.textContent = updated ? 'Updated: ' + updated : '';
 
+  if (!items || items.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">No inventory data.</p>';
+    return;
+  }
+
   container.innerHTML = items.map(function(item) {
-    var warn = item.pct < 30 ? ' <span style="color:var(--danger);font-size:0.75rem;">&#9888; Low</span>' : '';
-    return '<div class="inv-bar-wrap" id="inv-wrap-' + item.id + '">'
+    var pct  = Math.min(100, Math.max(0, item.pct || 0));
+    var warn = pct < 30 ? ' <span style="color:var(--danger);font-size:0.75rem;">&#9888; Low</span>' : '';
+    var amt  = Math.round(pct / 100 * (item.capacity || 100));
+    return '<div class="inv-bar-wrap">'
       + '<div class="inv-bar-label">'
       + '<span style="display:flex;align-items:center;gap:5px;">'
-      + '<span class="material-symbols-outlined" style="font-size:0.9rem;color:var(--muted);">' + item.icon + '</span>'
+      + '<span class="material-symbols-outlined" style="font-size:0.9rem;color:var(--muted);">' + (item.icon || 'inventory_2') + '</span>'
       + item.name + warn
       + '</span>'
-      + '<span style="color:' + getLabelColor(item.pct) + ';font-weight:700;" id="inv-lbl-' + item.id + '">'
-      + item.pct + '% &nbsp;<span style="font-weight:400;font-size:0.72rem;color:var(--muted);">('
-      + Math.round(item.pct / 100 * item.capacity) + ' / ' + item.capacity + ' ' + item.unit + ')</span>'
+      + '<span style="color:' + getLabelColor(pct) + ';font-weight:700;">'
+      + pct + '%'
+      + ' <span style="font-weight:400;font-size:0.72rem;color:var(--muted);">(' + amt + '/' + (item.capacity || 100) + ' ' + (item.unit || '') + ')</span>'
       + '</span>'
       + '</div>'
-      + '<div class="inv-bar"><div class="inv-bar-fill ' + getBarClass(item.pct) + '" id="inv-bar-' + item.id + '" style="width:' + item.pct + '%"></div></div>'
+      + '<div class="inv-bar"><div class="inv-bar-fill ' + getBarClass(pct) + '" style="width:' + pct + '%"></div></div>'
       + '</div>';
   }).join('');
 
-  // Update milk stat card from inventory
+  // Sync milk stat card
   var milkItem = items.find(function(i){ return i.id === 'milk'; });
   if (milkItem) {
-    var milkEl = document.getElementById('inv-milk-lbl');
-    if (milkEl) milkEl.textContent = Math.round(milkItem.pct / 100 * milkItem.capacity) + 'L';
+    var milkLbl = document.getElementById('inv-milk-lbl');
     var milkBar = document.getElementById('inv-milk-bar');
+    if (milkLbl) milkLbl.textContent = Math.round(milkItem.pct / 100 * milkItem.capacity) + 'L';
     if (milkBar) { milkBar.style.width = milkItem.pct + '%'; milkBar.className = 'inv-bar-fill ' + getBarClass(milkItem.pct); }
   }
 }
@@ -736,19 +866,6 @@ function saveEditInventory() {
   renderInventoryBars();
   document.getElementById('editInvModal').remove();
   UI.toast('Inventory items updated.', 'success');
-}te Stock</button>'
-    + '</div></div></div>';
-  document.body.appendChild(el);
-  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
-}
-
-function submitRestock() {
-  var item = document.getElementById('restock-item');
-  var val  = document.getElementById('restock-val');
-  if (!val || !val.value) { UI.toast('Please enter a stock level.', 'error'); return; }
-  var pct = Math.min(Math.max(parseInt(val.value, 10), 0), 100);
-  UI.toast(item.value + ' restocked to ' + pct + '%.', 'success');
-  document.getElementById('restockModal').remove();
 }
 
 // ── ADMIN DAILY TASKS ─────────────────────────────────────
@@ -849,6 +966,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── INIT ──────────────────────────────────────────────────
 (async function() {
   renderGreeting();
+  loadAlertStorage();   // load persisted custom alerts + dismissed ids
 
   var params = new URLSearchParams(window.location.search);
   if (params.get('access_denied') === '1') {
@@ -869,7 +987,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderGreeting();
   loadAdminTasks();
   loadNotes();
-  renderInventoryBars(); // Load inventory from localStorage
+  // renderInventoryBars is called via DOMContentLoaded below
 
   // Load all data in parallel, then build alerts and reports
   var results = await Promise.allSettled([
