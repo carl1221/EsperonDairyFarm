@@ -115,11 +115,11 @@
 
   <form id="login-form" novalidate>
 
-    <!-- Single email field — role detected from domain -->
+    <!-- Single email/username field — role detected from domain if email -->
     <div class="form-group">
-      <label for="email">Email Address</label>
-      <input type="email" id="email" placeholder="yourname@gmail.com"
-             autocomplete="email" required />
+      <label for="email">Email or Username</label>
+      <input type="text" id="email" placeholder="username or email@domain.com"
+             autocomplete="username email" required />
       <!-- Auto-detected role badge -->
       <div class="role-pill" id="role-pill">
         <span class="material-symbols-outlined" style="font-size:1rem;" id="role-icon">badge</span>
@@ -177,6 +177,8 @@ const ROLE_CONFIG = {
 };
 
 function detectRoleFromEmail(email) {
+  // If no @ symbol — treat as username (Staff/Admin)
+  if (!email.includes('@')) return 'staff';
   const parts = email.split('@');
   if (parts.length !== 2) return null;
   const domain = parts[1].toLowerCase().trim();
@@ -205,7 +207,10 @@ document.getElementById('email').addEventListener('input', function() {
   if (role && ROLE_CONFIG[role]) {
     const cfg = ROLE_CONFIG[role];
     iconEl.textContent  = cfg.icon;
-    labelEl.textContent = cfg.label + ' account detected';
+    // Show friendly label — username input means Staff/Admin
+    labelEl.textContent = email.includes('@')
+      ? cfg.label + ' account detected'
+      : 'Staff / Admin account';
     pill.classList.add(cfg.pillClass);
     pill.style.display = 'flex';
     // Show reCAPTCHA only for staff/admin
@@ -227,7 +232,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
   const password = document.getElementById('password').value;
   const btn      = document.getElementById('submit-btn');
 
-  if (!email)    { showAlert('Please enter your email address.', 'error'); return; }
+  if (!email)    { showAlert('Please enter your email or username.', 'error'); return; }
   if (!password) { showAlert('Please enter your password.', 'error'); return; }
 
   const role = detectRoleFromEmail(email);
@@ -238,6 +243,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
   }
 
   const isStaffOrAdmin = role === 'staff' || role === 'admin';
+  const isUsername     = !email.includes('@');
 
   // reCAPTCHA check for staff/admin
   let recaptchaToken = '';
@@ -257,12 +263,16 @@ document.getElementById('login-form').addEventListener('submit', async function(
     let res, data;
 
     if (isStaffOrAdmin) {
-      // Staff/Admin: look up by email in the Worker table
+      // Staff/Admin: send as username if no @, otherwise as email
+      const payload = isUsername
+        ? { username: email, password, 'g-recaptcha-response': recaptchaToken }
+        : { email,            password, 'g-recaptcha-response': recaptchaToken };
+
       res = await fetch(API + '/auth.php?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password, 'g-recaptcha-response': recaptchaToken }),
+        body: JSON.stringify(payload),
       });
       data = await res.json();
       if (data.success) {
