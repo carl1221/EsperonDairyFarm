@@ -142,7 +142,7 @@
   </form>
 
   <div class="auth-footer">
-    New here? <a href="signup.php" onclick="window.location.href='signup.php';return false;">Create account</a>
+    New here? <a href="signup.php">Create account</a>
   </div>
 </div>
 
