@@ -576,12 +576,16 @@ function openRestockModal() {
     + '<div style="padding:18px 20px;">'
     + '<div style="margin-bottom:12px;">'
     + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Select Item</label>'
-    + '<select id="restock-item" onchange="updateRestockPreview()" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-light);border-radius:9px;font-size:0.87rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;">'
+    + '<select id="restock-item" onchange="onRestockItemChange()" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-light);border-radius:9px;font-size:0.87rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;">'
     + items.map(function(i){ return '<option value="' + i.id + '">' + i.name + ' (currently ' + i.pct + '%)</option>'; }).join('')
     + '</select></div>'
     + '<div style="margin-bottom:12px;">'
     + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">New Stock Level (%)</label>'
-    + '<input id="restock-val" type="range" min="0" max="100" value="' + items[0].pct + '" oninput="updateRestockPreview()" style="width:100%;accent-color:var(--olive);cursor:pointer;" />'
+    + '<div style="display:flex;align-items:center;gap:10px;">'
+    + '<input id="restock-val" type="range" min="0" max="100" value="' + items[0].pct + '" oninput="syncRestockNumber();updateRestockPreview();" style="flex:1;accent-color:var(--olive);cursor:pointer;" />'
+    + '<input id="restock-num" type="number" min="0" max="100" value="' + items[0].pct + '" oninput="syncRestockSlider();updateRestockPreview();" style="width:64px;padding:7px 8px;border:1.5px solid var(--border-light);border-radius:8px;font-size:0.88rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;text-align:center;" />'
+    + '<span style="font-size:0.84rem;color:var(--muted);">%</span>'
+    + '</div>'
     + '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-top:2px;"><span>0%</span><span>50%</span><span>100%</span></div>'
     + '</div>'
     + '<div id="restock-preview" style="background:rgba(232,240,224,0.5);border:1px solid rgba(78,96,64,0.2);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:0.84rem;color:var(--olive-dark);">'
@@ -599,41 +603,74 @@ function openRestockModal() {
   updateRestockPreview();
 }
 
+function syncRestockNumber() {
+  var slider = document.getElementById('restock-val');
+  var num    = document.getElementById('restock-num');
+  if (slider && num) num.value = slider.value;
+}
+
+function syncRestockSlider() {
+  var slider = document.getElementById('restock-val');
+  var num    = document.getElementById('restock-num');
+  if (!slider || !num) return;
+  var v = Math.min(100, Math.max(0, parseInt(num.value, 10) || 0));
+  num.value    = v;
+  slider.value = v;
+}
+
 function updateRestockPreview() {
-  var itemSel  = document.getElementById('restock-item');
-  var valInput = document.getElementById('restock-val');
+  var itemSel   = document.getElementById('restock-item');
+  var valInput  = document.getElementById('restock-val');
+  var numInput  = document.getElementById('restock-num');
   var previewEl = document.getElementById('restock-preview-text');
   if (!itemSel || !valInput || !previewEl) return;
 
-  var items   = loadInventory();
-  var item    = items.find(function(i){ return i.id === itemSel.value; });
+  var items  = loadInventory();
+  var item   = items.find(function(i){ return i.id === itemSel.value; });
   if (!item) return;
 
-  var newPct  = parseInt(valInput.value, 10);
-  var newAmt  = Math.round(newPct / 100 * item.capacity);
-  var oldAmt  = Math.round(item.pct / 100 * item.capacity);
-  var diff    = newAmt - oldAmt;
+  // When dropdown changes, sync slider + number to the item's current value
+  var newPct = parseInt(valInput.value, 10);
+  var newAmt = Math.round(newPct / 100 * item.capacity);
+  var oldAmt = Math.round(item.pct / 100 * item.capacity);
+  var diff   = newAmt - oldAmt;
   var diffStr = diff >= 0 ? '+' + diff : '' + diff;
 
   previewEl.textContent = item.name + ': ' + item.pct + '% \u2192 ' + newPct + '% ('
     + oldAmt + ' \u2192 ' + newAmt + ' ' + item.unit + ', ' + diffStr + ' ' + item.unit + ')';
 }
 
+function onRestockItemChange() {
+  // Sync slider and number to the selected item's current value
+  var itemSel  = document.getElementById('restock-item');
+  var slider   = document.getElementById('restock-val');
+  var numInput = document.getElementById('restock-num');
+  if (!itemSel || !slider || !numInput) return;
+  var items = loadInventory();
+  var item  = items.find(function(i){ return i.id === itemSel.value; });
+  if (!item) return;
+  slider.value   = item.pct;
+  numInput.value = item.pct;
+  updateRestockPreview();
+}
+
 function submitRestock() {
   var itemSel  = document.getElementById('restock-item');
-  var valInput = document.getElementById('restock-val');
-  if (!itemSel || !valInput) return;
+  var numInput = document.getElementById('restock-num');
+  if (!itemSel || !numInput) return;
 
-  var newPct = parseInt(valInput.value, 10);
-  var items  = loadInventory();
-  var item   = items.find(function(i){ return i.id === itemSel.value; });
+  var newPct = Math.min(100, Math.max(0, parseInt(numInput.value, 10)));
+  if (isNaN(newPct)) { UI.toast('Please enter a valid percentage (0-100).', 'error'); return; }
+
+  var items = loadInventory();
+  var item  = items.find(function(i){ return i.id === itemSel.value; });
   if (!item) return;
 
   item.pct = newPct;
   saveInventory(items);
   renderInventoryBars();
 
-  // Re-check alerts
+  // Re-check alerts — remove old alerts for this item then re-evaluate
   alertItems = alertItems.filter(function(a){ return !a.msg.includes(item.name); });
   if (newPct < 30) addAlert(item.name + ' is critically low (' + newPct + '%) \u2014 restock urgently.', 'danger');
   else if (newPct < 50) addAlert(item.name + ' is below 50% (' + newPct + '%).', 'warning');
