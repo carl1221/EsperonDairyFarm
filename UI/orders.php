@@ -1,3 +1,8 @@
+<?php
+require_once __DIR__ . '/guard.php';
+requireAuthPage();
+$_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +11,9 @@
   <title>Orders — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
+  <?php if (!$_isAdmin): ?>
+  <style>.admin-only { display: none !important; }</style>
+  <?php endif; ?>
 </head>
 <body>
 
@@ -17,7 +25,7 @@
       <h1 class="page-title">Orders</h1>
       <p class="page-subtitle">Full order history with customer, cow, and worker details.</p>
     </div>
-    <button class="btn btn--primary" onclick="openModal()">＋ New Order</button>
+    <button class="btn btn--primary admin-only" onclick="openModal()">＋ New Order</button>
   </div>
 
   <div class="card">
@@ -152,8 +160,8 @@ function renderOrders(rows) {
       <td>${o.Worker}</td>
       <td><span class="badge ${o.Worker_Role === 'Admin' ? 'badge--gold' : 'badge--muted'}">${o.Worker_Role}</span></td>
       <td class="actions">
-        <button class="btn btn--icon btn--edit" onclick="openModal(${o.Order_ID})">✏</button>
-        <button class="btn btn--icon btn--del"  onclick="deleteOrder(${o.Order_ID})">🗑</button>
+        <button class="btn btn--icon btn--edit admin-only" onclick="openModal(${o.Order_ID})">✏</button>
+        <button class="btn btn--icon btn--del  admin-only" onclick="deleteOrder(${o.Order_ID})">🗑</button>
       </td>
     </tr>
   `).join('');

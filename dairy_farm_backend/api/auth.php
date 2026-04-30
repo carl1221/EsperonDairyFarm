@@ -176,7 +176,7 @@ try {
                 // Fetch the worker record — Email included so we can
                 // put it in the session for display in the frontend
                 $stmt = $db = getConnection()->prepare(
-                    'SELECT Worker_ID, Worker, Worker_Role, Email, Password
+                    'SELECT Worker_ID, Worker, Worker_Role, Email, Avatar, Password
                      FROM Worker
                      WHERE Worker = ?
                      LIMIT 1'
@@ -195,10 +195,11 @@ try {
 
                 // Store minimal user info in the server-side session
                 $_SESSION['user'] = [
-                    'id'    => $user['Worker_ID'],
-                    'name'  => $user['Worker'],
-                    'role'  => $user['Worker_Role'],
-                    'email' => $user['Email'] ?? '',
+                    'id'     => $user['Worker_ID'],
+                    'name'   => $user['Worker'],
+                    'role'   => $user['Worker_Role'],
+                    'email'  => $user['Email'] ?? '',
+                    'avatar' => $user['Avatar'] ?? '',
                 ];
 
                 // Issue a fresh CSRF token for this session

@@ -558,6 +558,7 @@ form.addEventListener('submit', async (e) => {
 
   const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
+  const rememberMe    = document.getElementById('remember').checked;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
 
@@ -607,12 +608,23 @@ form.addEventListener('submit', async (e) => {
     const data = await response.json();
 
     if (data.success) {
+      // ── Remember Me ───────────────────────────────────
+      if (rememberMe) {
+        localStorage.setItem('remembered_username', username);
+        localStorage.setItem('remember_me', 'true');
+      } else {
+        localStorage.removeItem('remembered_username');
+        localStorage.removeItem('remember_me');
+      }
+
       // Persist session data in localStorage for UI display
       localStorage.setItem('csrf_token', data.data.csrf_token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
-      // Show success message briefly before redirect
-      showAlert('Login successful! Redirecting…', 'success', 1000);
+      // Role-based redirect: all roles go to index.php (dashboard adapts by role)
+      const role = data.data.user?.role || '';
+      const greeting = role === 'Admin' ? 'Welcome Admin!' : `Welcome ${role || 'back'}!`;
+      showAlert(greeting + ' Redirecting…', 'success', 1000);
       setTimeout(() => {
         window.location.href = 'index.php';
       }, 800);
@@ -635,6 +647,18 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
+// ── Restore remembered username on page load ──────────────
+(function restoreRememberedUser() {
+  const remembered = localStorage.getItem('remembered_username');
+  const rememberOn = localStorage.getItem('remember_me') === 'true';
+  if (remembered && rememberOn) {
+    document.getElementById('username').value = remembered;
+    document.getElementById('remember').checked = true;
+    // Focus password field since username is already filled
+    document.getElementById('password').focus();
+  }
+})();
+
 // ── Reset reCAPTCHA on focus ──
 document.getElementById('username').addEventListener('focus', () => {
   if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse()) {
@@ -642,8 +666,10 @@ document.getElementById('username').addEventListener('focus', () => {
   }
 });
 
-// ── Auto-focus username field ──
-document.getElementById('username').focus();
+// ── Auto-focus: username if empty, password if remembered ──
+if (!localStorage.getItem('remembered_username')) {
+  document.getElementById('username').focus();
+}
 </script>
 
 </body>

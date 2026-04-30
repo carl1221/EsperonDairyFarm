@@ -15,6 +15,8 @@ require_once __DIR__ . '/../models/Worker.php';
 
 requireAuth();
 requireCsrf();
+// Workers management is Admin-only
+requireRole(['Admin']);
 
 $worker = new Worker();
 $method = $_SERVER['REQUEST_METHOD'];
@@ -35,28 +37,27 @@ try {
             break;
 
         case 'POST':
-            $data     = getRequestBody();
-            $required = ['Worker_ID', 'Worker', 'Worker_Role'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    sendError("Missing required field: $field");
-                }
-            }
-            $worker->create($data)
+            $data = getRequestBody();
+            validateRequired($data, ['Worker_ID', 'Worker', 'Worker_Role']);
+            $validatedData = [
+                'Worker_ID'   => validateInteger($data['Worker_ID'], 'Worker_ID'),
+                'Worker'      => validateString($data['Worker'], 'Worker', 100),
+                'Worker_Role' => validateString($data['Worker_Role'], 'Worker_Role', 50),
+            ];
+            $worker->create($validatedData)
                 ? sendSuccess('Worker created.', null, 201)
                 : sendError('Failed to create worker.', 500);
             break;
 
         case 'PUT':
             if (!$id) sendError('Worker ID is required for update.');
-            $data     = getRequestBody();
-            $required = ['Worker', 'Worker_Role'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    sendError("Missing required field: $field");
-                }
-            }
-            $worker->update($id, $data)
+            $data = getRequestBody();
+            validateRequired($data, ['Worker', 'Worker_Role']);
+            $validatedData = [
+                'Worker'      => validateString($data['Worker'], 'Worker', 100),
+                'Worker_Role' => validateString($data['Worker_Role'], 'Worker_Role', 50),
+            ];
+            $worker->update($id, $validatedData)
                 ? sendSuccess('Worker updated.')
                 : sendError('Worker not found or no changes made.', 404);
             break;
