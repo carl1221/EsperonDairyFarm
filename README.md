@@ -97,27 +97,12 @@ Open **http://localhost/esperon_final/UI/login.php** in your browser to access t
 
 ### 6. (Optional) Set up Google OAuth Login
 
-**Current Status:** Google OAuth is disabled by default. The "Continue with Google" button will show an error message until properly configured.
+**Current Status:** Google OAuth is disabled by default. Once you add your Google credentials to `.env`, it will work automatically.
 
-To enable "Continue with Google" login:
+**Good news:** You don't need to install Composer or any external PHP libraries! Google OAuth is implemented using native PHP/cURL, so it works out of the box once configured.
 
-#### Option A: Using Composer (Recommended)
-1. Install PHP dependencies:
-   ```bash
-   composer install
-   ```
-   If you encounter SSL certificate errors, try:
-   ```bash
-   composer config disable-tls true
-   composer install
-   ```
+#### Setup Steps
 
-#### Option B: Manual Setup (if Composer fails)
-1. Download the Google API Client library manually from GitHub
-2. Extract it to `vendor/google/apiclient/`
-3. Ensure the autoload files are in place
-
-#### Google Cloud Console Setup
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
 3. Enable the Google+ API:
@@ -130,7 +115,6 @@ To enable "Continue with Google" login:
    - Set authorized redirect URIs to: `http://localhost/esperon_final/dairy_farm_backend/api/auth.php?action=google_callback`
    - Copy the Client ID and Client Secret
 
-#### Update Environment Variables
 5. Update your `.env` file with the real credentials (replace the placeholder values):
    ```
    GOOGLE_CLIENT_ID=your_actual_client_id_here
@@ -139,12 +123,15 @@ To enable "Continue with Google" login:
 
 Users can now log in with their Google account if their email matches a worker's email in the database.
 
+Users can now log in with their Google account. If their email doesn't exist in the system, a new account will be automatically created with "Staff" role.
+
 **Testing Google OAuth:**
 - Click "Continue with Google" on the login page
 - You should be redirected to Google for authentication
 - After authentication, you'll be redirected back
-- If your Google email matches a worker email in the database, you'll be logged in
-- If not, you'll see an error message
+- If your Google email matches an existing worker → Login with existing account
+- If your Google email is new → Auto-create new "Staff" account and login
+- Username is automatically generated from your Google name
 
 **Current Worker Emails in Database:**
 - Mark: No email set
