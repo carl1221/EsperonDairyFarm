@@ -1,7 +1,7 @@
 -- ============================================================
 -- db.sql — Esperon Dairy Farm
--- Complete database setup (all migrations merged)
--- Run this ONCE on a fresh install in phpMyAdmin or terminal:
+-- Normalized to 3NF (Third Normal Form)
+-- Run this ONCE on a fresh install:
 --   mysql -u root < db.sql
 -- ============================================================
 
@@ -13,48 +13,60 @@ USE esperon_dairy_farm;
 
 -- ============================================================
 -- TABLE: Address
+-- Stores physical locations only (no contact info — that
+-- belongs to the Customer who lives at the address).
+-- 1NF: each column is atomic
+-- 2NF: Address and Barangay depend only on Address_ID
+-- 3NF: no transitive dependencies
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Address (
-    Address_ID  INT           NOT NULL AUTO_INCREMENT,
-    Address     VARCHAR(100)  NOT NULL,
-    Contact_Num VARCHAR(20)   NOT NULL,
+    Address_ID  INT          NOT NULL AUTO_INCREMENT,
+    Address     VARCHAR(100) NOT NULL,
     CONSTRAINT pk_address PRIMARY KEY (Address_ID)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- TABLE: Worker
+-- Stores all system users (Admin and Staff).
+-- approval_status, last_heartbeat, created_at support the
+-- approval and online-monitoring features.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Worker (
-    Worker_ID       INT           NOT NULL AUTO_INCREMENT,
-    Worker          VARCHAR(100)  NOT NULL,
-    Worker_Role     VARCHAR(50)   NOT NULL,
-    Email           VARCHAR(150)  NULL,
-    Avatar          VARCHAR(255)  NULL,
-    Password        VARCHAR(255)  NOT NULL DEFAULT '',
+    Worker_ID       INT          NOT NULL AUTO_INCREMENT,
+    Worker          VARCHAR(100) NOT NULL,
+    Worker_Role     VARCHAR(50)  NOT NULL,
+    Email           VARCHAR(150) NULL,
+    Avatar          VARCHAR(255) NULL,
+    Password        VARCHAR(255) NOT NULL DEFAULT '',
     approval_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved',
-    last_heartbeat  DATETIME      NULL,
-    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_heartbeat  DATETIME     NULL,
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_worker       PRIMARY KEY (Worker_ID),
     CONSTRAINT uq_worker_email UNIQUE (Email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- TABLE: Cow
+-- Production is split into value + unit for 1NF atomicity.
+-- e.g. instead of '10L', store production_liters = 10
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Cow (
-    Cow_ID     INT          NOT NULL AUTO_INCREMENT,
-    Cow        VARCHAR(50)  NOT NULL,
-    Production VARCHAR(20)  NOT NULL,
+    Cow_ID             INT           NOT NULL AUTO_INCREMENT,
+    Cow                VARCHAR(50)   NOT NULL,
+    Production_Liters  DECIMAL(8,2)  NOT NULL DEFAULT 0.00,
     CONSTRAINT pk_cow PRIMARY KEY (Cow_ID)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- TABLE: Customer
+-- Contact_Num moved here from Address (it belongs to the
+-- customer, not the location — 3NF fix).
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Customer (
     CID           INT          NOT NULL AUTO_INCREMENT,
     Customer_Name VARCHAR(100) NOT NULL,
     Address_ID    INT          NOT NULL,
+    Contact_Num   VARCHAR(20)  NOT NULL,
     CONSTRAINT pk_customer  PRIMARY KEY (CID),
     CONSTRAINT fk_cust_addr FOREIGN KEY (Address_ID)
         REFERENCES Address (Address_ID)
@@ -72,13 +84,13 @@ CREATE TABLE IF NOT EXISTS Orders (
     Order_Type VARCHAR(100) NOT NULL,
     Order_Date DATE         NOT NULL,
     CONSTRAINT pk_order      PRIMARY KEY (Order_ID),
-    CONSTRAINT fk_ord_cust   FOREIGN KEY (CID)       REFERENCES Customer (CID)       ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_ord_cow    FOREIGN KEY (Cow_ID)    REFERENCES Cow (Cow_ID)         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_ord_worker FOREIGN KEY (Worker_ID) REFERENCES Worker (Worker_ID)   ON UPDATE CASCADE ON DELETE RESTRICT
+    CONSTRAINT fk_ord_cust   FOREIGN KEY (CID)       REFERENCES Customer (CID)     ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_ord_cow    FOREIGN KEY (Cow_ID)    REFERENCES Cow (Cow_ID)       ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_ord_worker FOREIGN KEY (Worker_ID) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
--- TABLE: Reminders
+-- TABLE: reminders
 -- ============================================================
 CREATE TABLE IF NOT EXISTS reminders (
     reminder_id INT          NOT NULL AUTO_INCREMENT,
@@ -92,23 +104,27 @@ CREATE TABLE IF NOT EXISTS reminders (
 
 -- ============================================================
 -- TABLE: staff_reports
+-- worker_name removed — it was a transitive dependency
+-- (worker_name depends on worker_id, not report_id).
+-- Join with Worker table to get the name.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS staff_reports (
-    report_id   INT          NOT NULL AUTO_INCREMENT,
-    worker_id   INT          NOT NULL,
-    worker_name VARCHAR(100) NOT NULL,
-    report_type VARCHAR(50)  NOT NULL DEFAULT 'Daily Report',
+    report_id   INT         NOT NULL AUTO_INCREMENT,
+    worker_id   INT         NOT NULL,
+    report_type VARCHAR(50) NOT NULL DEFAULT 'Daily Report',
     title       VARCHAR(255) NOT NULL,
-    content     TEXT         NOT NULL,
+    content     TEXT        NOT NULL,
     status      ENUM('pending','reviewed','acknowledged') NOT NULL DEFAULT 'pending',
-    admin_note  TEXT         NULL,
-    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT pk_reports PRIMARY KEY (report_id)
+    admin_note  TEXT        NULL,
+    created_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_reports    PRIMARY KEY (report_id),
+    CONSTRAINT fk_rep_worker FOREIGN KEY (worker_id) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- VIEW: vw_order_details
+-- Updated to use Production_Liters and Customer.Contact_Num
 -- ============================================================
 CREATE OR REPLACE VIEW vw_order_details AS
 SELECT
@@ -116,12 +132,12 @@ SELECT
     o.CID,
     c.Customer_Name,
     a.Address,
-    a.Contact_Num,
+    c.Contact_Num,
     o.Order_Type,
     o.Order_Date,
     o.Cow_ID,
     cw.Cow,
-    cw.Production,
+    CONCAT(cw.Production_Liters, 'L') AS Production,
     o.Worker_ID,
     w.Worker,
     w.Worker_Role
@@ -130,6 +146,26 @@ JOIN Customer c  ON o.CID       = c.CID
 JOIN Address  a  ON c.Address_ID = a.Address_ID
 JOIN Cow      cw ON o.Cow_ID    = cw.Cow_ID
 JOIN Worker   w  ON o.Worker_ID  = w.Worker_ID;
+
+-- ============================================================
+-- VIEW: vw_staff_reports
+-- Joins worker name so APIs don't need to store it redundantly
+-- ============================================================
+CREATE OR REPLACE VIEW vw_staff_reports AS
+SELECT
+    r.report_id,
+    r.worker_id,
+    w.Worker      AS worker_name,
+    w.Worker_Role AS worker_role,
+    r.report_type,
+    r.title,
+    r.content,
+    r.status,
+    r.admin_note,
+    r.created_at,
+    r.updated_at
+FROM staff_reports r
+JOIN Worker w ON r.worker_id = w.Worker_ID;
 
 -- ============================================================
 -- INDEXES
@@ -145,30 +181,32 @@ CREATE INDEX IF NOT EXISTS idx_orders_worker_id  ON Orders(Worker_ID);
 CREATE INDEX IF NOT EXISTS idx_orders_date       ON Orders(Order_Date);
 CREATE INDEX IF NOT EXISTS idx_reminders_due     ON reminders(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_status  ON reminders(status);
+CREATE INDEX IF NOT EXISTS idx_reports_worker    ON staff_reports(worker_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status    ON staff_reports(status);
 
 -- ============================================================
 -- SAMPLE DATA
 -- ============================================================
-INSERT INTO Address (Address_ID, Address, Contact_Num) VALUES
-    (301, 'Casisang', '901'),
-    (302, 'San Jose',  '902')
-ON DUPLICATE KEY UPDATE Address=VALUES(Address);
+INSERT INTO Address (Address_ID, Address) VALUES
+    (301, 'Casisang'),
+    (302, 'San Jose')
+ON DUPLICATE KEY UPDATE Address = VALUES(Address);
 
 -- Default password is 'password' (bcrypt hash)
 INSERT INTO Worker (Worker_ID, Worker, Worker_Role, Email, Password, approval_status) VALUES
-    (201, 'Mark',    'Staff', 'mark@esperon.farm', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'approved'),
-    (202, 'Patrick', 'Admin', 'carl@esperon.farm', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'approved')
-ON DUPLICATE KEY UPDATE Worker=VALUES(Worker);
+    (201, 'Mark',    'Staff', 'mark@esperon.farm',    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'approved'),
+    (202, 'Patrick', 'Admin', 'patrick@esperon.farm', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'approved')
+ON DUPLICATE KEY UPDATE Worker = VALUES(Worker);
 
-INSERT INTO Cow (Cow_ID, Cow, Production) VALUES
-    (101, 'Cow1', '10L'),
-    (102, 'Cow2', '15L')
-ON DUPLICATE KEY UPDATE Cow=VALUES(Cow);
+INSERT INTO Cow (Cow_ID, Cow, Production_Liters) VALUES
+    (101, 'Cow1', 10.00),
+    (102, 'Cow2', 15.00)
+ON DUPLICATE KEY UPDATE Cow = VALUES(Cow);
 
-INSERT INTO Customer (CID, Customer_Name, Address_ID) VALUES
-    (1, 'Ana',  301),
-    (2, 'Juan', 302)
-ON DUPLICATE KEY UPDATE Customer_Name=VALUES(Customer_Name);
+INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num) VALUES
+    (1, 'Ana',  301, '09010000001'),
+    (2, 'Juan', 302, '09020000002')
+ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name);
 
 INSERT INTO Orders (CID, Cow_ID, Worker_ID, Order_Type, Order_Date) VALUES
     (1, 101, 201, 'Milk', '2026-03-26'),
