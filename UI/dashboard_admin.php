@@ -390,6 +390,7 @@ requireAdminPage();
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/inventory.js"></script>
 <script src="js/dashboard_admin.js"></script>
 </body>
 </html>
