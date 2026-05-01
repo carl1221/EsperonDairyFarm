@@ -48,12 +48,15 @@ requireAdminPage();  // Cows page is Admin-only
           <tr>
             <th>Cow ID</th>
             <th>Name</th>
+            <th>Breed</th>
             <th>Daily Production</th>
+            <th>Health</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="cows-body">
-          <tr><td colspan="4" class="tbl-empty"><span class="spinner"></span> Loading…</td></tr>
+          <tr><td colspan="7" class="tbl-empty"><span class="spinner"></span> Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -70,16 +73,33 @@ requireAdminPage();  // Cows page is Admin-only
     <div class="modal__body">
       <form class="form-grid" onsubmit="return false">
         <div class="form-group">
-          <label>Cow ID</label>
-          <input id="f-cow-id" type="number" placeholder="e.g. 103" />
-        </div>
-        <div class="form-group">
           <label>Cow Name</label>
           <input id="f-cow-name" type="text" placeholder="e.g. Cow3" required />
         </div>
+        <div class="form-group">
+          <label>Breed <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+          <input id="f-breed" type="text" placeholder="e.g. Holstein" />
+        </div>
+        <div class="form-group">
+          <label>Date of Birth <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+          <input id="f-dob" type="date" />
+        </div>
+        <div class="form-group">
+          <label>Daily Production (liters)</label>
+          <input id="f-production" type="number" min="0" step="0.01" placeholder="e.g. 12.00" required />
+        </div>
+        <div class="form-group">
+          <label>Health Status</label>
+          <select id="f-health">
+            <option value="Healthy">Healthy</option>
+            <option value="Sick">Sick</option>
+            <option value="Under Treatment">Under Treatment</option>
+            <option value="Retired">Retired</option>
+          </select>
+        </div>
         <div class="form-group form-group--full">
-          <label>Daily Production</label>
-          <input id="f-production" type="text" placeholder="e.g. 12L" required />
+          <label>Notes <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+          <input id="f-notes" type="text" placeholder="Any additional notes…" />
         </div>
       </form>
     </div>
@@ -100,39 +120,54 @@ let _cowsData = [];
 
 async function loadCows() {
   const tbody = document.getElementById('cows-body');
-  UI.setLoading(tbody, 4);
+  UI.setLoading(tbody, 7);
   try {
     const rows = await API.cows.getAll();
     _cowsData = rows;
-    if (!rows.length) { UI.setEmpty(tbody, 4); return; }
+    if (!rows.length) { UI.setEmpty(tbody, 7); return; }
+
+    const healthBadge = {
+      'Healthy':         'badge--green',
+      'Sick':            'badge--danger',
+      'Under Treatment': 'badge--gold',
+      'Retired':         'badge--muted',
+    };
+
     tbody.innerHTML = rows.map(c => `
       <tr>
         <td><strong>${c.Cow_ID}</strong></td>
         <td>
-          <span class="material-symbols-outlined" style="font-size: 1.3rem; vertical-align: middle; margin-right: 8px; color: var(--olive);">pets</span>
-          <span style="vertical-align: middle;">${c.Cow}</span>
+          <span class="material-symbols-outlined" style="font-size:1.3rem;vertical-align:middle;margin-right:8px;color:var(--olive);">pets</span>
+          <span style="vertical-align:middle;">${c.Cow}</span>
         </td>
-        <td><span class="badge badge--green">${c.Production}</span></td>
+        <td>${c.Breed || '—'}</td>
+        <td><span class="badge badge--green">${parseFloat(c.Production_Liters || 0).toFixed(2)}L</span></td>
+        <td><span class="badge ${healthBadge[c.Health_Status] || 'badge--muted'}">${c.Health_Status || '—'}</span></td>
+        <td>${c.is_active ? '<span class="badge badge--green">Active</span>' : '<span class="badge badge--muted">Inactive</span>'}</td>
         <td class="actions">
           <button class="btn btn--icon btn--edit" onclick="openModal(${c.Cow_ID})">
-            <span class="material-symbols-outlined" style="font-size: 1rem;">edit</span> Edit
+            <span class="material-symbols-outlined" style="font-size:1rem;">edit</span> Edit
           </button>
           <button class="btn btn--icon btn--del" onclick="deleteCow(${c.Cow_ID})">
-            <span class="material-symbols-outlined" style="font-size: 1rem;">delete</span> Del
+            <span class="material-symbols-outlined" style="font-size:1rem;">delete</span> Del
           </button>
         </td>
       </tr>
     `).join('');
   } catch (e) {
     UI.toast(e.message, 'error');
-    UI.setEmpty(tbody, 4, 'Failed to load cows.');
+    UI.setEmpty(tbody, 7, 'Failed to load cows.');
   }
 }
 
 const COW_COLS = [
-  { key: 'Cow_ID',     label: 'Cow ID'     },
-  { key: 'Cow',        label: 'Name'       },
-  { key: 'Production', label: 'Production' },
+  { key: 'Cow_ID',            label: 'Cow ID'        },
+  { key: 'Cow',               label: 'Name'          },
+  { key: 'Breed',             label: 'Breed'         },
+  { key: 'Date_Of_Birth',     label: 'Date of Birth' },
+  { key: 'Production_Liters', label: 'Production (L)'},
+  { key: 'Health_Status',     label: 'Health'        },
+  { key: 'is_active',         label: 'Active'        },
 ];
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -150,7 +185,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var success = 0, failed = 0;
         for (var r of records) {
           try {
-            await API.cows.create({ Cow_ID: parseInt(r.Cow_ID) || 0, Cow: r.Cow || r.Name || '', Production: r.Production || '0L' });
+            await API.cows.create({
+              Cow:               r.Cow || r.Name || '',
+              Breed:             r.Breed || null,
+              Date_Of_Birth:     r.Date_Of_Birth || null,
+              Production_Liters: parseFloat(r['Production (L)'] || r.Production_Liters || 0),
+              Health_Status:     r.Health || r.Health_Status || 'Healthy',
+            });
             success++;
           } catch(e) { failed++; }
         }
@@ -164,15 +205,20 @@ document.addEventListener('DOMContentLoaded', function() {
 function openModal(id = null) {
   editingId = id;
   document.getElementById('modal-title').textContent = id ? 'Edit Cow' : 'Add Cow';
-  document.getElementById('f-cow-id').disabled = !!id;
 
   if (!id) {
-    ['f-cow-id','f-cow-name','f-production'].forEach(i => document.getElementById(i).value = '');
+    ['f-cow-name','f-breed','f-dob','f-production','f-notes'].forEach(i => {
+      const el = document.getElementById(i); if (el) el.value = '';
+    });
+    document.getElementById('f-health').value = 'Healthy';
   } else {
     API.cows.getById(id).then(c => {
-      document.getElementById('f-cow-id').value    = c.Cow_ID;
       document.getElementById('f-cow-name').value  = c.Cow;
-      document.getElementById('f-production').value = c.Production;
+      document.getElementById('f-breed').value     = c.Breed || '';
+      document.getElementById('f-dob').value       = c.Date_Of_Birth || '';
+      document.getElementById('f-production').value = c.Production_Liters || 0;
+      document.getElementById('f-health').value    = c.Health_Status || 'Healthy';
+      document.getElementById('f-notes').value     = c.notes || '';
     }).catch(e => UI.toast(e.message, 'error'));
   }
   document.getElementById('modal-overlay').classList.add('modal-overlay--open');
@@ -185,16 +231,25 @@ function closeModal() {
 
 async function saveCow() {
   const name = document.getElementById('f-cow-name').value.trim();
-  const prod = document.getElementById('f-production').value.trim();
-  if (!name || !prod) { UI.toast('Please fill in all fields.', 'error'); return; }
+  const prod = parseFloat(document.getElementById('f-production').value);
+  if (!name)       { UI.toast('Please enter a cow name.', 'error'); return; }
+  if (isNaN(prod)) { UI.toast('Please enter a valid production value.', 'error'); return; }
+
+  const data = {
+    Cow:               name,
+    Breed:             document.getElementById('f-breed').value.trim() || null,
+    Date_Of_Birth:     document.getElementById('f-dob').value || null,
+    Production_Liters: prod,
+    Health_Status:     document.getElementById('f-health').value,
+    notes:             document.getElementById('f-notes').value.trim() || null,
+  };
 
   try {
     if (editingId) {
-      await API.cows.update(editingId, { Cow: name, Production: prod });
+      await API.cows.update(editingId, data);
       UI.toast('Cow updated!');
     } else {
-      const cowId = parseInt(document.getElementById('f-cow-id').value);
-      await API.cows.create({ Cow_ID: cowId, Cow: name, Production: prod });
+      await API.cows.create(data);
       UI.toast('Cow added!');
     }
     closeModal(); loadCows();

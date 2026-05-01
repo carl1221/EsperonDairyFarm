@@ -68,8 +68,6 @@ requireAdminPage();  // Workers page is Admin-only
           <select id="f-role">
             <option value="Staff">Staff</option>
             <option value="Admin">Admin</option>
-            <option value="Manager">Manager</option>
-            <option value="Veterinarian">Veterinarian</option>
           </select>
         </div>
       </form>

@@ -137,7 +137,7 @@ function validateCsrfToken(string $token): bool {
  */
 function requireCsrf(): void {
     $method = $_SERVER['REQUEST_METHOD'];
-    if (!in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+    if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
         return;
     }
     $headers = getallheaders();

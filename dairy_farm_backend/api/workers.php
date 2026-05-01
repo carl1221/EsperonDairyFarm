@@ -38,11 +38,15 @@ try {
 
         case 'POST':
             $data = getRequestBody();
-            validateRequired($data, ['Worker_ID', 'Worker', 'Worker_Role']);
+            validateRequired($data, ['Worker', 'Worker_Role']);
+            $role = $data['Worker_Role'] ?? '';
+            if (!in_array($role, ['Admin', 'Staff'], true)) {
+                sendError("Worker_Role must be 'Admin' or 'Staff'.", 400);
+            }
             $validatedData = [
-                'Worker_ID'   => validateInteger($data['Worker_ID'], 'Worker_ID'),
+                'Worker_ID'   => isset($data['Worker_ID']) ? validateInteger($data['Worker_ID'], 'Worker_ID') : null,
                 'Worker'      => validateString($data['Worker'], 'Worker', 100),
-                'Worker_Role' => validateString($data['Worker_Role'], 'Worker_Role', 50),
+                'Worker_Role' => $role,
             ];
             $worker->create($validatedData)
                 ? sendSuccess('Worker created.', null, 201)
@@ -53,9 +57,13 @@ try {
             if (!$id) sendError('Worker ID is required for update.');
             $data = getRequestBody();
             validateRequired($data, ['Worker', 'Worker_Role']);
+            $role = $data['Worker_Role'] ?? '';
+            if (!in_array($role, ['Admin', 'Staff'], true)) {
+                sendError("Worker_Role must be 'Admin' or 'Staff'.", 400);
+            }
             $validatedData = [
                 'Worker'      => validateString($data['Worker'], 'Worker', 100),
-                'Worker_Role' => validateString($data['Worker_Role'], 'Worker_Role', 50),
+                'Worker_Role' => $role,
             ];
             $worker->update($id, $validatedData)
                 ? sendSuccess('Worker updated.')
