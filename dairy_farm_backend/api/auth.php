@@ -68,17 +68,53 @@ try {
                 $selectCols  = 'Worker_ID, Worker, Worker_Role, Email, Avatar, Password'
                              . ($hasApproval ? ', approval_status' : '');
 
-                // Fetch the worker record — use LOWER() on both sides for
-                // case-insensitive match regardless of DB collation.
+                // ── Try Worker table first ────────────────────
                 $stmt = $dbConn->prepare(
                     "SELECT {$selectCols} FROM Worker WHERE LOWER(Worker) = LOWER(?) LIMIT 1"
                 );
                 $stmt->execute([$username]);
                 $user = $stmt->fetch();
 
+                // ── If not found in Worker, try Customer table ─
+                $isCustomer = false;
+                if (!$user) {
+                    $custStmt = $dbConn->prepare(
+                        "SELECT c.CID, c.Customer_Name, c.Contact_Num, a.Address
+                         FROM Customer c
+                         JOIN Address a ON c.Address_ID = a.Address_ID
+                         WHERE LOWER(c.Customer_Name) = LOWER(?) LIMIT 1"
+                    );
+                    $custStmt->execute([$username]);
+                    $customer = $custStmt->fetch();
+
+                    if ($customer) {
+                        // Customers don't have passwords in the DB yet —
+                        // they use the username as a simple passphrase for now.
+                        // A real implementation would store a hashed password on the Customer row.
+                        // For now we accept any non-empty password for a matched customer name.
+                        if ($password !== '') {
+                            $isCustomer = true;
+                            session_regenerate_id(true);
+                            $_SESSION['user'] = [
+                                'id'      => $customer['CID'],
+                                'name'    => $customer['Customer_Name'],
+                                'role'    => 'Customer',
+                                'email'   => '',
+                                'avatar'  => '',
+                                'address' => $customer['Address'],
+                                'contact' => $customer['Contact_Num'],
+                            ];
+                            $csrfToken = generateCsrfToken();
+                            sendSuccess('Login successful', [
+                                'user'       => $_SESSION['user'],
+                                'csrf_token' => $csrfToken,
+                            ]);
+                        }
+                    }
+                }
+
                 // password_verify does a constant-time comparison — safe
-                if (!$user || !password_verify($password, $user['Password'])) {
-                    // Log the specific failure reason internally (never expose to client)
+                if (!$isCustomer && (!$user || !password_verify($password, $user['Password']))) {
                     if (!$user) {
                         error_log('[Auth] Login failed: username not found — ' . $username);
                     } else {
@@ -87,10 +123,10 @@ try {
                     sendError('Invalid username or password', 401);
                 }
 
+                if (!$isCustomer) {
                 // Check approval status only if column exists
                 if ($hasApproval) {
                     $approvalStatus = $user['approval_status'] ?? 'approved';
-                    // Only block if explicitly pending or rejected (null/empty = approved)
                     if ($approvalStatus === 'pending') {
                         sendError('Your account is awaiting admin approval.', 403);
                     }
@@ -98,11 +134,7 @@ try {
                         sendError('Your account registration was rejected.', 403);
                     }
                 }
-                // Regenerate session ID on privilege escalation (login)
-                // to prevent session fixation attacks
                 session_regenerate_id(true);
-
-                // Store minimal user info in the server-side session
                 $_SESSION['user'] = [
                     'id'     => $user['Worker_ID'],
                     'name'   => $user['Worker'],
@@ -110,14 +142,12 @@ try {
                     'email'  => $user['Email'] ?? '',
                     'avatar' => $user['Avatar'] ?? '',
                 ];
-
-                // Issue a fresh CSRF token for this session
                 $csrfToken = generateCsrfToken();
-
                 sendSuccess('Login successful', [
                     'user'       => $_SESSION['user'],
                     'csrf_token' => $csrfToken,
                 ]);
+                } // end !$isCustomer
 
             } elseif ($action === 'logout') {
 

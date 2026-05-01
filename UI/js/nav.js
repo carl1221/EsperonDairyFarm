@@ -68,9 +68,10 @@
   }
 
   // ── Render sidebar ────────────────────────────────────────
-  const isAdmin = uRole === 'Admin';
-  const roleBadgeColor = isAdmin ? '#4e6040' : '#8a7f72';
-  const roleBadgeBg    = isAdmin ? 'rgba(78,96,64,0.12)' : 'rgba(138,127,114,0.12)';
+  const isAdmin    = uRole === 'Admin';
+  const isCustomer = uRole === 'Customer';
+  const roleBadgeColor = isAdmin ? '#4e6040' : isCustomer ? '#2980b9' : '#8a7f72';
+  const roleBadgeBg    = isAdmin ? 'rgba(78,96,64,0.12)' : isCustomer ? 'rgba(41,128,185,0.12)' : 'rgba(138,127,114,0.12)';
 
   nav.innerHTML =
     '<div class="nav__brand">'
@@ -102,7 +103,7 @@
     + '<span class="nav__section">Overview</span>'
     + '<a href="index.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">dashboard</span><span>Dashboard</span></a>'
 
-    // Admin-only records section
+    // Role-based nav sections
     + (isAdmin
       ? '<span class="nav__section">Records</span>'
         + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'
@@ -116,6 +117,10 @@
         + '<a href="reminders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">alarm</span><span>Reminders</span></a>'
         + '<a href="notes.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">edit_note</span><span>Notes</span></a>'
         + '<a href="report.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">description</span><span>Staff Reports</span></a>'
+      : isCustomer
+      ? '<span class="nav__section">My Account</span>'
+        + '<a href="dashboard_customer.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">home</span><span>My Dashboard</span></a>'
+        + '<a href="dashboard_customer.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">receipt_long</span><span>My Orders</span></a>'
       : '<span class="nav__section">My Work</span>'
         + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
         + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'

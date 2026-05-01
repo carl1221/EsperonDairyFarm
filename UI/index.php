@@ -10,6 +10,8 @@ $role = $_SESSION['user']['role'] ?? 'Staff';
 
 if ($role === 'Admin') {
     header('Location: dashboard_admin.php');
+} elseif ($role === 'Customer') {
+    header('Location: dashboard_customer.php');
 } else {
     header('Location: dashboard_staff.php');
 }
