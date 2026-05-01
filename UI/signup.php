@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign Up — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <!-- Explicit render — same pattern as login.php to avoid null style error -->
+  <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
   <style>
     /* ── Signup page specific styles ── */
     body {
@@ -474,7 +475,7 @@
     </div>
     <span id="terms-error" class="field-error" style="margin-bottom: 1rem;"></span>
 
-    <div class="g-recaptcha" data-sitekey="6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n"></div>
+    <div id="recaptcha-container" class="g-recaptcha"></div>
 
     <button type="submit" class="submit-btn" id="submit-btn">
       <span class="spinner"></span>
@@ -493,6 +494,28 @@ const API_BASE       = '../dairy_farm_backend/api';
 const form           = document.getElementById('signup-form');
 const submitBtn      = document.getElementById('submit-btn');
 const alertContainer = document.getElementById('alert-container');
+
+// ── reCAPTCHA explicit render ─────────────────────────────────
+// Matches the same pattern as login.php — avoids the "null style" crash
+// that occurs when auto-render fires inside a flex container.
+let recaptchaWidgetId = null;
+
+function onRecaptchaLoad() {
+  recaptchaWidgetId = grecaptcha.render('recaptcha-container', {
+    sitekey: '6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n',
+  });
+}
+
+function getRecaptchaToken() {
+  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) return '';
+  return grecaptcha.getResponse(recaptchaWidgetId);
+}
+
+function resetRecaptcha() {
+  if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId !== null) {
+    try { grecaptcha.reset(recaptchaWidgetId); } catch(e) {}
+  }
+}
 
 // ── Alert helpers ─────────────────────────────────────────────
 function showAlert(msg, type = 'error', duration = 5000) {
@@ -702,12 +725,12 @@ form.addEventListener('submit', async (e) => {
   }
 
   // reCAPTCHA
-  if (typeof grecaptcha === 'undefined') {
+  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) {
     showError('reCAPTCHA is still loading. Please wait a moment and try again.');
     return;
   }
-  const token = grecaptcha.getResponse();
-  if (!token) { showError('Please verify the reCAPTCHA.'); return; }
+  const token = getRecaptchaToken();
+  if (!token) { showError('Please complete the reCAPTCHA verification.'); return; }
 
   // Loading
   submitBtn.disabled = true;
@@ -743,7 +766,7 @@ form.addEventListener('submit', async (e) => {
         document.getElementById('username-error').textContent = 'Username or email already in use.';
         document.getElementById('username-error').classList.add('visible');
       }
-      try { grecaptcha.reset(); } catch(e) {}
+      try { resetRecaptcha(); } catch(e) {}
     }
   } catch (err) {
     showError('Network error. Please check your connection and try again.');
