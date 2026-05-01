@@ -55,6 +55,7 @@ try {
             $data = getRequestBody();
             validateRequired($data, ['title', 'due_date']);
             $validatedData = [
+                'created_by'  => $_SESSION['user']['id'] ?? null,
                 'title'       => validateString($data['title'], 'title', 255),
                 'description' => isset($data['description']) ? validateString($data['description'], 'description', 1000) : null,
                 'due_date'    => $data['due_date'],

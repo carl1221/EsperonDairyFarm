@@ -91,26 +91,30 @@ CREATE TABLE IF NOT EXISTS Orders (
 
 -- ============================================================
 -- TABLE: reminders
+-- Weak entity — depends on Worker (created_by).
+-- A reminder has no meaning without the worker who created it.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS reminders (
     reminder_id INT          NOT NULL AUTO_INCREMENT,
+    created_by  INT          NOT NULL,              -- FK → Worker (weak entity dependency)
     title       VARCHAR(255) NOT NULL,
     description TEXT         NULL,
     due_date    DATETIME     NOT NULL,
     status      ENUM('pending','completed') NOT NULL DEFAULT 'pending',
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_reminders PRIMARY KEY (reminder_id)
+    CONSTRAINT pk_reminders        PRIMARY KEY (reminder_id),
+    CONSTRAINT fk_reminder_worker  FOREIGN KEY (created_by)
+        REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- TABLE: staff_reports
--- worker_name removed — it was a transitive dependency
--- (worker_name depends on worker_id, not report_id).
--- Join with Worker table to get the name.
+-- Weak entity — depends on Worker (worker_id).
+-- A report has no meaning without the staff member who wrote it.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS staff_reports (
     report_id   INT         NOT NULL AUTO_INCREMENT,
-    worker_id   INT         NOT NULL,
+    worker_id   INT         NOT NULL,              -- FK → Worker (weak entity)
     report_type VARCHAR(50) NOT NULL DEFAULT 'Daily Report',
     title       VARCHAR(255) NOT NULL,
     content     TEXT        NOT NULL,
@@ -211,6 +215,63 @@ ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name);
 INSERT INTO Orders (CID, Cow_ID, Worker_ID, Order_Type, Order_Date) VALUES
     (1, 101, 201, 'Milk', '2026-03-26'),
     (2, 102, 202, 'Milk', '2026-03-21');
+
+-- ============================================================
+-- MIGRATION: Fix existing live database
+-- Run these if upgrading from an older version.
+-- Safe to run multiple times (uses IF NOT EXISTS / IF EXISTS).
+-- ============================================================
+
+-- 1. Add created_by to reminders (links reminders → Worker)
+ALTER TABLE reminders
+    ADD COLUMN IF NOT EXISTS created_by INT NULL AFTER reminder_id;
+
+-- Set existing reminders to the first Admin worker
+UPDATE reminders SET created_by = (
+    SELECT Worker_ID FROM Worker WHERE Worker_Role = 'Admin' LIMIT 1
+) WHERE created_by IS NULL;
+
+-- Make it NOT NULL and add FK
+ALTER TABLE reminders MODIFY COLUMN created_by INT NOT NULL;
+
+-- Add FK only if it doesn't exist
+SET @fk_exists = (
+    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'reminders'
+    AND CONSTRAINT_NAME = 'fk_reminder_worker'
+);
+SET @sql = IF(@fk_exists = 0,
+    'ALTER TABLE reminders ADD CONSTRAINT fk_reminder_worker FOREIGN KEY (created_by) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 2. Add FK on staff_reports → Worker if missing
+SET @fk2 = (
+    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'staff_reports'
+    AND CONSTRAINT_NAME = 'fk_rep_worker'
+);
+SET @sql2 = IF(@fk2 = 0,
+    'ALTER TABLE staff_reports ADD CONSTRAINT fk_rep_worker FOREIGN KEY (worker_id) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE',
+    'SELECT 1'
+);
+PREPARE stmt2 FROM @sql2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
+
+-- 3. Add FK on customer → address if missing
+SET @fk3 = (
+    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'customer'
+    AND CONSTRAINT_NAME = 'fk_cust_addr'
+);
+SET @sql3 = IF(@fk3 = 0,
+    'ALTER TABLE customer ADD CONSTRAINT fk_cust_addr FOREIGN KEY (Address_ID) REFERENCES address (Address_ID) ON UPDATE CASCADE ON DELETE RESTRICT',
+    'SELECT 1'
+);
+PREPARE stmt3 FROM @sql3; EXECUTE stmt3; DEALLOCATE PREPARE stmt3;
 
 -- ============================================================
 -- END OF SCRIPT
