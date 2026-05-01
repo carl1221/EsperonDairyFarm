@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <!-- onload=onRecaptchaLoad tells the API to call our function once ready,
        explicit render prevents the "null style" error that occurs when the
        widget auto-renders inside a flex container before layout is complete -->
@@ -359,16 +360,226 @@
       justify-content: center;
     }
 
-    @media (max-width: 480px) {
-      .auth-card {
-        padding: 1.5rem 1.25rem;
-      }
+    /* ── Forgot Password Modal ── */
+    .fp-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(42, 31, 21, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .fp-overlay.open { display: flex; }
 
-      .form-options {
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: flex-start;
-      }
+    .fp-card {
+      background: rgba(255,255,255,0.97);
+      border-radius: 20px;
+      box-shadow: 0 16px 56px rgba(0,0,0,0.22);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+      animation: fpSlideIn 0.25s cubic-bezier(.34,1.56,.64,1);
+      font-family: 'Lato', sans-serif;
+    }
+    @keyframes fpSlideIn {
+      from { opacity:0; transform: translateY(-20px) scale(0.96); }
+      to   { opacity:1; transform: translateY(0)     scale(1);    }
+    }
+
+    .fp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px 14px;
+      background: linear-gradient(135deg, #4e6040, #6b8a5c);
+    }
+    .fp-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .fp-header-icon {
+      font-size: 1.2rem;
+      color: #fff;
+    }
+    .fp-header-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .fp-close {
+      background: rgba(255,255,255,0.18);
+      border: none;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .fp-close:hover { background: rgba(255,255,255,0.32); }
+
+    .fp-body { padding: 22px 22px 18px; }
+
+    .fp-step { display: none; }
+    .fp-step.active { display: block; }
+
+    .fp-desc {
+      font-size: 0.84rem;
+      color: #5a4f45;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .fp-field {
+      margin-bottom: 14px;
+    }
+    .fp-label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #4a3f35;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 5px;
+    }
+    .fp-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e8dfd2;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: 'Lato', sans-serif;
+      color: #2a1f15;
+      background: #fff;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .fp-input:focus {
+      border-color: #4e6040;
+      box-shadow: 0 0 0 3px rgba(78,96,64,0.12);
+    }
+    .fp-input.fp-input--error { border-color: #c0392b; }
+
+    .fp-field-err {
+      display: none;
+      font-size: 0.73rem;
+      color: #c0392b;
+      margin-top: 4px;
+    }
+    .fp-field-err.visible { display: block; }
+
+    .fp-pw-wrap { position: relative; }
+    .fp-pw-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #8a7f72;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .fp-pw-toggle svg { width: 18px; height: 18px; }
+
+    .fp-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .fp-strength-bar {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: #e8dfd2;
+      transition: background 0.2s;
+    }
+
+    .fp-alert {
+      padding: 9px 12px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .fp-alert.visible { display: block; }
+    .fp-alert--error   { background: #fdecea; border: 1px solid #f5c6cb; color: #c0392b; }
+    .fp-alert--success { background: #eaf4ec; border: 1px solid #c3e6cb; color: #2d6a4f; }
+
+    .fp-success-icon {
+      text-align: center;
+      padding: 8px 0 16px;
+    }
+    .fp-success-icon span {
+      font-size: 3rem;
+      color: #4e6040;
+    }
+
+    .fp-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 0 22px 20px;
+    }
+    .fp-btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-family: 'Lato', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+    }
+    .fp-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .fp-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .fp-btn--ghost {
+      background: #fff;
+      color: #4a3f35;
+      border: 1.5px solid #d4c9b8 !important;
+    }
+    .fp-btn--primary {
+      background: linear-gradient(135deg, #4e6040, #6b8a5c);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(78,96,64,0.25);
+    }
+    .fp-btn--success {
+      background: linear-gradient(135deg, #2d6a4f, #4e6040);
+      color: #fff;
+    }
+    .fp-step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .fp-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #e8dfd2;
+      transition: background 0.2s;
+    }
+    .fp-dot.active { background: #4e6040; }
+    .fp-dot.done   { background: #6b8a5c; }
+
+    @media (max-width: 480px) {
+      .auth-card { padding: 1.5rem 1.25rem; }
+      .form-options { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
     }
   </style>
 </head>
@@ -460,6 +671,128 @@
     Don't have an account? <a href="signup.php">Sign up</a>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════════════
+     FORGOT PASSWORD MODAL
+     Step 1 — Enter username + registered email (identity check)
+     Step 2 — Enter + confirm new password
+     Step 3 — Success confirmation
+     No email server needed: email is used as a security question.
+     ══════════════════════════════════════════════════════════ -->
+<div class="fp-overlay" id="fpOverlay" role="dialog" aria-modal="true" aria-labelledby="fpTitle">
+  <div class="fp-card">
+
+    <!-- Header -->
+    <div class="fp-header">
+      <div class="fp-header-left">
+        <span class="material-symbols-outlined fp-header-icon">lock_reset</span>
+        <span class="fp-header-title" id="fpTitle">Reset Password</span>
+      </div>
+      <button class="fp-close" id="fpClose" aria-label="Close">
+        <span class="material-symbols-outlined" style="font-size:1rem;">close</span>
+      </button>
+    </div>
+
+    <div class="fp-body">
+
+      <!-- Step indicator -->
+      <div class="fp-step-indicator" id="fpDots">
+        <div class="fp-dot active" id="fpDot1"></div>
+        <div class="fp-dot"        id="fpDot2"></div>
+        <div class="fp-dot"        id="fpDot3"></div>
+      </div>
+
+      <!-- Alert banner (shared across steps) -->
+      <div class="fp-alert" id="fpAlert"></div>
+
+      <!-- ── Step 1: Identity verification ── -->
+      <div class="fp-step active" id="fpStep1">
+        <p class="fp-desc">Enter your username and the email address registered to your account.</p>
+
+        <div class="fp-field">
+          <label class="fp-label" for="fpUsername">Username <span style="color:#c0392b;">*</span></label>
+          <input class="fp-input" type="text" id="fpUsername" autocomplete="username"
+                 placeholder="Your username" />
+          <div class="fp-field-err" id="fpUsernameErr">Username is required.</div>
+        </div>
+
+        <div class="fp-field">
+          <label class="fp-label" for="fpEmail">Registered Email <span style="color:#c0392b;">*</span></label>
+          <input class="fp-input" type="email" id="fpEmail" autocomplete="email"
+                 placeholder="email@example.com" />
+          <div class="fp-field-err" id="fpEmailErr">A valid email is required.</div>
+        </div>
+      </div>
+
+      <!-- ── Step 2: New password ── -->
+      <div class="fp-step" id="fpStep2">
+        <p class="fp-desc">
+          Identity verified for <strong id="fpWorkerName"></strong>.
+          Choose a strong new password.
+        </p>
+
+        <div class="fp-field">
+          <label class="fp-label" for="fpNewPw">New Password <span style="color:#c0392b;">*</span></label>
+          <div class="fp-pw-wrap">
+            <input class="fp-input" type="password" id="fpNewPw"
+                   autocomplete="new-password" placeholder="Min 8 chars, 1 uppercase, 1 number"
+                   oninput="fpCheckStrength(this.value)" />
+            <button type="button" class="fp-pw-toggle" onclick="fpTogglePw('fpNewPw',this)" aria-label="Toggle">
+              <svg id="fpEye1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <div class="fp-strength" id="fpStrength">
+            <div class="fp-strength-bar" id="fpBar1"></div>
+            <div class="fp-strength-bar" id="fpBar2"></div>
+            <div class="fp-strength-bar" id="fpBar3"></div>
+            <div class="fp-strength-bar" id="fpBar4"></div>
+          </div>
+          <div class="fp-field-err" id="fpNewPwErr"></div>
+        </div>
+
+        <div class="fp-field">
+          <label class="fp-label" for="fpConfirmPw">Confirm Password <span style="color:#c0392b;">*</span></label>
+          <div class="fp-pw-wrap">
+            <input class="fp-input" type="password" id="fpConfirmPw"
+                   autocomplete="new-password" placeholder="Repeat new password" />
+            <button type="button" class="fp-pw-toggle" onclick="fpTogglePw('fpConfirmPw',this)" aria-label="Toggle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <div class="fp-field-err" id="fpConfirmPwErr"></div>
+        </div>
+      </div>
+
+      <!-- ── Step 3: Success ── -->
+      <div class="fp-step" id="fpStep3">
+        <div class="fp-success-icon">
+          <span class="material-symbols-outlined">check_circle</span>
+        </div>
+        <p class="fp-desc" style="text-align:center;font-size:0.9rem;">
+          Your password has been reset successfully.<br>
+          You can now log in with your new password.
+        </p>
+      </div>
+
+    </div><!-- /fp-body -->
+
+    <!-- Footer buttons -->
+    <div class="fp-footer" id="fpFooter">
+      <button class="fp-btn fp-btn--ghost" id="fpCancelBtn">Cancel</button>
+      <button class="fp-btn fp-btn--primary" id="fpNextBtn">
+        <span id="fpNextSpinner" style="display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;"></span>
+        <span id="fpNextLabel">Verify Identity</span>
+      </button>
+    </div>
+
+  </div><!-- /fp-card -->
+</div><!-- /fpOverlay -->
 
 <script>
 const API_BASE       = '../dairy_farm_backend/api';
@@ -571,7 +904,7 @@ document.getElementById('password').addEventListener('input', function () {
 // ── Forgot password handler ───────────────────────────────
 document.getElementById('forgot-password-link').addEventListener('click', (e) => {
   e.preventDefault();
-  showAlert('Please contact your administrator to reset your password.', 'success', 5000);
+  fpOpen();
 });
 
 // ── Form submission ───────────────────────────────────────
@@ -677,6 +1010,251 @@ form.addEventListener('submit', async (e) => {
     document.getElementById('username').focus();
   }
 })();
+</script>
+
+</body>
+</html>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// FORGOT PASSWORD MODAL
+// ══════════════════════════════════════════════════════════
+const FP_API = '../dairy_farm_backend/api/reset_password.php';
+
+let fpCurrentStep  = 1;
+let fpResetToken   = null;
+
+const fpOverlay    = document.getElementById('fpOverlay');
+const fpAlert      = document.getElementById('fpAlert');
+const fpNextBtn    = document.getElementById('fpNextBtn');
+const fpNextLabel  = document.getElementById('fpNextLabel');
+const fpNextSpinner= document.getElementById('fpNextSpinner');
+const fpCancelBtn  = document.getElementById('fpCancelBtn');
+const fpFooter     = document.getElementById('fpFooter');
+
+// ── Open / Close ──────────────────────────────────────────
+function fpOpen() {
+  fpReset();
+  fpOverlay.classList.add('open');
+  setTimeout(() => document.getElementById('fpUsername').focus(), 80);
+}
+
+function fpClose() {
+  fpOverlay.classList.remove('open');
+}
+
+function fpReset() {
+  fpCurrentStep = 1;
+  fpResetToken  = null;
+  fpShowStep(1);
+  fpHideAlert();
+  ['fpUsername','fpEmail','fpNewPw','fpConfirmPw'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('fp-input--error'); }
+  });
+  ['fpUsernameErr','fpEmailErr','fpNewPwErr','fpConfirmPwErr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+  fpCheckStrength('');
+  fpNextLabel.textContent = 'Verify Identity';
+  fpNextBtn.style.display = '';
+  fpCancelBtn.textContent = 'Cancel';
+}
+
+document.getElementById('fpClose').addEventListener('click', fpClose);
+fpCancelBtn.addEventListener('click', () => {
+  if (fpCurrentStep === 3) { fpClose(); return; }
+  fpClose();
+});
+fpOverlay.addEventListener('click', e => { if (e.target === fpOverlay) fpClose(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && fpOverlay.classList.contains('open')) fpClose();
+});
+
+// ── Step navigation ───────────────────────────────────────
+function fpShowStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('fpStep' + i).classList.toggle('active', i === n);
+    const dot = document.getElementById('fpDot' + i);
+    dot.classList.toggle('active', i === n);
+    dot.classList.toggle('done',   i < n);
+  });
+  fpCurrentStep = n;
+}
+
+// ── Alert helpers ─────────────────────────────────────────
+function fpShowAlert(msg, type = 'error') {
+  fpAlert.textContent = msg;
+  fpAlert.className   = 'fp-alert fp-alert--' + type + ' visible';
+}
+function fpHideAlert() {
+  fpAlert.className = 'fp-alert';
+  fpAlert.textContent = '';
+}
+
+// ── Field error helpers ───────────────────────────────────
+function fpFieldErr(inputId, errId, msg) {
+  const inp = document.getElementById(inputId);
+  const err = document.getElementById(errId);
+  if (inp) inp.classList.add('fp-input--error');
+  if (err) { err.textContent = msg; err.classList.add('visible'); }
+}
+function fpFieldOk(inputId, errId) {
+  const inp = document.getElementById(inputId);
+  const err = document.getElementById(errId);
+  if (inp) inp.classList.remove('fp-input--error');
+  if (err) err.classList.remove('visible');
+}
+
+// ── Password strength meter ───────────────────────────────
+function fpCheckStrength(pw) {
+  const bars   = [1,2,3,4].map(i => document.getElementById('fpBar' + i));
+  const colors = ['#c0392b','#e67e22','#f1c40f','#27ae60'];
+  let score = 0;
+  if (pw.length >= 8)              score++;
+  if (/[A-Z]/.test(pw))            score++;
+  if (/[0-9]/.test(pw))            score++;
+  if (/[^A-Za-z0-9]/.test(pw))     score++;
+  bars.forEach((b, i) => {
+    b.style.background = i < score ? colors[score - 1] : '#e8dfd2';
+  });
+}
+
+// ── Password visibility toggle ────────────────────────────
+function fpTogglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+}
+
+// ── Loading state ─────────────────────────────────────────
+function fpSetLoading(loading) {
+  fpNextBtn.disabled    = loading;
+  fpNextSpinner.style.display = loading ? 'block' : 'none';
+}
+
+// ── Main action button ────────────────────────────────────
+fpNextBtn.addEventListener('click', async () => {
+  fpHideAlert();
+
+  if (fpCurrentStep === 1) {
+    await fpVerifyIdentity();
+  } else if (fpCurrentStep === 2) {
+    await fpDoReset();
+  } else if (fpCurrentStep === 3) {
+    fpClose();
+  }
+});
+
+// ── Step 1: verify identity ───────────────────────────────
+async function fpVerifyIdentity() {
+  const username = document.getElementById('fpUsername').value.trim();
+  const email    = document.getElementById('fpEmail').value.trim();
+  let valid = true;
+
+  if (!username) {
+    fpFieldErr('fpUsername', 'fpUsernameErr', 'Username is required.'); valid = false;
+  } else { fpFieldOk('fpUsername', 'fpUsernameErr'); }
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    fpFieldErr('fpEmail', 'fpEmailErr', 'A valid email address is required.'); valid = false;
+  } else { fpFieldOk('fpEmail', 'fpEmailErr'); }
+
+  if (!valid) return;
+
+  fpSetLoading(true);
+  fpNextLabel.textContent = 'Verifying…';
+
+  try {
+    const res  = await fetch(FP_API + '?action=verify_identity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, email }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      fpResetToken = data.data.token;
+      document.getElementById('fpWorkerName').textContent = data.data.worker_name;
+      fpShowStep(2);
+      fpNextLabel.textContent = 'Reset Password';
+      setTimeout(() => document.getElementById('fpNewPw').focus(), 60);
+    } else {
+      fpShowAlert(data.message || 'Verification failed. Please check your details.');
+    }
+  } catch (e) {
+    fpShowAlert('Network error. Please try again.');
+  } finally {
+    fpSetLoading(false);
+    if (fpCurrentStep === 1) fpNextLabel.textContent = 'Verify Identity';
+  }
+}
+
+// ── Step 2: reset password ────────────────────────────────
+async function fpDoReset() {
+  const pw      = document.getElementById('fpNewPw').value;
+  const confirm = document.getElementById('fpConfirmPw').value;
+  let valid = true;
+
+  // Validate password strength
+  if (pw.length < 8) {
+    fpFieldErr('fpNewPw', 'fpNewPwErr', 'Password must be at least 8 characters.'); valid = false;
+  } else if (!/[A-Z]/.test(pw)) {
+    fpFieldErr('fpNewPw', 'fpNewPwErr', 'Must contain at least one uppercase letter.'); valid = false;
+  } else if (!/[0-9]/.test(pw)) {
+    fpFieldErr('fpNewPw', 'fpNewPwErr', 'Must contain at least one number.'); valid = false;
+  } else {
+    fpFieldOk('fpNewPw', 'fpNewPwErr');
+  }
+
+  if (pw !== confirm) {
+    fpFieldErr('fpConfirmPw', 'fpConfirmPwErr', 'Passwords do not match.'); valid = false;
+  } else if (confirm) {
+    fpFieldOk('fpConfirmPw', 'fpConfirmPwErr');
+  }
+
+  if (!valid) return;
+
+  fpSetLoading(true);
+  fpNextLabel.textContent = 'Saving…';
+
+  try {
+    const res  = await fetch(FP_API + '?action=reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        token:            fpResetToken,
+        password:         pw,
+        password_confirm: confirm,
+      }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      fpShowStep(3);
+      // Hide next button, change cancel to "Back to Login"
+      fpNextBtn.style.display = 'none';
+      fpCancelBtn.textContent = 'Back to Login';
+      fpCancelBtn.classList.remove('fp-btn--ghost');
+      fpCancelBtn.classList.add('fp-btn--success');
+    } else {
+      fpShowAlert(data.message || 'Reset failed. Please try again.');
+      if (data.message && data.message.includes('expired')) {
+        // Token expired — go back to step 1
+        setTimeout(() => { fpShowStep(1); fpNextLabel.textContent = 'Verify Identity'; }, 1500);
+      }
+    }
+  } catch (e) {
+    fpShowAlert('Network error. Please try again.');
+  } finally {
+    fpSetLoading(false);
+    if (fpCurrentStep === 2) fpNextLabel.textContent = 'Reset Password';
+  }
+}
 </script>
 
 </body>
