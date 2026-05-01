@@ -34,19 +34,42 @@ class Customer {
     }
 
     public function create(array $data): int {
-        // Create or reuse Address (no Contact_Num on Address anymore)
-        $addrStmt = $this->db->prepare("
-            INSERT INTO Address (Address_ID, Address)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE Address = VALUES(Address)
-        ");
-        $addrStmt->execute([$data['Address_ID'], $data['Address']]);
+        // ── Address handling ──────────────────────────────
+        // If Address_ID is provided (Admin flow), upsert that specific row.
+        // If not provided (Staff flow), insert a new Address row and get its ID.
+        if (!empty($data['Address_ID'])) {
+            $addrStmt = $this->db->prepare("
+                INSERT INTO Address (Address_ID, Address)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE Address = VALUES(Address)
+            ");
+            $addrStmt->execute([$data['Address_ID'], $data['Address']]);
+            $addressId = (int) $data['Address_ID'];
+        } else {
+            $addrStmt = $this->db->prepare("
+                INSERT INTO Address (Address) VALUES (?)
+            ");
+            $addrStmt->execute([$data['Address']]);
+            $addressId = (int) $this->db->lastInsertId();
+        }
 
-        $stmt = $this->db->prepare("
-            INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num)
-            VALUES (?, ?, ?, ?)
-        ");
-        $stmt->execute([$data['CID'], $data['Customer_Name'], $data['Address_ID'], $data['Contact_Num']]);
+        // ── Customer insert ───────────────────────────────
+        // If CID is provided (Admin flow), use it explicitly.
+        // If not provided (Staff flow), let AUTO_INCREMENT assign it.
+        if (!empty($data['CID'])) {
+            $stmt = $this->db->prepare("
+                INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$data['CID'], $data['Customer_Name'], $addressId, $data['Contact_Num']]);
+        } else {
+            $stmt = $this->db->prepare("
+                INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num)
+                VALUES (?, ?, ?)
+            ");
+            $stmt->execute([$data['Customer_Name'], $addressId, $data['Contact_Num']]);
+        }
+
         return (int) $this->db->lastInsertId();
     }
 

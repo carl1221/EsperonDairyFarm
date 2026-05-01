@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/guard.php';
 requireAuthPage();
-requireAdminPage();  // Customers page is Admin-only
+$_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +11,9 @@ requireAdminPage();  // Customers page is Admin-only
   <title>Customers — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
+  <?php if (!$_isAdmin): ?>
+  <style>.admin-only { display: none !important; }</style>
+  <?php endif; ?>
 </head>
 <body>
 
@@ -20,7 +23,9 @@ requireAdminPage();  // Customers page is Admin-only
   <div class="page-header">
     <div>
       <h1 class="page-title">Customers</h1>
-      <p class="page-subtitle">Manage all farm customers and their addresses.</p>
+      <p class="page-subtitle">
+        <?= $_isAdmin ? 'Manage all farm customers and their addresses.' : 'View customers and add new ones.' ?>
+      </p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;" id="customers-header-actions">
       <button class="btn btn--primary" onclick="openModal()">＋ Add Customer</button>
@@ -94,6 +99,7 @@ requireAdminPage();  // Customers page is Admin-only
 <script>
 let editingId = null;
 let _customersData = [];
+const IS_ADMIN = <?= $_isAdmin ? 'true' : 'false' ?>;
 
 async function loadCustomers() {
   const tbody = document.getElementById('customers-body');
@@ -109,8 +115,10 @@ async function loadCustomers() {
         <td>${c.Address}</td>
         <td>${c.Contact_Num}</td>
         <td class="actions">
-          <button class="btn btn--icon btn--edit" onclick="openModal(${c.CID})">✏ Edit</button>
-          <button class="btn btn--icon btn--del"  onclick="deleteCustomer(${c.CID})">🗑 Del</button>
+          ${IS_ADMIN ? `
+          <button class="btn btn--icon btn--edit admin-only" onclick="openModal(${c.CID})">✏ Edit</button>
+          <button class="btn btn--icon btn--del  admin-only" onclick="deleteCustomer(${c.CID})">🗑 Del</button>
+          ` : '<span style="font-size:0.75rem;color:var(--muted);">View only</span>'}
         </td>
       </tr>
     `).join('');
@@ -161,8 +169,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function openModal(id = null) {
+  // Staff can only add new customers, not edit existing ones
+  if (!IS_ADMIN && id) { UI.toast('Only admins can edit customers.', 'error'); return; }
+
   editingId = id;
   document.getElementById('modal-title').textContent = id ? 'Edit Customer' : 'Add Customer';
+
+  // Hide Customer ID and Address ID fields for Staff — auto-assigned by DB
+  const cidRow    = document.getElementById('f-new-cid').closest('.form-group');
+  const addrIdRow = document.getElementById('f-addr-id-new').closest('.form-group');
+  if (cidRow)    cidRow.style.display    = IS_ADMIN ? '' : 'none';
+  if (addrIdRow) addrIdRow.style.display = IS_ADMIN ? '' : 'none';
+
   document.getElementById('f-new-cid').disabled = !!id;
 
   if (!id) {
@@ -170,13 +188,13 @@ function openModal(id = null) {
       .forEach(i => document.getElementById(i).value = '');
   } else {
     API.customers.getById(id).then(c => {
-      document.getElementById('f-cid').value       = c.CID;
-      document.getElementById('f-addr-id').value   = c.Address_ID;
-      document.getElementById('f-new-cid').value   = c.CID;
-      document.getElementById('f-name').value       = c.Customer_Name;
+      document.getElementById('f-cid').value         = c.CID;
+      document.getElementById('f-addr-id').value     = c.Address_ID;
+      document.getElementById('f-new-cid').value     = c.CID;
+      document.getElementById('f-name').value        = c.Customer_Name;
       document.getElementById('f-addr-id-new').value = c.Address_ID;
-      document.getElementById('f-addr').value       = c.Address;
-      document.getElementById('f-contact').value    = c.Contact_Num;
+      document.getElementById('f-addr').value        = c.Address;
+      document.getElementById('f-contact').value     = c.Contact_Num;
     }).catch(e => UI.toast(e.message, 'error'));
   }
   document.getElementById('modal-overlay').classList.add('modal-overlay--open');
@@ -195,13 +213,21 @@ async function saveCustomer() {
 
   try {
     if (editingId) {
+      // Admin only — already guarded in openModal
       await API.customers.update(editingId, { Customer_Name: name, Address: addr, Contact_Num: contact });
       UI.toast('Customer updated!');
     } else {
-      const cid    = parseInt(document.getElementById('f-new-cid').value);
-      const addrId = parseInt(document.getElementById('f-addr-id-new').value);
-      await API.customers.create({ CID: cid, Customer_Name: name, Address_ID: addrId, Address: addr, Contact_Num: contact });
-      UI.toast('Customer created!');
+      // For Staff: CID and Address_ID are omitted — DB AUTO_INCREMENT handles CID,
+      // and the backend will create a new Address row automatically.
+      const payload = { Customer_Name: name, Address: addr, Contact_Num: contact };
+      if (IS_ADMIN) {
+        const cid    = parseInt(document.getElementById('f-new-cid').value);
+        const addrId = parseInt(document.getElementById('f-addr-id-new').value);
+        if (cid)    payload.CID        = cid;
+        if (addrId) payload.Address_ID = addrId;
+      }
+      await API.customers.create(payload);
+      UI.toast('Customer added!');
     }
     closeModal();
     loadCustomers();
