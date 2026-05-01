@@ -1,6 +1,8 @@
 <?php
 // ============================================================
 // models/Order.php
+// Orders now include quantity_liters, unit_price, total_price
+// (generated column), status, and notes.
 // ============================================================
 
 require_once __DIR__ . '/../config/database.php';
@@ -24,42 +26,81 @@ class Order {
     }
 
     public function getByCustomer(int $cid): array {
-        $stmt = $this->db->prepare("SELECT * FROM vw_order_details WHERE Customer_Name = (
-            SELECT Customer_Name FROM Customer WHERE CID = ?
-        )");
+        $stmt = $this->db->prepare("SELECT * FROM vw_order_details WHERE CID = ?");
         $stmt->execute([$cid]);
         return $stmt->fetchAll();
     }
 
+    /**
+     * Create a new order.
+     * Required keys: CID, Cow_ID, Worker_ID, Order_Type, Order_Date,
+     *                quantity_liters, unit_price
+     * Optional keys: status, notes
+     *
+     * total_price is a GENERATED column — do NOT insert it.
+     */
     public function create(array $data): int {
         $stmt = $this->db->prepare("
-            INSERT INTO Orders (CID, Cow_ID, Worker_ID, Order_Type, Order_Date)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO Orders
+                (CID, Cow_ID, Worker_ID, Order_Type, Order_Date,
+                 quantity_liters, unit_price, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
-            $data['CID'],
-            $data['Cow_ID'],
-            $data['Worker_ID'],
-            $data['Order_Type'],
-            $data['Order_Date'],
+            (int)   $data['CID'],
+            (int)   $data['Cow_ID'],
+            (int)   $data['Worker_ID'],
+                    $data['Order_Type'],
+                    $data['Order_Date'],
+            (float) ($data['quantity_liters'] ?? 0),
+            (float) ($data['unit_price']      ?? 0),
+                    $data['status']            ?? 'pending',
+                    $data['notes']             ?? null,
         ]);
         return (int) $this->db->lastInsertId();
     }
 
+    /**
+     * Update an existing order.
+     * Accepts the same keys as create().
+     */
     public function update(int $id, array $data): bool {
         $stmt = $this->db->prepare("
             UPDATE Orders
-            SET CID = ?, Cow_ID = ?, Worker_ID = ?, Order_Type = ?, Order_Date = ?
+            SET CID             = ?,
+                Cow_ID          = ?,
+                Worker_ID       = ?,
+                Order_Type      = ?,
+                Order_Date      = ?,
+                quantity_liters = ?,
+                unit_price      = ?,
+                status          = ?,
+                notes           = ?
             WHERE Order_ID = ?
         ");
         $stmt->execute([
-            $data['CID'],
-            $data['Cow_ID'],
-            $data['Worker_ID'],
-            $data['Order_Type'],
-            $data['Order_Date'],
+            (int)   $data['CID'],
+            (int)   $data['Cow_ID'],
+            (int)   $data['Worker_ID'],
+                    $data['Order_Type'],
+                    $data['Order_Date'],
+            (float) ($data['quantity_liters'] ?? 0),
+            (float) ($data['unit_price']      ?? 0),
+                    $data['status']            ?? 'pending',
+                    $data['notes']             ?? null,
             $id,
         ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    /** Update only the status of an order (e.g. confirm, deliver, cancel). */
+    public function updateStatus(int $id, string $status): bool {
+        $allowed = ['pending', 'confirmed', 'delivered', 'cancelled'];
+        if (!in_array($status, $allowed, true)) {
+            return false;
+        }
+        $stmt = $this->db->prepare("UPDATE Orders SET status = ? WHERE Order_ID = ?");
+        $stmt->execute([$status, $id]);
         return $stmt->rowCount() > 0;
     }
 

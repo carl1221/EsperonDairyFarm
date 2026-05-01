@@ -3,11 +3,13 @@
 // api/cows.php
 // Endpoint: /api/cows.php
 //
-// GET    /api/cows.php          → list all cows
-// GET    /api/cows.php?id=101   → get one cow
-// POST   /api/cows.php          → create cow
-// PUT    /api/cows.php?id=101   → update cow
-// DELETE /api/cows.php?id=101   → delete cow
+// GET    /api/cows.php              → list all cows (active + inactive)
+// GET    /api/cows.php?active=1     → list active cows only
+// GET    /api/cows.php?id=101       → get one cow
+// POST   /api/cows.php              → create cow (Admin only)
+// PUT    /api/cows.php?id=101       → update cow (Admin only)
+// PATCH  /api/cows.php?id=101       → deactivate cow / update health (Admin only)
+// DELETE /api/cows.php?id=101       → hard-delete cow (Admin only)
 // ============================================================
 
 require_once __DIR__ . '/../config/bootstrap.php';
@@ -16,13 +18,14 @@ require_once __DIR__ . '/../models/Cow.php';
 requireAuth();
 requireCsrf();
 // Staff can view cows (GET), only Admin can create/update/delete
-if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
     requireRole(['Admin']);
 }
 
 $cow    = new Cow();
 $method = $_SERVER['REQUEST_METHOD'];
-$id     = isset($_GET['id']) ? (int) $_GET['id'] : null;
+$id     = isset($_GET['id'])     ? (int) $_GET['id']     : null;
+$active = isset($_GET['active']) ? (bool)$_GET['active'] : false;
 
 try {
     switch ($method) {
@@ -34,34 +37,62 @@ try {
                     ? sendSuccess('Cow found.', $row)
                     : sendError('Cow not found.', 404);
             } else {
-                sendSuccess('Cows retrieved.', $cow->getAll());
+                sendSuccess('Cows retrieved.', $cow->getAll($active));
             }
             break;
 
         case 'POST':
             $data = getRequestBody();
-            validateRequired($data, ['Cow_ID', 'Cow', 'Production']);
+            validateRequired($data, ['Cow']);
+
             $validatedData = [
-                'Cow_ID'     => validateInteger($data['Cow_ID'], 'Cow_ID'),
-                'Cow'        => validateString($data['Cow'], 'Cow', 50),
-                'Production' => validateString($data['Production'], 'Production', 20),
+                'Cow'              => validateString($data['Cow'],  'Cow',   100),
+                'Breed'            => isset($data['Breed'])         ? validateString($data['Breed'],         'Breed',         100) : null,
+                'Date_Of_Birth'    => $data['Date_Of_Birth']        ?? null,
+                'Production_Liters'=> isset($data['Production_Liters']) ? (float)$data['Production_Liters'] : 0.0,
+                'Health_Status'    => $data['Health_Status']        ?? 'Healthy',
+                'is_active'        => isset($data['is_active'])     ? (int)$data['is_active'] : 1,
+                'notes'            => $data['notes']                ?? null,
             ];
-            $cow->create($validatedData)
-                ? sendSuccess('Cow created.', null, 201)
-                : sendError('Failed to create cow.', 500);
+
+            $newId = $cow->create($validatedData);
+            sendSuccess('Cow created.', ['Cow_ID' => $newId], 201);
             break;
 
         case 'PUT':
             if (!$id) sendError('Cow ID is required for update.');
             $data = getRequestBody();
-            validateRequired($data, ['Cow', 'Production']);
+            validateRequired($data, ['Cow']);
+
             $validatedData = [
-                'Cow'        => validateString($data['Cow'], 'Cow', 50),
-                'Production' => validateString($data['Production'], 'Production', 20),
+                'Cow'              => validateString($data['Cow'],  'Cow',   100),
+                'Breed'            => isset($data['Breed'])         ? validateString($data['Breed'],         'Breed',         100) : null,
+                'Date_Of_Birth'    => $data['Date_Of_Birth']        ?? null,
+                'Production_Liters'=> isset($data['Production_Liters']) ? (float)$data['Production_Liters'] : 0.0,
+                'Health_Status'    => $data['Health_Status']        ?? 'Healthy',
+                'is_active'        => isset($data['is_active'])     ? (int)$data['is_active'] : 1,
+                'notes'            => $data['notes']                ?? null,
             ];
+
             $cow->update($id, $validatedData)
                 ? sendSuccess('Cow updated.')
                 : sendError('Cow not found or no changes made.', 404);
+            break;
+
+        case 'PATCH':
+            // Soft-delete (deactivate) or quick health status update
+            if (!$id) sendError('Cow ID is required.');
+            $data = getRequestBody();
+
+            if (isset($data['is_active']) && (int)$data['is_active'] === 0) {
+                $cow->deactivate($id)
+                    ? sendSuccess('Cow deactivated.')
+                    : sendError('Cow not found.', 404);
+            } else {
+                $cow->update($id, $data)
+                    ? sendSuccess('Cow updated.')
+                    : sendError('Cow not found or no changes made.', 404);
+            }
             break;
 
         case 'DELETE':
