@@ -26,7 +26,7 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
       <p class="page-subtitle">Full order history with customer, cow, and worker details.</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;" id="orders-header-actions">
-      <button class="btn btn--primary admin-only" onclick="openModal()">＋ New Order</button>
+      <button class="btn btn--primary" onclick="openModal()">＋ New Order</button>
     </div>
   </div>
 
@@ -90,9 +90,15 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
           <label>Cow</label>
           <select id="f-cow"></select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="worker-field">
           <label>Worker</label>
           <select id="f-worker"></select>
+        </div>
+        <div class="form-group" id="worker-readonly" style="display:none;">
+          <label>Worker</label>
+          <input type="text" id="f-worker-name" disabled
+                 style="background:rgba(255,255,255,0.5);color:var(--muted);cursor:not-allowed;" />
+          <small style="color:var(--muted);font-size:0.72rem;">Assigned to you automatically</small>
         </div>
         <div class="form-group">
           <label>Order Date</label>
@@ -138,6 +144,8 @@ let allOrders  = [];
 let customers  = [];
 let cows       = [];
 let workers    = [];
+const IS_ADMIN = <?= $_isAdmin ? 'true' : 'false' ?>;
+const CURRENT_USER = <?= json_encode(['id' => $_SESSION['user']['id'], 'name' => $_SESSION['user']['name']]) ?>;
 
 const ORDER_COLS = [
   { key: 'Order_ID',        label: 'Order ID'    },
@@ -156,22 +164,23 @@ const ORDER_COLS = [
 ];
 
 async function init() {
-  // Only Admin needs customers/cows/workers for the "New Order" modal
-  if (<?= $_isAdmin ? 'true' : 'false' ?>) {
-    try {
-      [customers, cows, workers] = await Promise.all([
-        API.customers.getAll(),
-        API.cows.getAll(),
-        API.workers.getAll(),
-      ]);
-      populateSelects();
-    } catch(e) {
-      console.warn('Could not load modal data:', e.message);
-    }
+  // Both Admin and Staff need customers and cows to fill the modal.
+  // Admin also needs the workers list to assign any worker.
+  try {
+    const fetches = [API.customers.getAll(), API.cows.getAll()];
+    if (IS_ADMIN) fetches.push(API.workers.getAll());
+
+    const results = await Promise.all(fetches);
+    customers = results[0];
+    cows      = results[1];
+    workers   = IS_ADMIN ? results[2] : [];
+    populateSelects();
+  } catch(e) {
+    console.warn('Could not load modal data:', e.message);
   }
+
   loadOrders();
 
-  // Add export buttons (orders are export-only — no import due to FK complexity)
   ImportExport.addButtons(
     document.getElementById('orders-header-actions'),
     {
@@ -187,20 +196,31 @@ function populateSelects() {
   document.getElementById('f-cid').innerHTML =
     customers.map(c => `<option value="${c.CID}">${c.Customer_Name}</option>`).join('');
   document.getElementById('f-cow').innerHTML =
-    cows.map(c => `<option value="${c.Cow_ID}">${c.Cow} (${c.Production})</option>`).join('');
-  document.getElementById('f-worker').innerHTML =
-    workers.map(w => `<option value="${w.Worker_ID}">${w.Worker} — ${w.Worker_Role}</option>`).join('');
+    cows.map(c => `<option value="${c.Cow_ID}">${c.Cow} (${parseFloat(c.Production_Liters||0).toFixed(2)}L)</option>`).join('');
+
+  if (IS_ADMIN) {
+    // Admin: show worker dropdown
+    document.getElementById('f-worker').innerHTML =
+      workers.map(w => `<option value="${w.Worker_ID}">${w.Worker} — ${w.Worker_Role}</option>`).join('');
+    document.getElementById('worker-field').style.display    = '';
+    document.getElementById('worker-readonly').style.display = 'none';
+  } else {
+    // Staff: show their own name as read-only, hide the dropdown
+    document.getElementById('f-worker-name').value           = CURRENT_USER.name;
+    document.getElementById('worker-field').style.display    = 'none';
+    document.getElementById('worker-readonly').style.display = '';
+  }
 }
 
 async function loadOrders() {
   const tbody = document.getElementById('orders-body');
-  UI.setLoading(tbody, 11);
+  UI.setLoading(tbody, 13);
   try {
     allOrders = await API.orders.getAll();
     renderOrders(allOrders);
   } catch (e) {
     UI.toast(e.message, 'error');
-    UI.setEmpty(tbody, 11, 'Failed to load orders.');
+    UI.setEmpty(tbody, 13, 'Failed to load orders.');
   }
 }
 
@@ -245,6 +265,9 @@ function filterOrders() {
 }
 
 function openModal(id = null) {
+  // Staff can only create new orders, not edit existing ones
+  if (!IS_ADMIN && id) { UI.toast('Only admins can edit orders.', 'error'); return; }
+
   editingId = id;
   document.getElementById('modal-title').textContent = id ? 'Edit Order' : 'New Order';
 
@@ -284,14 +307,13 @@ async function saveOrder() {
   const price = parseFloat(document.getElementById('f-price').value);
   const date  = document.getElementById('f-date').value;
 
-  if (!date)          { UI.toast('Please select a date.', 'error'); return; }
+  if (!date)                     { UI.toast('Please select a date.', 'error'); return; }
   if (isNaN(qty)   || qty   < 0) { UI.toast('Please enter a valid quantity.', 'error'); return; }
   if (isNaN(price) || price < 0) { UI.toast('Please enter a valid unit price.', 'error'); return; }
 
   const data = {
     CID:             parseInt(document.getElementById('f-cid').value),
     Cow_ID:          parseInt(document.getElementById('f-cow').value),
-    Worker_ID:       parseInt(document.getElementById('f-worker').value),
     Order_Type:      document.getElementById('f-type').value,
     Order_Date:      date,
     quantity_liters: qty,
@@ -299,6 +321,11 @@ async function saveOrder() {
     status:          document.getElementById('f-status').value,
     notes:           document.getElementById('f-notes').value.trim() || null,
   };
+
+  // Admin picks the worker; Staff is auto-assigned server-side from session
+  if (IS_ADMIN) {
+    data.Worker_ID = parseInt(document.getElementById('f-worker').value);
+  }
 
   try {
     if (editingId) {

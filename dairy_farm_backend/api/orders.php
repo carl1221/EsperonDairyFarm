@@ -17,8 +17,15 @@ require_once __DIR__ . '/../models/Order.php';
 
 requireAuth();
 requireCsrf();
-// Staff can view orders (GET); only Admin can create/update/delete
-if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+
+// Role-based access:
+// - GET:    both Admin and Staff
+// - POST:   both Admin and Staff (Staff auto-assigned as the worker)
+// - PUT:    Admin only
+// - PATCH:  both Admin and Staff (status updates)
+// - DELETE: Admin only
+$method = $_SERVER['REQUEST_METHOD'];
+if (in_array($method, ['PUT', 'DELETE'], true)) {
     requireRole(['Admin']);
 }
 
@@ -46,15 +53,22 @@ try {
         case 'POST':
             $data = getRequestBody();
             validateRequired($data, [
-                'CID', 'Cow_ID', 'Worker_ID',
+                'CID', 'Cow_ID',
                 'Order_Type', 'Order_Date',
                 'quantity_liters', 'unit_price',
             ]);
 
+            // Staff are always assigned as the worker on their own orders.
+            // Admin can specify any Worker_ID.
+            $isAdmin  = ($_SESSION['user']['role'] ?? '') === 'Admin';
+            $workerId = $isAdmin
+                ? validateInteger($data['Worker_ID'] ?? 0, 'Worker_ID')
+                : (int) $_SESSION['user']['id'];
+
             $validatedData = [
                 'CID'             => validateInteger($data['CID'],             'CID'),
                 'Cow_ID'          => validateInteger($data['Cow_ID'],          'Cow_ID'),
-                'Worker_ID'       => validateInteger($data['Worker_ID'],       'Worker_ID'),
+                'Worker_ID'       => $workerId,
                 'Order_Type'      => validateString($data['Order_Type'],       'Order_Type', 100),
                 'Order_Date'      => validateDate($data['Order_Date'],         'Order_Date'),
                 'quantity_liters' => (float) $data['quantity_liters'],
