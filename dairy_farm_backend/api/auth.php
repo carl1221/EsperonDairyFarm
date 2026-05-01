@@ -42,6 +42,9 @@ try {
         // ── Login ──────────────────────────────────────────
         case 'POST':
             if ($action === 'login') {
+                // Login is the unauthenticated entry point — no CSRF token exists yet.
+                // The token is issued to the client AFTER a successful login response.
+                // All other state-changing endpoints call requireCsrf() via bootstrap.
 
                 $data     = getRequestBody();
                 $username = trim($data['username'] ?? '');

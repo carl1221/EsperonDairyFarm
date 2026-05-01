@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <!-- onload=onRecaptchaLoad tells the API to call our function once ready,
+       explicit render prevents the "null style" error that occurs when the
+       widget auto-renders inside a flex container before layout is complete -->
+  <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
   <style>
     /* ── Login page specific styles ── */
     body {
@@ -442,7 +445,10 @@
       <a href="#" class="forgot-password" id="forgot-password-link">Forgot password?</a>
     </div>
 
-    <div class="g-recaptcha" data-sitekey="6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n"></div>
+    <!-- reCAPTCHA rendered explicitly via grecaptcha.render() in onRecaptchaLoad
+         to avoid the "Cannot read properties of null (reading 'style')" error
+         that occurs with auto-render inside flex/transformed containers -->
+    <div id="recaptcha-container" class="g-recaptcha"></div>
 
     <button type="submit" class="submit-btn" id="login-btn">
       <span class="spinner"></span>
@@ -456,159 +462,175 @@
 </div>
 
 <script>
-const API_BASE  = '../dairy_farm_backend/api';
+const API_BASE       = '../dairy_farm_backend/api';
 const alertContainer = document.getElementById('alert-container');
-const loginBtn  = document.getElementById('login-btn');
-const form = document.getElementById('login-form');
+const loginBtn       = document.getElementById('login-btn');
+const form           = document.getElementById('login-form');
 
-// ── Check for URL parameters (e.g., errors) ──
+// ── reCAPTCHA explicit render ─────────────────────────────
+// Called by the reCAPTCHA API once it has fully loaded
+// (via ?onload=onRecaptchaLoad&render=explicit in the script URL).
+// Explicit render avoids the "Cannot read properties of null (reading 'style')"
+// error that occurs when auto-render fires inside a flex container before
+// the widget's internal iframe has a valid DOM target.
+let recaptchaWidgetId = null;
+
+function onRecaptchaLoad() {
+  recaptchaWidgetId = grecaptcha.render('recaptcha-container', {
+    sitekey: '6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n',
+  });
+}
+
+// Helper: get reCAPTCHA response safely regardless of load state
+function getRecaptchaToken() {
+  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) return '';
+  return grecaptcha.getResponse(recaptchaWidgetId);
+}
+
+// Helper: reset reCAPTCHA safely
+function resetRecaptcha() {
+  if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId !== null) {
+    grecaptcha.reset(recaptchaWidgetId);
+  }
+}
+
+// ── Check for URL parameters (e.g., errors) ──────────────
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('error') === 'google_user_not_found') {
   showError('Your Google account is not associated with any user in the system. Please contact your administrator.');
 }
 
-// ── Google Login Handler ──
+// ── Google Login Handler ──────────────────────────────────
 document.getElementById('google-login-btn').addEventListener('click', () => {
   window.location.href = `${API_BASE}/auth.php?action=google_login`;
 });
 
-// ── Password visibility toggle ──
-const pwToggle = document.getElementById('pw-toggle');
+// ── Password visibility toggle ────────────────────────────
+const pwToggle     = document.getElementById('pw-toggle');
 const passwordInput = document.getElementById('password');
-const eyeHidden = document.getElementById('eye-hidden');
-const eyeVisible = document.getElementById('eye-visible');
+const eyeHidden    = document.getElementById('eye-hidden');
+const eyeVisible   = document.getElementById('eye-visible');
 
 pwToggle.addEventListener('click', () => {
   const isPassword = passwordInput.type === 'password';
   passwordInput.type = isPassword ? 'text' : 'password';
-  eyeHidden.style.display = isPassword ? 'none' : 'block';
+  eyeHidden.style.display  = isPassword ? 'none'  : 'block';
   eyeVisible.style.display = isPassword ? 'block' : 'none';
   pwToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
 });
 
-// ── Alert helpers ──
+// ── Alert helpers ─────────────────────────────────────────
 function showAlert(msg, type = 'error', duration = 5000) {
-  const alert = document.createElement('div');
-  alert.className = `alert alert--${type}`;
-  alert.textContent = msg;
-  alert.style.display = 'block';
-  alertContainer.appendChild(alert);
+  const el = document.createElement('div');
+  el.className = `alert alert--${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+  alertContainer.appendChild(el);
 
   if (duration > 0) {
     setTimeout(() => {
-      alert.style.opacity = '0';
-      alert.style.transition = 'opacity .3s';
-      setTimeout(() => alert.remove(), 300);
+      el.style.opacity = '0';
+      el.style.transition = 'opacity .3s';
+      setTimeout(() => el.remove(), 300);
     }, duration);
   }
-
-  return alert;
+  return el;
 }
 
 function showError(msg) {
-  // Clear existing alerts
   alertContainer.innerHTML = '';
   showAlert(msg, 'error', 6000);
 }
 
-// ── Field validation ──
+// ── Field validation ──────────────────────────────────────
 function validateField(input, errorId, validationFn) {
   const errorEl = document.getElementById(errorId);
-  const value = input.value.trim();
-  const error = validationFn(value);
+  const value   = input.value.trim();
+  const error   = validationFn(value);
 
   if (error) {
     input.classList.add('error');
     errorEl.textContent = error;
     errorEl.classList.add('visible');
     return false;
-  } else {
-    input.classList.remove('error');
-    errorEl.textContent = '';
-    errorEl.classList.remove('visible');
-    return true;
   }
+  input.classList.remove('error');
+  errorEl.textContent = '';
+  errorEl.classList.remove('visible');
+  return true;
 }
 
-// Clear field error on input
-document.getElementById('username').addEventListener('input', function() {
-  validateField(this, 'username-error', (v) => {
-    if (v && v.length > 0) return null;
-    return 'Username is required.';
-  });
+document.getElementById('username').addEventListener('input', function () {
+  validateField(this, 'username-error', v => v ? null : 'Username is required.');
 });
 
-document.getElementById('password').addEventListener('input', function() {
-  validateField(this, 'password-error', (v) => {
-    if (v && v.length > 0) return null;
-    return 'Password is required.';
-  });
+document.getElementById('password').addEventListener('input', function () {
+  validateField(this, 'password-error', v => v ? null : 'Password is required.');
 });
 
-// ── Forgot password handler ──
+// ── Forgot password handler ───────────────────────────────
 document.getElementById('forgot-password-link').addEventListener('click', (e) => {
   e.preventDefault();
   showAlert('Please contact your administrator to reset your password.', 'success', 5000);
 });
 
-// ── Form submission ──
+// ── Form submission ───────────────────────────────────────
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   alertContainer.innerHTML = '';
 
   const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
   const rememberMe    = document.getElementById('remember').checked;
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
+  const username      = usernameInput.value.trim();
+  const password      = passwordInput.value;
 
-  // Validate all fields
-  const usernameValid = validateField(usernameInput, 'username-error', (v) => {
-    if (!v) return 'Username is required.';
+  const usernameValid = validateField(usernameInput, 'username-error', v => {
+    if (!v)          return 'Username is required.';
     if (v.length < 3) return 'Username must be at least 3 characters.';
     return null;
   });
 
-  const passwordValid = validateField(passwordInput, 'password-error', (v) => {
-    if (!v) return 'Password is required.';
-    if (v.length < 1) return 'Password is required.';
-    return null;
-  });
+  const passwordValid = validateField(passwordInput, 'password-error', v =>
+    v ? null : 'Password is required.'
+  );
 
-  if (!usernameValid || !passwordValid) {
-    return;
-  }
+  if (!usernameValid || !passwordValid) return;
 
-  // Check if reCAPTCHA is loaded
-  if (typeof grecaptcha === 'undefined') {
+  // reCAPTCHA check
+  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) {
     showError('reCAPTCHA is still loading. Please wait a moment and try again.');
     return;
   }
 
-  // Get reCAPTCHA token
-  const recaptchaToken = grecaptcha.getResponse();
+  const recaptchaToken = getRecaptchaToken();
   if (!recaptchaToken) {
-    showError('Please verify the reCAPTCHA.');
+    showError('Please complete the reCAPTCHA verification.');
     return;
   }
 
-  // Start loading
+  // Loading state
   loginBtn.disabled = true;
   loginBtn.classList.add('loading');
   loginBtn.querySelector('.btn-text').textContent = 'Logging in…';
 
   try {
+    // NOTE: No X-CSRF-Token header here — the login endpoint is unauthenticated.
+    // The CSRF token is issued by the server AFTER a successful login and stored
+    // in localStorage for use by subsequent authenticated API calls.
     const response = await fetch(`${API_BASE}/auth.php?action=login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ username, password, 'g-recaptcha-response': recaptchaToken }),
+      body: JSON.stringify({
+        username,
+        password,
+        'g-recaptcha-response': recaptchaToken,
+      }),
     });
 
     const data = await response.json();
 
     if (data.success) {
-      // ── Remember Me ───────────────────────────────────
       if (rememberMe) {
         localStorage.setItem('remembered_username', username);
         localStorage.setItem('remember_me', 'true');
@@ -617,23 +639,19 @@ form.addEventListener('submit', async (e) => {
         localStorage.removeItem('remember_me');
       }
 
-      // Persist session data in localStorage for UI display
+      // Store CSRF token and user info for authenticated requests
       localStorage.setItem('csrf_token', data.data.csrf_token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
-      // Role-based redirect: all roles go to index.php (dashboard adapts by role)
-      const role = data.data.user?.role || '';
+      const role     = data.data.user?.role || '';
       const greeting = role === 'Admin' ? 'Welcome Admin!' : `Welcome ${role || 'back'}!`;
       showAlert(greeting + ' Redirecting…', 'success', 1000);
-      setTimeout(() => {
-        window.location.href = 'index.php';
-      }, 800);
+      setTimeout(() => { window.location.href = 'index.php'; }, 800);
+
     } else {
       showError(data.message || 'Login failed. Please check your credentials.');
       passwordInput.value = '';
-      if (typeof grecaptcha !== 'undefined') {
-        grecaptcha.reset();
-      }
+      resetRecaptcha();
       passwordInput.focus();
     }
 
@@ -647,29 +665,18 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// ── Restore remembered username on page load ──────────────
+// ── Restore remembered username ───────────────────────────
 (function restoreRememberedUser() {
   const remembered = localStorage.getItem('remembered_username');
   const rememberOn = localStorage.getItem('remember_me') === 'true';
   if (remembered && rememberOn) {
     document.getElementById('username').value = remembered;
     document.getElementById('remember').checked = true;
-    // Focus password field since username is already filled
     document.getElementById('password').focus();
+  } else {
+    document.getElementById('username').focus();
   }
 })();
-
-// ── Reset reCAPTCHA on focus ──
-document.getElementById('username').addEventListener('focus', () => {
-  if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse()) {
-    grecaptcha.reset();
-  }
-});
-
-// ── Auto-focus: username if empty, password if remembered ──
-if (!localStorage.getItem('remembered_username')) {
-  document.getElementById('username').focus();
-}
 </script>
 
 </body>
