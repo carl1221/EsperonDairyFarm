@@ -60,12 +60,6 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
     .dash-tab--active { color:var(--olive-dark); border-bottom-color:var(--olive); }
     .dash-tab-panel { animation:tabFadeIn .18s ease; }
     @keyframes tabFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
-    /* ── Quick action cards ── */
-    .quick-card { background:rgba(255,255,255,0.35); border:1px solid rgba(255,255,255,0.5); border-radius:var(--radius-xl); padding:18px 20px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all .2s; }
-    .quick-card:hover { background:rgba(255,255,255,0.55); transform:translateY(-2px); box-shadow:var(--shadow-md); }
-    .quick-card__icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .quick-card__title { font-weight:700; font-size:0.88rem; color:var(--text); }
-    .quick-card__sub   { font-size:0.74rem; color:var(--muted); margin-top:2px; }
   </style>
 </head>
 <body>
@@ -148,73 +142,6 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
       </div>
       <div style="padding:16px 20px;" id="staff-inventory-bars">
         <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SECTION 3: Quick Actions ───────────────────────── -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--spacing-md);margin-bottom:var(--spacing-xl);">
-    <div class="quick-card" onclick="switchStaffTab('tab-tasks',document.getElementById('sbtn-tasks'))">
-      <div class="quick-card__icon" style="background:rgba(78,96,64,0.1);">
-        <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.4rem;">checklist</span>
-      </div>
-      <div>
-        <div class="quick-card__title">My Tasks</div>
-        <div class="quick-card__sub" id="qa-tasks-sub">Loading…</div>
-      </div>
-    </div>
-    <div class="quick-card" onclick="window.location.href='orders.php'">
-      <div class="quick-card__icon" style="background:rgba(192,57,43,0.08);">
-        <span class="material-symbols-outlined" style="color:var(--danger);font-size:1.4rem;">receipt_long</span>
-      </div>
-      <div>
-        <div class="quick-card__title">Orders</div>
-        <div class="quick-card__sub" id="qa-orders-sub">View today's orders</div>
-      </div>
-    </div>
-    <div class="quick-card" onclick="switchStaffTab('tab-livestock',document.getElementById('sbtn-livestock'))">
-      <div class="quick-card__icon" style="background:rgba(78,96,64,0.1);">
-        <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.4rem;">pets</span>
-      </div>
-      <div>
-        <div class="quick-card__title">Livestock</div>
-        <div class="quick-card__sub" id="qa-livestock-sub">Check herd status</div>
-      </div>
-    </div>
-    <div class="quick-card" onclick="switchStaffTab('tab-reminders',document.getElementById('sbtn-reminders'))">
-      <div class="quick-card__icon" style="background:rgba(192,57,43,0.08);">
-        <span class="material-symbols-outlined" style="color:var(--danger);font-size:1.4rem;">alarm</span>
-      </div>
-      <div>
-        <div class="quick-card__title">Reminders</div>
-        <div class="quick-card__sub" id="qa-reminders-sub">View assigned tasks</div>
-      </div>
-    </div>
-    <div class="quick-card" onclick="document.getElementById('log-activity-btn').click()">
-      <div class="quick-card__icon" style="background:rgba(91,122,138,0.1);">
-        <span class="material-symbols-outlined" style="color:var(--info);font-size:1.4rem;">add_circle</span>
-      </div>
-      <div>
-        <div class="quick-card__title">Log Activity</div>
-        <div class="quick-card__sub">Record what you did</div>
-      </div>
-    </div>
-    <div class="quick-card" onclick="switchStaffTab('tab-notes',document.getElementById('sbtn-notes'))">
-      <div class="quick-card__icon" style="background:rgba(91,122,138,0.1);">
-        <span class="material-symbols-outlined" style="color:var(--info);font-size:1.4rem;">edit_note</span>
-      </div>
-      <div>
-        <div class="quick-card__title">Notes</div>
-        <div class="quick-card__sub">Message admin or staff</div>
-      </div>
-    </div>
-    <div class="quick-card" onclick="window.location.href='inventory.php'">
-      <div class="quick-card__icon" style="background:rgba(78,96,64,0.1);">
-        <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.4rem;">inventory_2</span>
-      </div>
-      <div>
-        <div class="quick-card__title">Inventory</div>
-        <div class="quick-card__sub" id="qa-inventory-sub">Update stock levels</div>
       </div>
     </div>
   </div>
