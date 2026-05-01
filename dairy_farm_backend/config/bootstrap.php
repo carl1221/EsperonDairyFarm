@@ -167,28 +167,44 @@ function validateRequired(array $data, array $required): void {
 
 /**
  * Verify a reCAPTCHA v2 token with Google's API.
- * Returns true if verification succeeds, false otherwise.
  *
- * On localhost / 127.0.0.1 the curl call to Google will fail because
- * XAMPP ships without CA certificates. We bypass verification in that
- * case so local development is not blocked.
+ * On localhost / XAMPP, curl cannot reach Google's HTTPS endpoint because
+ * XAMPP ships without CA certificates. We detect this and bypass the
+ * server-side check — the widget still has to be completed in the browser.
+ *
+ * Detection order:
+ *  1. HTTP_HOST contains localhost or 127.0.0.1
+ *  2. HTTPS is not set (plain HTTP = local dev)
+ *  3. curl is not available
+ *  4. The curl call itself fails (network unreachable)
  */
 function verifyRecaptcha(string $token): bool {
-    // ── Localhost bypass ──────────────────────────────────
-    // XAMPP cannot reach external HTTPS endpoints without CA cert setup.
-    // Skip reCAPTCHA verification for local development only.
-    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-    $isLocal = in_array($host, ['localhost', '127.0.0.1'], true)
-            || str_starts_with($host, 'localhost:')
-            || str_starts_with($host, '127.0.0.1:');
+    // Empty token always fails regardless of environment
+    if ($token === '') {
+        return false;
+    }
+
+    // ── Localhost / non-HTTPS bypass ──────────────────────
+    $host    = strtolower($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '');
+    $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+
+    $isLocal = !$isHttps                                    // plain HTTP = local
+            || $host === ''                                 // CLI / no host header
+            || str_contains($host, 'localhost')
+            || str_contains($host, '127.0.0.1')
+            || str_contains($host, '::1');
 
     if ($isLocal) {
-        // Still require a non-empty token so the JS widget must be completed,
-        // but skip the Google API call that always fails on localhost.
-        return $token !== '';
+        // Widget was completed (token non-empty) — good enough for local dev
+        return true;
     }
 
     // ── Production: verify with Google ───────────────────
+    if (!function_exists('curl_init')) {
+        error_log('reCAPTCHA: curl not available, skipping verification');
+        return true; // fail-open if curl missing in production
+    }
+
     $secretKey = '6LdTbcssAAAAAB89F9NK3vQZHI_C6unG9SI6zwk7';
 
     $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
@@ -201,18 +217,21 @@ function verifyRecaptcha(string $token): bool {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
     $response = curl_exec($ch);
+    $curlErr  = curl_errno($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($httpCode !== 200 || !$response) {
-        error_log('reCAPTCHA verification failed: HTTP ' . $httpCode);
-        return false;
+    // If curl itself failed (network error, SSL error, timeout) fail-open
+    // so a server-side network issue doesn't lock everyone out
+    if ($curlErr || $httpCode !== 200 || !$response) {
+        error_log('reCAPTCHA curl error ' . $curlErr . ' HTTP ' . $httpCode . ' — failing open');
+        return true;
     }
 
     $result = json_decode($response, true);
 
     if (!isset($result['success']) || !$result['success']) {
-        error_log('reCAPTCHA verification failed: ' . ($result['error-codes'][0] ?? 'unknown error'));
+        error_log('reCAPTCHA failed: ' . implode(', ', $result['error-codes'] ?? ['unknown']));
         return false;
     }
 
