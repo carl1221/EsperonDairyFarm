@@ -8,7 +8,7 @@ requireAdminPage();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Members — Esperon Dairy Farm</title>
+  <title>Admins — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -19,11 +19,11 @@ requireAdminPage();
 <main class="main">
   <div class="page-header">
     <div>
-      <h1 class="page-title">Staff Members</h1>
-      <p class="page-subtitle">Manage farm staff accounts.</p>
+      <h1 class="page-title">Admins</h1>
+      <p class="page-subtitle">Manage administrator accounts.</p>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;" id="workers-header-actions">
-      <button class="btn btn--primary" onclick="openModal()">＋ Add Staff</button>
+    <div style="display:flex;gap:8px;align-items:center;" id="admins-header-actions">
+      <button class="btn btn--primary" onclick="openModal()">＋ Add Admin</button>
     </div>
   </div>
 
@@ -38,7 +38,7 @@ requireAdminPage();
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="workers-body">
+        <tbody id="admins-body">
           <tr><td colspan="4" class="tbl-empty"><span class="spinner"></span> Loading…</td></tr>
         </tbody>
       </table>
@@ -46,30 +46,30 @@ requireAdminPage();
   </div>
 </main>
 
-<!-- Modal — role is always Staff on this page -->
+<!-- Modal — role is always Admin on this page -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal__head">
-      <span class="modal__title" id="modal-title">Add Staff Member</span>
+      <span class="modal__title" id="modal-title">Add Admin</span>
       <button class="modal__close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal__body">
       <form class="form-grid" onsubmit="return false">
         <div class="form-group">
           <label>Full Name</label>
-          <input id="f-worker-name" type="text" placeholder="e.g. Jose" required />
+          <input id="f-admin-name" type="text" placeholder="e.g. Maria" required />
         </div>
         <div class="form-group">
           <label>Role</label>
-          <!-- Locked to Staff on this page -->
-          <input type="text" value="Staff" disabled
+          <!-- Locked to Admin on this page -->
+          <input type="text" value="Admin" disabled
                  style="background:rgba(255,255,255,0.5);color:var(--muted);cursor:not-allowed;" />
         </div>
       </form>
     </div>
     <div class="modal__foot">
       <button class="btn btn--ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn--primary" onclick="saveWorker()">Save</button>
+      <button class="btn btn--primary" onclick="saveAdmin()">Save</button>
     </div>
   </div>
 </div>
@@ -79,35 +79,35 @@ requireAdminPage();
 <script src="js/nav.js"></script>
 <script src="js/import-export.js"></script>
 <script>
-let editingId    = null;
-let _workersData = [];
+let editingId   = null;
+let _adminsData = [];
 
-async function loadWorkers() {
-  const tbody = document.getElementById('workers-body');
+async function loadAdmins() {
+  const tbody = document.getElementById('admins-body');
   UI.setLoading(tbody, 4);
   try {
-    // Only fetch Staff-role workers
-    const rows = await API.request('workers.php?role=Staff');
-    _workersData = Array.isArray(rows) ? rows : [];
-    if (!_workersData.length) { UI.setEmpty(tbody, 4, 'No staff members found.'); return; }
-    tbody.innerHTML = _workersData.map(w => `
+    // Only fetch Admin-role workers
+    const rows = await API.request('workers.php?role=Admin');
+    _adminsData = Array.isArray(rows) ? rows : [];
+    if (!_adminsData.length) { UI.setEmpty(tbody, 4, 'No admins found.'); return; }
+    tbody.innerHTML = _adminsData.map(w => `
       <tr>
         <td><strong>${w.Worker_ID}</strong></td>
-        <td>👷 ${w.Worker}</td>
-        <td><span class="badge badge--green">${w.Worker_Role}</span></td>
+        <td>🛡️ ${w.Worker}</td>
+        <td><span class="badge badge--gold">${w.Worker_Role}</span></td>
         <td class="actions">
           <button class="btn btn--icon btn--edit" onclick="openModal(${w.Worker_ID})">✏ Edit</button>
-          <button class="btn btn--icon btn--del"  onclick="deleteWorker(${w.Worker_ID})">🗑 Del</button>
+          <button class="btn btn--icon btn--del"  onclick="deleteAdmin(${w.Worker_ID})">🗑 Del</button>
         </td>
       </tr>
     `).join('');
   } catch (e) {
     UI.toast(e.message, 'error');
-    UI.setEmpty(tbody, 4, 'Failed to load staff.');
+    UI.setEmpty(tbody, 4, 'Failed to load admins.');
   }
 }
 
-const WORKER_COLS = [
+const ADMIN_COLS = [
   { key: 'Worker_ID',   label: 'ID'   },
   { key: 'Worker',      label: 'Name' },
   { key: 'Worker_Role', label: 'Role' },
@@ -115,28 +115,28 @@ const WORKER_COLS = [
 
 document.addEventListener('DOMContentLoaded', function() {
   ImportExport.addButtons(
-    document.getElementById('workers-header-actions'),
+    document.getElementById('admins-header-actions'),
     {
-      getData:  function() { return _workersData; },
-      columns:  WORKER_COLS,
-      title:    'Staff Members — Esperon Dairy Farm',
-      filename: 'staff',
+      getData:  function() { return _adminsData; },
+      columns:  ADMIN_COLS,
+      title:    'Admins — Esperon Dairy Farm',
+      filename: 'admins',
       onImport: async function(records) {
         if (!records.length) { UI.toast('No records found in file.', 'error'); return; }
-        var ok = await UI.confirm('Import ' + records.length + ' staff member(s)?');
+        var ok = await UI.confirm('Import ' + records.length + ' admin(s)?');
         if (!ok) return;
         var success = 0, failed = 0;
         for (var r of records) {
           try {
             await API.workers.create({
               Worker:      r.Worker || r.Name || '',
-              Worker_Role: 'Staff',   // always Staff on this page
+              Worker_Role: 'Admin',   // always Admin on this page
             });
             success++;
           } catch(e) { failed++; }
         }
-        UI.toast('Imported ' + success + ' staff member(s).' + (failed ? ' ' + failed + ' failed.' : ''), success ? 'success' : 'error');
-        loadWorkers();
+        UI.toast('Imported ' + success + ' admin(s).' + (failed ? ' ' + failed + ' failed.' : ''), success ? 'success' : 'error');
+        loadAdmins();
       }
     }
   );
@@ -144,13 +144,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function openModal(id = null) {
   editingId = id;
-  document.getElementById('modal-title').textContent = id ? 'Edit Staff Member' : 'Add Staff Member';
+  document.getElementById('modal-title').textContent = id ? 'Edit Admin' : 'Add Admin';
 
   if (!id) {
-    document.getElementById('f-worker-name').value = '';
+    document.getElementById('f-admin-name').value = '';
   } else {
     API.workers.getById(id).then(w => {
-      document.getElementById('f-worker-name').value = w.Worker;
+      document.getElementById('f-admin-name').value = w.Worker;
     }).catch(e => UI.toast(e.message, 'error'));
   }
   document.getElementById('modal-overlay').classList.add('modal-overlay--open');
@@ -161,33 +161,33 @@ function closeModal() {
   editingId = null;
 }
 
-async function saveWorker() {
-  const name = document.getElementById('f-worker-name').value.trim();
+async function saveAdmin() {
+  const name = document.getElementById('f-admin-name').value.trim();
   if (!name) { UI.toast('Please enter a name.', 'error'); return; }
 
   try {
     if (editingId) {
-      await API.workers.update(editingId, { Worker: name, Worker_Role: 'Staff' });
-      UI.toast('Staff member updated!');
+      await API.workers.update(editingId, { Worker: name, Worker_Role: 'Admin' });
+      UI.toast('Admin updated!');
     } else {
-      await API.workers.create({ Worker: name, Worker_Role: 'Staff' });
-      UI.toast('Staff member added!');
+      await API.workers.create({ Worker: name, Worker_Role: 'Admin' });
+      UI.toast('Admin added!');
     }
-    closeModal(); loadWorkers();
+    closeModal(); loadAdmins();
   } catch (e) { UI.toast(e.message, 'error'); }
 }
 
-async function deleteWorker(id) {
-  const ok = await UI.confirm('Delete this staff member?');
+async function deleteAdmin(id) {
+  const ok = await UI.confirm('Delete this admin account?');
   if (!ok) return;
   try {
     await API.workers.delete(id);
-    UI.toast('Staff member deleted.');
-    loadWorkers();
+    UI.toast('Admin deleted.');
+    loadAdmins();
   } catch (e) { UI.toast(e.message, 'error'); }
 }
 
-loadWorkers();
+loadAdmins();
 </script>
 </body>
 </html>

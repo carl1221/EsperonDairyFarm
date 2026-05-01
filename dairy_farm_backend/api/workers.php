@@ -32,7 +32,12 @@ try {
                     ? sendSuccess('Worker found.', $row)
                     : sendError('Worker not found.', 404);
             } else {
-                sendSuccess('Workers retrieved.', $worker->getAll());
+                // Optional ?role=Staff or ?role=Admin filter
+                $roleFilter = isset($_GET['role']) ? trim($_GET['role']) : null;
+                if ($roleFilter !== null && !in_array($roleFilter, ['Admin', 'Staff'], true)) {
+                    sendError("role must be 'Admin' or 'Staff'.", 400);
+                }
+                sendSuccess('Workers retrieved.', $worker->getAll($roleFilter));
             }
             break;
 

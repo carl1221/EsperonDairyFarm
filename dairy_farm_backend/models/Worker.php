@@ -14,13 +14,20 @@ class Worker {
     }
 
     /**
-     * Return all workers.
+     * Return all workers, optionally filtered by role.
      * Password hash is deliberately excluded — never send it to clients.
      */
-    public function getAll(): array {
-        $stmt = $this->db->query(
-            'SELECT Worker_ID, Worker, Worker_Role FROM Worker ORDER BY Worker_ID'
-        );
+    public function getAll(?string $role = null): array {
+        if ($role !== null) {
+            $stmt = $this->db->prepare(
+                'SELECT Worker_ID, Worker, Worker_Role FROM Worker WHERE Worker_Role = ? ORDER BY Worker_ID'
+            );
+            $stmt->execute([$role]);
+        } else {
+            $stmt = $this->db->query(
+                'SELECT Worker_ID, Worker, Worker_Role FROM Worker ORDER BY Worker_ID'
+            );
+        }
         return $stmt->fetchAll();
     }
 
