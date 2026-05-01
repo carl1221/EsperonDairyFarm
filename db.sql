@@ -350,11 +350,16 @@ INSERT INTO Address (Address_ID, Address) VALUES
     (302, 'San Jose, Malaybalay City')
 ON DUPLICATE KEY UPDATE Address = VALUES(Address);
 
--- Default password is 'password' (bcrypt hash)
+-- Default password is 'password' — hash generated with PHP password_hash('password', PASSWORD_DEFAULT)
 INSERT INTO Worker (Worker_ID, Worker, Worker_Role, Email, Password, approval_status) VALUES
-    (201, 'Mark',    'Staff', 'mark@esperon.farm',    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'approved'),
-    (202, 'Patrick', 'Admin', 'patrick@esperon.farm', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'approved')
-ON DUPLICATE KEY UPDATE Worker = VALUES(Worker);
+    (201, 'Mark',    'Staff', 'mark@esperon.farm',    '$2y$10$wsIsunJBcBMNSwjt6Ptz6Owr9n3bqHi9IihvpiTTz7Tmhd4wWJNLC', 'approved'),
+    (202, 'Patrick', 'Admin', 'patrick@esperon.farm', '$2y$10$wsIsunJBcBMNSwjt6Ptz6Owr9n3bqHi9IihvpiTTz7Tmhd4wWJNLC', 'approved')
+ON DUPLICATE KEY UPDATE
+    Worker          = VALUES(Worker),
+    Worker_Role     = VALUES(Worker_Role),
+    Email           = VALUES(Email),
+    Password        = VALUES(Password),
+    approval_status = VALUES(approval_status);
 
 INSERT INTO Cow (Cow_ID, Cow, Breed, Date_Of_Birth, Production_Liters, Health_Status) VALUES
     (101, 'Cow1', 'Holstein', '2020-03-15', 10.00, 'Healthy'),
