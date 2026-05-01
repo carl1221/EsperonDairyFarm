@@ -6,9 +6,17 @@
   <title>Login — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-  <!-- onload=onRecaptchaLoad tells the API to call our function once ready,
-       explicit render prevents the "null style" error that occurs when the
-       widget auto-renders inside a flex container before layout is complete -->
+  <!-- Define the callback BEFORE loading the reCAPTCHA script so it exists
+       when the API fires onload. async+defer means the API can call the
+       callback before the bottom <script> block has run. -->
+  <script>
+    var recaptchaWidgetId = null;
+    function onRecaptchaLoad() {
+      recaptchaWidgetId = grecaptcha.render('recaptcha-container', {
+        sitekey: '6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n',
+      });
+    }
+  </script>
   <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
   <style>
     /* ── Login page specific styles ── */
@@ -800,19 +808,8 @@ const alertContainer = document.getElementById('alert-container');
 const loginBtn       = document.getElementById('login-btn');
 const form           = document.getElementById('login-form');
 
-// ── reCAPTCHA explicit render ─────────────────────────────
-// Called by the reCAPTCHA API once it has fully loaded
-// (via ?onload=onRecaptchaLoad&render=explicit in the script URL).
-// Explicit render avoids the "Cannot read properties of null (reading 'style')"
-// error that occurs when auto-render fires inside a flex container before
-// the widget's internal iframe has a valid DOM target.
-let recaptchaWidgetId = null;
-
-function onRecaptchaLoad() {
-  recaptchaWidgetId = grecaptcha.render('recaptcha-container', {
-    sitekey: '6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n',
-  });
-}
+// recaptchaWidgetId and onRecaptchaLoad are defined in <head> before the
+// reCAPTCHA script loads — do NOT redeclare them here.
 
 // Helper: get reCAPTCHA response safely regardless of load state
 function getRecaptchaToken() {
