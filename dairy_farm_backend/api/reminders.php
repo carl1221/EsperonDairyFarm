@@ -15,13 +15,26 @@ require_once __DIR__ . '/../models/Reminder.php';
 
 requireAuth();
 requireCsrf();
-// Staff can view reminders (GET), only Admin can create/update/delete
-if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+// Staff can view reminders (GET) and mark them complete (PUT with status only).
+// Only Admin can create, delete, or do full updates.
+$method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'POST' || $method === 'DELETE') {
     requireRole(['Admin']);
+}
+if ($method === 'PUT') {
+    $userRole = $_SESSION['user']['role'] ?? '';
+    if ($userRole !== 'Admin') {
+        // Staff may only update the status field to 'completed'
+        $body = getRequestBody();
+        $allowedKeys = array_keys($body);
+        $onlyStatus  = $allowedKeys === ['status'] || (count($allowedKeys) === 1 && isset($body['status']));
+        if (!$onlyStatus || $body['status'] !== 'completed') {
+            sendError('Access denied. Staff may only mark reminders as completed.', 403);
+        }
+    }
 }
 
 $reminder = new Reminder();
-$method   = $_SERVER['REQUEST_METHOD'];
 $id       = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 try {

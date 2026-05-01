@@ -25,21 +25,46 @@
   const uAvatar = currentUser.avatar || '';
 
   // ── Build avatar HTML ─────────────────────────────────────
-  function avatarHTML(src, name, size) {
-    size = size || 46;
-    const initial = (name || '?').charAt(0).toUpperCase();
-    const fallback = '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;'
+  // Called by onerror on the avatar img — swaps it for the initial circle
+  window._navAvatarFallback = function(img, initial, size) {
+    var wrap = document.getElementById('nav-avatar-wrap');
+    if (!wrap) return;
+    var el = document.createElement('div');
+    el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;'
       + 'background:linear-gradient(135deg,#4e6040,#6b8a5c);'
       + 'display:flex;align-items:center;justify-content:center;'
       + 'font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;color:#fff;'
+      + 'border:2.5px solid rgba(255,255,255,0.6);box-shadow:0 2px 10px rgba(0,0,0,0.15);flex-shrink:0;';
+    el.textContent = initial;
+    wrap.innerHTML = '';
+    wrap.appendChild(el);
+  };
+
+  function makeInitialCircle(initial, size) {
+    var el = document.createElement('div');
+    el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;'
+      + 'background:linear-gradient(135deg,#4e6040,#6b8a5c);'
+      + 'display:flex;align-items:center;justify-content:center;'
+      + 'font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;color:#fff;'
+      + 'border:2.5px solid rgba(255,255,255,0.6);box-shadow:0 2px 10px rgba(0,0,0,0.15);flex-shrink:0;';
+    el.textContent = initial;
+    return el;
+  }
+
+  function avatarHTML(src, name, size) {
+    size = size || 46;
+    var initial = (name || '?').charAt(0).toUpperCase();
+    if (!src) {
+      // Return outer HTML of the circle div
+      return makeInitialCircle(initial, size).outerHTML;
+    }
+    // Only the <img> — no sibling fallback in the DOM
+    // onerror calls the global helper function (no inline style strings)
+    return '<img src="' + src + '?t=' + Date.now() + '" alt="' + name + '" '
+      + 'style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;'
       + 'border:2.5px solid rgba(255,255,255,0.6);box-shadow:0 2px 10px rgba(0,0,0,0.15);'
-      + 'flex-shrink:0;">' + initial + '</div>';
-    if (!src) return fallback;
-    return '<img src="' + src + '?t=' + Date.now() + '" alt="' + name + '" style="'
-      + 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;'
-      + 'border:2.5px solid rgba(255,255,255,0.6);box-shadow:0 2px 10px rgba(0,0,0,0.15);'
-      + 'display:block;flex-shrink:0;" onerror="this.replaceWith(this.nextElementSibling)" />'
-      + fallback;
+      + 'display:block;flex-shrink:0;" '
+      + 'onerror="_navAvatarFallback(this,\'' + initial + '\',' + size + ');this.onerror=null;" />';
   }
 
   // ── Render sidebar ────────────────────────────────────────
@@ -84,8 +109,17 @@
         + '<a href="cows.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">pets</span><span>Cows</span></a>'
         + '<a href="workers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">badge</span><span>Workers</span></a>'
         + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
+        + '<a href="approvals.php" class="nav__link" id="nav-approvals-link"><span class="nav__link-icon material-symbols-outlined">how_to_reg</span><span>Approvals</span><span id="nav-approval-badge" style="display:none;margin-left:auto;background:var(--danger);color:#fff;border-radius:20px;font-size:0.6rem;font-weight:700;padding:1px 6px;min-width:16px;text-align:center;"></span></a>'
+        + '<a href="online_staff.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">wifi</span><span>Online Staff</span></a>'
+        + '<a href="inventory.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">inventory_2</span><span>Inventory</span></a>'
+        + '<a href="reminders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">alarm</span><span>Reminders</span></a>'
+        + '<a href="notes.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">edit_note</span><span>Notes</span></a>'
+        + '<a href="report.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">description</span><span>Staff Reports</span></a>'
       : '<span class="nav__section">My Work</span>'
         + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
+        + '<a href="reminders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">alarm</span><span>Reminders</span></a>'
+        + '<a href="notes.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">edit_note</span><span>Notes</span></a>'
+        + '<a href="report.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">description</span><span>My Reports</span></a>'
     )
 
     + '<span class="nav__section">Account</span>'

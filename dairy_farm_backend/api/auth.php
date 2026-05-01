@@ -57,13 +57,17 @@ try {
                     sendError('reCAPTCHA verification failed. Please try again.', 400);
                 }
 
-                // Fetch the worker record — Email included so we can
-                // put it in the session for display in the frontend
-                $stmt = $db = getConnection()->prepare(
-                    'SELECT Worker_ID, Worker, Worker_Role, Email, Avatar, Password
-                     FROM Worker
-                     WHERE Worker = ?
-                     LIMIT 1'
+                $dbConn = getConnection();
+
+                // Check if approval_status column exists (migration may not have run yet)
+                $cols       = $dbConn->query("SHOW COLUMNS FROM Worker")->fetchAll(PDO::FETCH_COLUMN);
+                $hasApproval = in_array('approval_status', $cols);
+                $selectCols  = 'Worker_ID, Worker, Worker_Role, Email, Avatar, Password'
+                             . ($hasApproval ? ', approval_status' : '');
+
+                // Fetch the worker record
+                $stmt = $dbConn->prepare(
+                    "SELECT {$selectCols} FROM Worker WHERE Worker = ? LIMIT 1"
                 );
                 $stmt->execute([$username]);
                 $user = $stmt->fetch();
@@ -73,6 +77,17 @@ try {
                     sendError('Invalid username or password', 401);
                 }
 
+                // Check approval status only if column exists
+                if ($hasApproval) {
+                    $approvalStatus = $user['approval_status'] ?? 'approved';
+                    // Only block if explicitly pending or rejected (null/empty = approved)
+                    if ($approvalStatus === 'pending') {
+                        sendError('Your account is awaiting admin approval.', 403);
+                    }
+                    if ($approvalStatus === 'rejected') {
+                        sendError('Your account registration was rejected.', 403);
+                    }
+                }
                 // Regenerate session ID on privilege escalation (login)
                 // to prevent session fixation attacks
                 session_regenerate_id(true);

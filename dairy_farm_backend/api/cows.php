@@ -15,8 +15,10 @@ require_once __DIR__ . '/../models/Cow.php';
 
 requireAuth();
 requireCsrf();
-// Cow management is Admin-only
-requireRole(['Admin']);
+// Staff can view cows (GET), only Admin can create/update/delete
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
+    requireRole(['Admin']);
+}
 
 $cow    = new Cow();
 $method = $_SERVER['REQUEST_METHOD'];

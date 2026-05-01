@@ -105,4 +105,30 @@ const API = {
     update:        (id, d)  => API.request(`orders.php?id=${id}`, 'PUT', d),
     delete:        (id)     => API.request(`orders.php?id=${id}`, 'DELETE'),
   },
+
+  // ── Approval ──────────────────────────────────────────────
+  approval: {
+    getPending: () => API.request('approval.php'),
+    approve: (worker_id) => API.request('approval.php', 'POST', { worker_id, action: 'approve' }),
+    reject:  (worker_id) => API.request('approval.php', 'POST', { worker_id, action: 'reject' }),
+  },
+
+  // ── Online Status ─────────────────────────────────────────
+  onlineStatus: {
+    getAll: () => API.request('online_status.php'),
+  },
+
+  // ── Heartbeat ─────────────────────────────────────────────
+  heartbeat: {
+    ping: () => API.request('heartbeat.php', 'POST'),
+  },
+
+  // ── Staff Reports ─────────────────────────────────────────
+  reports: {
+    getAll:    ()        => API.request('reports.php'),
+    getById:   (id)      => API.request(`reports.php?id=${id}`),
+    submit:    (data)    => API.request('reports.php', 'POST', data),
+    update:    (id, d)   => API.request(`reports.php?id=${id}`, 'PUT', d),
+    delete:    (id)      => API.request(`reports.php?id=${id}`, 'DELETE'),
+  },
 };
