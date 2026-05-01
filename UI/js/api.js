@@ -90,11 +90,13 @@ const API = {
 
   // ── Workers ───────────────────────────────────────────────
   workers: {
-    getAll:   ()        => API.request('workers.php'),
-    getById:  (id)      => API.request(`workers.php?id=${id}`),
-    create:   (data)    => API.request('workers.php', 'POST', data),
-    update:   (id, d)   => API.request(`workers.php?id=${id}`, 'PUT', d),
-    delete:   (id)      => API.request(`workers.php?id=${id}`, 'DELETE'),
+    getAll:      ()        => API.request('workers.php'),
+    getStaff:    ()        => API.request('workers.php?role=Staff'),
+    getAdmins:   ()        => API.request('workers.php?role=Admin'),
+    getById:     (id)      => API.request(`workers.php?id=${id}`),
+    create:      (data)    => API.request('workers.php', 'POST', data),
+    update:      (id, d)   => API.request(`workers.php?id=${id}`, 'PUT', d),
+    delete:      (id)      => API.request(`workers.php?id=${id}`, 'DELETE'),
   },
 
   // ── Orders ────────────────────────────────────────────────
