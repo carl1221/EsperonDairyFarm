@@ -21,21 +21,30 @@ $id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $user   = $_SESSION['user'];
 $isAdmin = ($user['role'] ?? '') === 'Admin';
 
-// Ensure table exists (auto-migrate)
+// Ensure table exists (auto-migrate) and view exists
 $db->exec("
     CREATE TABLE IF NOT EXISTS staff_reports (
-        report_id   INT           NOT NULL AUTO_INCREMENT,
-        worker_id   INT           NOT NULL,
-        worker_name VARCHAR(100)  NOT NULL,
-        report_type VARCHAR(50)   NOT NULL DEFAULT 'Daily Report',
-        title       VARCHAR(255)  NOT NULL,
-        content     TEXT          NOT NULL,
+        report_id   INT          NOT NULL AUTO_INCREMENT,
+        worker_id   INT          NOT NULL,
+        report_type VARCHAR(50)  NOT NULL DEFAULT 'Daily Report',
+        title       VARCHAR(255) NOT NULL,
+        content     TEXT         NOT NULL,
         status      ENUM('pending','reviewed','acknowledged') NOT NULL DEFAULT 'pending',
-        admin_note  TEXT          NULL,
-        created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        CONSTRAINT pk_reports PRIMARY KEY (report_id)
+        admin_note  TEXT         NULL,
+        created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT pk_reports    PRIMARY KEY (report_id),
+        CONSTRAINT fk_rep_worker FOREIGN KEY (worker_id) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+");
+
+// Create view for joined queries
+$db->exec("
+    CREATE OR REPLACE VIEW vw_staff_reports AS
+    SELECT r.report_id, r.worker_id, w.Worker AS worker_name, w.Worker_Role AS worker_role,
+           r.report_type, r.title, r.content, r.status, r.admin_note, r.created_at, r.updated_at
+    FROM staff_reports r
+    JOIN Worker w ON r.worker_id = w.Worker_ID
 ");
 
 try {
@@ -43,20 +52,19 @@ try {
 
         case 'GET':
             if ($id) {
-                $stmt = $db->prepare("SELECT * FROM staff_reports WHERE report_id = ?");
+                $stmt = $db->prepare("SELECT * FROM vw_staff_reports WHERE report_id = ?");
                 $stmt->execute([$id]);
                 $row = $stmt->fetch();
                 if (!$row) sendError('Report not found.', 404);
-                // Staff can only view their own
                 if (!$isAdmin && (int)$row['worker_id'] !== (int)$user['id']) {
                     sendError('Access denied.', 403);
                 }
                 sendSuccess('Report found.', $row);
             } else {
                 if ($isAdmin) {
-                    $stmt = $db->query("SELECT * FROM staff_reports ORDER BY created_at DESC");
+                    $stmt = $db->query("SELECT * FROM vw_staff_reports ORDER BY created_at DESC");
                 } else {
-                    $stmt = $db->prepare("SELECT * FROM staff_reports WHERE worker_id = ? ORDER BY created_at DESC");
+                    $stmt = $db->prepare("SELECT * FROM vw_staff_reports WHERE worker_id = ? ORDER BY created_at DESC");
                     $stmt->execute([$user['id']]);
                 }
                 sendSuccess('Reports retrieved.', $stmt->fetchAll());
@@ -67,12 +75,11 @@ try {
             $data = getRequestBody();
             validateRequired($data, ['title', 'content', 'report_type']);
             $stmt = $db->prepare("
-                INSERT INTO staff_reports (worker_id, worker_name, report_type, title, content, status)
-                VALUES (?, ?, ?, ?, ?, 'pending')
+                INSERT INTO staff_reports (worker_id, report_type, title, content, status)
+                VALUES (?, ?, ?, ?, 'pending')
             ");
             $stmt->execute([
                 $user['id'],
-                $user['name'],
                 validateString($data['report_type'], 'report_type', 50),
                 validateString($data['title'],       'title',       255),
                 validateString($data['content'],     'content',     5000),
