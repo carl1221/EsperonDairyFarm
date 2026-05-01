@@ -168,36 +168,54 @@ function validateRequired(array $data, array $required): void {
 /**
  * Verify a reCAPTCHA v2 token with Google's API.
  * Returns true if verification succeeds, false otherwise.
+ *
+ * On localhost / 127.0.0.1 the curl call to Google will fail because
+ * XAMPP ships without CA certificates. We bypass verification in that
+ * case so local development is not blocked.
  */
 function verifyRecaptcha(string $token): bool {
+    // ── Localhost bypass ──────────────────────────────────
+    // XAMPP cannot reach external HTTPS endpoints without CA cert setup.
+    // Skip reCAPTCHA verification for local development only.
+    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+    $isLocal = in_array($host, ['localhost', '127.0.0.1'], true)
+            || str_starts_with($host, 'localhost:')
+            || str_starts_with($host, '127.0.0.1:');
+
+    if ($isLocal) {
+        // Still require a non-empty token so the JS widget must be completed,
+        // but skip the Google API call that always fails on localhost.
+        return $token !== '';
+    }
+
+    // ── Production: verify with Google ───────────────────
     $secretKey = '6LdTbcssAAAAAB89F9NK3vQZHI_C6unG9SI6zwk7';
-    
+
     $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-        'secret' => $secretKey,
-        'response' => $token
+        'secret'   => $secretKey,
+        'response' => $token,
     ]));
     curl_setopt($ch, CURLOPT_TIMEOUT, 5);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
+
     if ($httpCode !== 200 || !$response) {
         error_log('reCAPTCHA verification failed: HTTP ' . $httpCode);
         return false;
     }
-    
+
     $result = json_decode($response, true);
-    
-    // Require success and score threshold
+
     if (!isset($result['success']) || !$result['success']) {
         error_log('reCAPTCHA verification failed: ' . ($result['error-codes'][0] ?? 'unknown error'));
         return false;
     }
-    
+
     return true;
 }
 

@@ -184,15 +184,22 @@ try {
                 $selectCols  = 'Worker_ID, Worker, Worker_Role, Email, Avatar, Password'
                              . ($hasApproval ? ', approval_status' : '');
 
-                // Fetch the worker record
+                // Fetch the worker record — use LOWER() on both sides for
+                // case-insensitive match regardless of DB collation.
                 $stmt = $dbConn->prepare(
-                    "SELECT {$selectCols} FROM Worker WHERE Worker = ? LIMIT 1"
+                    "SELECT {$selectCols} FROM Worker WHERE LOWER(Worker) = LOWER(?) LIMIT 1"
                 );
                 $stmt->execute([$username]);
                 $user = $stmt->fetch();
 
                 // password_verify does a constant-time comparison — safe
                 if (!$user || !password_verify($password, $user['Password'])) {
+                    // Log the specific failure reason internally (never expose to client)
+                    if (!$user) {
+                        error_log('[Auth] Login failed: username not found — ' . $username);
+                    } else {
+                        error_log('[Auth] Login failed: wrong password for — ' . $username);
+                    }
                     sendError('Invalid username or password', 401);
                 }
 
