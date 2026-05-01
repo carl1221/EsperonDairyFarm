@@ -194,6 +194,7 @@ var STATUS_PILL = {
 
 var TYPE_ICON = {
   'Daily Report':           'today',
+  'Activity Log':           'history',
   'Incident Report':        'warning',
   'Livestock Report':       'pets',
   'Maintenance Report':     'build',

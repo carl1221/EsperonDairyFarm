@@ -189,14 +189,28 @@ function toggleTask(id, checked) {
 // ── ACTIVITY LOG ──────────────────────────────────────────
 const LOG_KEY = 'staff_activity_log_' + (getStoredUser().id || 'default');
 
-function logActivity(text) {
+async function logActivity(text) {
   try {
+    // Save locally for instant display
     const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
     logs.unshift({ text, time: nowTime(), date: new Date().toDateString() });
     if (logs.length > 20) logs.pop();
     localStorage.setItem(LOG_KEY, JSON.stringify(logs));
     renderActivityLog();
-  } catch(e) {}
+
+    // Also save to database so admin can see it in Staff Reports
+    const csrf = localStorage.getItem('csrf_token') || '';
+    await fetch('../dairy_farm_backend/api/reports.php', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify({
+        report_type: 'Activity Log',
+        title: new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) + ' — Activity',
+        content: text
+      })
+    });
+  } catch(e) { /* non-critical — local log still saved */ }
 }
 
 function renderActivityLog() {
