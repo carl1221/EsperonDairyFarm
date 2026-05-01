@@ -37,3 +37,14 @@ function requireAdminPage(): void {
         exit;
     }
 }
+
+/**
+ * Redirect to login if the current user is not a Customer.
+ */
+function requireCustomerPage(): void {
+    $role = $_SESSION['user']['role'] ?? '';
+    if ($role !== 'Customer') {
+        header('Location: index.php');
+        exit;
+    }
+}
