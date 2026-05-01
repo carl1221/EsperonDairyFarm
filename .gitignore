@@ -1,3 +1,6 @@
+# Kiro internal spec/workspace files
+.kiro/
+
 # Environment variables
 .env
 .env.local
