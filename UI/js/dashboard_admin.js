@@ -2,6 +2,31 @@
 // js/dashboard_admin.js  —  Admin Dashboard Logic
 // ============================================================
 
+// ── DASHBOARD TABS ────────────────────────────────────────
+function switchTab(tabId, btn) {
+  // Hide all panels
+  document.querySelectorAll('.dash-tab-panel').forEach(function(p) {
+    p.style.display = 'none';
+  });
+  // Deactivate all tab buttons
+  document.querySelectorAll('.dash-tab').forEach(function(b) {
+    b.classList.remove('dash-tab--active');
+  });
+  // Show selected panel
+  var panel = document.getElementById(tabId);
+  if (panel) panel.style.display = 'block';
+  if (btn)   btn.classList.add('dash-tab--active');
+  // Persist active tab
+  try { localStorage.setItem('dash_active_tab', tabId); } catch(e) {}
+}
+
+// Restore last active tab on load
+document.addEventListener('DOMContentLoaded', function() {
+  var saved = localStorage.getItem('dash_active_tab') || 'tab-orders';
+  var btn   = document.getElementById('btn-' + saved);
+  if (btn) switchTab(saved, btn);
+});
+
 // ── Helpers ───────────────────────────────────────────────
 function getStoredUser() {
   try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
@@ -172,6 +197,168 @@ function submitCustomAlert() {
   if (typeof UI !== 'undefined') UI.toast('Alert posted!', 'success');
 }
 
+// ── NOTIFICATION BELL PANEL ───────────────────────────────
+(function() {
+  var panelEl = null;
+  var isOpen  = false;
+
+  var icons = { danger: 'warning', warning: 'info', info: 'info', success: 'check_circle' };
+  var typeColors = {
+    danger:  { bg: 'var(--danger-lt)',  border: 'var(--danger)',  text: '#7a1f2e' },
+    warning: { bg: 'var(--warning-lt)', border: 'var(--warning)', text: '#7a5a1e' },
+    info:    { bg: 'var(--info-lt)',    border: 'var(--info)',    text: '#2d4f5e' },
+    success: { bg: 'var(--success-lt)', border: 'var(--olive)',   text: 'var(--olive-dark)' },
+  };
+
+  function getVisible() {
+    var sys = alertItems.filter(function(a) {
+      return dismissedAlerts.indexOf(a.id) === -1;
+    });
+    return sys.concat(customAlerts);
+  }
+
+  function buildPanel() {
+    var visible = getVisible();
+    var el = document.createElement('div');
+    el.id = 'notif-panel';
+    el.style.cssText = 'position:absolute;top:calc(100% + 10px);right:0;width:340px;'
+      + 'background:#faf6f0;border:1.5px solid var(--border-light);border-radius:16px;'
+      + 'box-shadow:0 12px 40px rgba(0,0,0,0.16);z-index:99999;overflow:hidden;'
+      + 'font-family:var(--font-sans);animation:notifSlideIn 0.2s ease;';
+
+    // Header
+    var header = '<div style="display:flex;align-items:center;justify-content:space-between;'
+      + 'padding:14px 16px 10px;background:linear-gradient(135deg,#4e6040,#6b8a5c);">'
+      + '<div style="display:flex;align-items:center;gap:7px;">'
+      + '<span class="material-symbols-outlined" style="color:#fff;font-size:1.1rem;">notifications</span>'
+      + '<span style="font-family:\'Playfair Display\',serif;font-size:0.95rem;font-weight:700;color:#fff;">Notifications</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;">'
+      + (visible.length ? '<button onclick="clearAllAlerts()" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;'
+        + 'padding:3px 9px;border-radius:6px;color:#fff;font-size:0.72rem;font-weight:600;font-family:\'Lato\',sans-serif;">'
+        + 'Clear all</button>' : '')
+      + '<button id="notif-panel-close" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;'
+        + 'width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;">'
+        + '<span class="material-symbols-outlined" style="font-size:0.9rem;">close</span></button>'
+      + '</div></div>';
+
+    // Body
+    var body = '<div style="max-height:340px;overflow-y:auto;">';
+    if (!visible.length) {
+      body += '<div style="padding:28px 16px;text-align:center;">'
+        + '<span class="material-symbols-outlined" style="font-size:2.5rem;color:var(--olive);display:block;margin-bottom:8px;">check_circle</span>'
+        + '<div style="font-size:0.88rem;font-weight:600;color:var(--text);">All clear!</div>'
+        + '<div style="font-size:0.78rem;color:var(--muted);margin-top:3px;">No active notifications.</div>'
+        + '</div>';
+    } else {
+      body += visible.map(function(a) {
+        var c = typeColors[a.type] || typeColors.warning;
+        var isCustom = !!a.custom;
+        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:11px 16px;'
+          + 'border-bottom:1px solid var(--border-light);background:' + c.bg + ';'
+          + 'border-left:3px solid ' + c.border + ';">'
+          + '<span class="material-symbols-outlined" style="font-size:1rem;color:' + c.border + ';flex-shrink:0;margin-top:1px;">'
+          + (icons[a.type] || 'info') + '</span>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:0.83rem;color:' + c.text + ';line-height:1.4;">' + a.msg + '</div>'
+          + (isCustom ? '<div style="font-size:0.68rem;color:var(--muted);margin-top:2px;font-weight:700;text-transform:uppercase;">Custom</div>' : '')
+          + '</div>'
+          + '<button onclick="dismissAlert(\'' + a.id + '\',' + isCustom + ');refreshNotifPanel();" title="Dismiss" '
+          + 'style="background:none;border:none;cursor:pointer;padding:0;flex-shrink:0;opacity:0.45;line-height:1;" '
+          + 'onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'0.45\'">'
+          + '<span class="material-symbols-outlined" style="font-size:0.9rem;color:' + c.text + ';">close</span>'
+          + '</button>'
+          + '</div>';
+      }).join('');
+    }
+    body += '</div>';
+
+    // Footer
+    var footer = '<div style="padding:9px 16px;border-top:1px solid var(--border-light);'
+      + 'background:rgba(255,255,255,0.5);display:flex;justify-content:space-between;align-items:center;">'
+      + '<span style="font-size:0.72rem;color:var(--muted);">'
+      + visible.length + ' active notification' + (visible.length !== 1 ? 's' : '') + '</span>'
+      + '<button onclick="openAddAlertModal()" style="background:none;border:none;cursor:pointer;'
+        + 'font-size:0.72rem;color:var(--olive);font-weight:700;font-family:\'Lato\',sans-serif;'
+        + 'display:flex;align-items:center;gap:3px;">'
+        + '<span class="material-symbols-outlined" style="font-size:0.85rem;">add_alert</span> Add alert</button>'
+      + '</div>';
+
+    el.innerHTML = header + body + footer;
+    return el;
+  }
+
+  function openPanel() {
+    closePanel();
+    var btn = document.getElementById('notif-btn');
+    if (!btn) return;
+    var wrap = btn.parentElement;
+    wrap.style.position = 'relative';
+    panelEl = buildPanel();
+    wrap.appendChild(panelEl);
+    isOpen = true;
+
+    // Close button
+    var closeBtn = document.getElementById('notif-panel-close');
+    if (closeBtn) closeBtn.onclick = closePanel;
+
+    // Close on outside click
+    setTimeout(function() {
+      document.addEventListener('click', outsideClick);
+    }, 10);
+  }
+
+  function closePanel() {
+    if (panelEl) { panelEl.remove(); panelEl = null; }
+    isOpen = false;
+    document.removeEventListener('click', outsideClick);
+  }
+
+  function outsideClick(e) {
+    if (panelEl && !panelEl.contains(e.target)) {
+      var btn = document.getElementById('notif-btn');
+      if (btn && btn.contains(e.target)) return;
+      closePanel();
+    }
+  }
+
+  // Expose so dismissAlert can refresh the panel
+  window.refreshNotifPanel = function() {
+    if (isOpen) { closePanel(); openPanel(); }
+    renderAlerts(); // keep the alerts card in sync
+  };
+
+  window.clearAllAlerts = function() {
+    // Dismiss all system alerts
+    alertItems.forEach(function(a) {
+      if (dismissedAlerts.indexOf(a.id) === -1) dismissedAlerts.push(a.id);
+    });
+    // Clear all custom alerts
+    customAlerts = [];
+    saveAlertStorage();
+    renderAlerts();
+    if (isOpen) { closePanel(); openPanel(); }
+    if (typeof UI !== 'undefined') UI.toast('All notifications cleared.', 'success');
+  };
+
+  // Add keyframe animation
+  var styleEl = document.createElement('style');
+  styleEl.textContent = '@keyframes notifSlideIn{from{opacity:0;transform:translateY(-10px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}';
+  document.head.appendChild(styleEl);
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('notif-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (isOpen) closePanel(); else openPanel();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && isOpen) closePanel();
+    });
+  });
+})();
+
 // ── MILK STAT ─────────────────────────────────────────────
 function updateMilkStat(cows) {
   var total = cows.reduce(function(sum, c) {
@@ -197,7 +384,189 @@ function updateMilkStat(cows) {
 }
 
 // ── ORDERS ────────────────────────────────────────────────
-var allOrders   = [];
+var allOrders    = [];
+var allCows      = [];
+var allWorkers   = [];
+var allCustomers = [];
+
+// ── GLOBAL SEARCH ─────────────────────────────────────────
+(function() {
+  var searchTimeout = null;
+  var dropEl = null;
+
+  function getOrCreateDrop() {
+    if (dropEl) return dropEl;
+    dropEl = document.createElement('div');
+    dropEl.id = 'global-search-drop';
+    dropEl.style.cssText = 'position:absolute;top:calc(100% + 6px);left:0;right:0;'
+      + 'background:#faf6f0;border:1.5px solid var(--border-light);border-radius:14px;'
+      + 'box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:99999;max-height:380px;overflow-y:auto;'
+      + 'font-family:var(--font-sans);min-width:320px;';
+    var wrap = document.querySelector('.header__search');
+    if (wrap) {
+      wrap.style.position = 'relative';
+      wrap.appendChild(dropEl);
+    }
+    return dropEl;
+  }
+
+  function closeDrop() {
+    if (dropEl) { dropEl.remove(); dropEl = null; }
+  }
+
+  function highlight(text, q) {
+    if (!q) return text;
+    var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return String(text).replace(re, '<mark style="background:rgba(78,96,64,0.18);border-radius:3px;padding:0 2px;">$1</mark>');
+  }
+
+  function makeRow(icon, title, sub, href) {
+    var el = document.createElement('a');
+    el.href = href || '#';
+    el.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 14px;'
+      + 'text-decoration:none;color:var(--text);border-bottom:1px solid var(--border-light);'
+      + 'transition:background 0.12s;';
+    el.onmouseover = function() { el.style.background = 'rgba(78,96,64,0.07)'; };
+    el.onmouseout  = function() { el.style.background = ''; };
+    el.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem;color:var(--muted);flex-shrink:0;">' + icon + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:0.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + title + '</div>'
+      + '<div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sub + '</div>'
+      + '</div>';
+    return el;
+  }
+
+  function makeSectionHeader(label) {
+    var el = document.createElement('div');
+    el.style.cssText = 'padding:6px 14px 3px;font-size:0.65rem;font-weight:700;'
+      + 'text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);'
+      + 'background:rgba(255,255,255,0.6);';
+    el.textContent = label;
+    return el;
+  }
+
+  function runSearch(q) {
+    var drop = getOrCreateDrop();
+    drop.innerHTML = '';
+
+    if (!q) { closeDrop(); return; }
+
+    var ql = q.toLowerCase();
+    var results = [];
+
+    // Orders
+    var orderMatches = allOrders.filter(function(o) {
+      return (String(o.Order_ID).includes(ql))
+        || (o.Customer_Name || '').toLowerCase().includes(ql)
+        || (o.Order_Type    || '').toLowerCase().includes(ql)
+        || (o.Cow           || '').toLowerCase().includes(ql);
+    }).slice(0, 5);
+
+    // Cows
+    var cowMatches = allCows.filter(function(c) {
+      return (c.Cow || '').toLowerCase().includes(ql)
+        || String(c.Cow_ID).includes(ql)
+        || (c.Production || '').toLowerCase().includes(ql);
+    }).slice(0, 5);
+
+    // Workers / Staff
+    var workerMatches = allWorkers.filter(function(w) {
+      return (w.Worker      || '').toLowerCase().includes(ql)
+        || (w.Worker_Role   || '').toLowerCase().includes(ql)
+        || String(w.Worker_ID).includes(ql);
+    }).slice(0, 5);
+
+    // Customers
+    var customerMatches = allCustomers.filter(function(c) {
+      return (c.Customer_Name || '').toLowerCase().includes(ql)
+        || (c.Address         || '').toLowerCase().includes(ql)
+        || (c.Contact_Num     || '').toLowerCase().includes(ql)
+        || String(c.CID).includes(ql);
+    }).slice(0, 5);
+
+    var total = orderMatches.length + cowMatches.length + workerMatches.length + customerMatches.length;
+
+    if (!total) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'padding:16px 14px;text-align:center;color:var(--muted);font-size:0.84rem;';
+      empty.textContent = 'No results for "' + q + '"';
+      drop.appendChild(empty);
+      return;
+    }
+
+    if (orderMatches.length) {
+      drop.appendChild(makeSectionHeader('Orders'));
+      orderMatches.forEach(function(o) {
+        drop.appendChild(makeRow('receipt_long',
+          highlight('#' + o.Order_ID + ' — ' + (o.Customer_Name || ''), q),
+          highlight((o.Order_Type || '') + ' · ' + (o.Cow || '') + ' · ' + (o.Order_Date || ''), q),
+          'orders.php'
+        ));
+      });
+    }
+
+    if (cowMatches.length) {
+      drop.appendChild(makeSectionHeader('Cows'));
+      cowMatches.forEach(function(c) {
+        drop.appendChild(makeRow('pets',
+          highlight(c.Cow || '', q),
+          highlight('ID #' + c.Cow_ID + ' · ' + (c.Production || ''), q),
+          'cows.php'
+        ));
+      });
+    }
+
+    if (workerMatches.length) {
+      drop.appendChild(makeSectionHeader('Staff'));
+      workerMatches.forEach(function(w) {
+        drop.appendChild(makeRow('badge',
+          highlight(w.Worker || '', q),
+          highlight((w.Worker_Role || '') + ' · ID #' + w.Worker_ID, q),
+          'workers.php'
+        ));
+      });
+    }
+
+    if (customerMatches.length) {
+      drop.appendChild(makeSectionHeader('Customers'));
+      customerMatches.forEach(function(c) {
+        drop.appendChild(makeRow('people',
+          highlight(c.Customer_Name || '', q),
+          highlight((c.Address || '') + ' · ' + (c.Contact_Num || ''), q),
+          'customers.php'
+        ));
+      });
+    }
+
+    // Footer hint
+    var footer = document.createElement('div');
+    footer.style.cssText = 'padding:7px 14px;font-size:0.7rem;color:var(--muted);text-align:center;'
+      + 'border-top:1px solid var(--border-light);background:rgba(255,255,255,0.5);';
+    footer.textContent = total + ' result' + (total !== 1 ? 's' : '') + ' found';
+    drop.appendChild(footer);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('global-search');
+    if (!input) return;
+
+    input.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      var q = input.value.trim();
+      searchTimeout = setTimeout(function() { runSearch(q); }, 180);
+    });
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { input.value = ''; closeDrop(); }
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', function(e) {
+      var wrap = document.querySelector('.header__search');
+      if (wrap && !wrap.contains(e.target)) closeDrop();
+    });
+  });
+})();
 var orderFilter = 'all';
 var statusCycle = ['pending', 'processing', 'delivered'];
 var statusLabel = { pending: 'Pending', processing: 'Processing', delivered: 'Delivered' };
@@ -596,37 +965,8 @@ async function deleteReminder(id) {
 })();
 
 // ── INVENTORY MANAGEMENT ──────────────────────────────────
-var INV_KEY = 'admin_inventory';
-
-var defaultInventory = [
-  { id: 'milk',    name: 'Milk Stock',  pct: 65, unit: 'L',  capacity: 500,  icon: 'water_drop'  },
-  { id: 'silageA', name: 'Silage A',    pct: 78, unit: 'kg', capacity: 1000, icon: 'grass'        },
-  { id: 'siloB',   name: 'Silo B',      pct: 38, unit: 'kg', capacity: 800,  icon: 'silo'         },
-  { id: 'hay',     name: 'Hay',         pct: 88, unit: 'kg', capacity: 600,  icon: 'agriculture'  },
-  { id: 'feed',    name: 'Animal Feed', pct: 52, unit: 'kg', capacity: 400,  icon: 'lunch_dining' },
-];
-
-function loadInventory() {
-  try {
-    var stored = localStorage.getItem(INV_KEY);
-    if (!stored) return defaultInventory.map(function(i){ return Object.assign({}, i); });
-    var parsed = JSON.parse(stored);
-    // Validate it's a non-empty array with the right shape
-    if (!Array.isArray(parsed) || parsed.length === 0 || typeof parsed[0].pct === 'undefined') {
-      return defaultInventory.map(function(i){ return Object.assign({}, i); });
-    }
-    return parsed;
-  } catch(e) {
-    return defaultInventory.map(function(i){ return Object.assign({}, i); });
-  }
-}
-
-function saveInventory(items) {
-  try {
-    localStorage.setItem(INV_KEY, JSON.stringify(items));
-    localStorage.setItem(INV_KEY + '_updated', new Date().toLocaleString());
-  } catch(e) { console.error('Failed to save inventory:', e); }
-}
+// Core helpers (INV_KEY, defaultInventory, loadInventory, saveInventory,
+// getBarClass, getLabelColor) are loaded from js/inventory.js
 
 function resetInventory() {
   if (!confirm('Reset all inventory levels to defaults?')) return;
@@ -634,14 +974,6 @@ function resetInventory() {
   localStorage.removeItem(INV_KEY + '_updated');
   renderInventoryBars();
   UI.toast('Inventory reset to defaults.', 'success');
-}
-
-function getBarClass(pct) {
-  return pct < 30 ? 'inv-bar-fill--low' : pct < 60 ? 'inv-bar-fill--mid' : 'inv-bar-fill--ok';
-}
-
-function getLabelColor(pct) {
-  return pct < 30 ? 'var(--danger)' : pct < 60 ? '#7a5a1e' : 'var(--olive-dark)';
 }
 
 function renderInventoryBars() {
@@ -963,6 +1295,183 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// ── PENDING APPROVALS ─────────────────────────────────────
+async function loadPendingApprovals() {
+  var container = document.getElementById('approvals-list');
+  var badge     = document.getElementById('approval-badge');
+  if (!container) return;
+  try {
+    var pending = await API.approval.getPending();
+    if (!Array.isArray(pending)) pending = [];
+
+    if (badge) {
+      badge.textContent = pending.length;
+      badge.style.display = pending.length > 0 ? 'inline-block' : 'none';
+    }
+
+    if (!pending.length) {
+      container.innerHTML = '<div style="text-align:center;padding:20px 0;">'
+        + '<span class="material-symbols-outlined" style="font-size:2rem;color:var(--olive);display:block;margin-bottom:6px;">check_circle</span>'
+        + '<p style="color:var(--muted);font-size:0.84rem;">No pending registrations.</p></div>';
+      return;
+    }
+
+    container.innerHTML = pending.map(function(w) {
+      var initials = (w.Worker || '?').charAt(0).toUpperCase();
+      var date = w.created_at
+        ? new Date(w.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+        : '—';
+      var safeName = (w.Worker || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);">'
+        + '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--olive),var(--olive-light));'
+        + 'display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:#fff;flex-shrink:0;">' + initials + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:700;font-size:0.84rem;">' + (w.Worker || '') + '</div>'
+        + '<div style="font-size:0.72rem;color:var(--muted);">' + (w.Email || '') + ' · ' + (w.Worker_Role || '') + ' · ' + date + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:5px;flex-shrink:0;">'
+        + '<button onclick="approveWorker(' + w.Worker_ID + ',this)" '
+        + 'style="background:var(--olive);color:#fff;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:3px;">'
+        + '<span class="material-symbols-outlined" style="font-size:0.85rem;">check</span> Approve</button>'
+        + '<button onclick="openRejectModal(' + w.Worker_ID + ',\'' + safeName + '\')" '
+        + 'style="background:var(--danger-lt);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:3px;">'
+        + '<span class="material-symbols-outlined" style="font-size:0.85rem;">close</span> Reject</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    if (container) container.innerHTML = '<p style="color:var(--danger);font-size:0.84rem;">Failed to load approvals.</p>';
+  }
+}
+
+async function approveWorker(id, btn) {
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.85rem;animation:rmSpin 0.7s linear infinite;">progress_activity</span>'; }
+  try {
+    await API.approval.approve(id);
+    UI.toast('User approved successfully!', 'success');
+    loadPendingApprovals();
+  } catch(e) {
+    UI.toast('Failed to approve: ' + (e.message || 'Unknown error'), 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.85rem;">check</span> Approve'; }
+  }
+}
+
+var _rejectWorkerId = null;
+
+function openRejectModal(id, name) {
+  _rejectWorkerId = id;
+  var modal  = document.getElementById('rejectModal');
+  var nameEl = document.getElementById('reject-worker-name');
+  if (nameEl) nameEl.textContent = 'Worker: ' + name;
+  if (modal)  modal.style.display = 'flex';
+  var confirmBtn = document.getElementById('confirm-reject-btn');
+  if (confirmBtn) confirmBtn.onclick = confirmReject;
+}
+
+function closeRejectModal() {
+  var modal = document.getElementById('rejectModal');
+  if (modal) modal.style.display = 'none';
+  _rejectWorkerId = null;
+}
+
+async function confirmReject() {
+  if (!_rejectWorkerId) return;
+  var id = _rejectWorkerId;
+  closeRejectModal();
+  try {
+    await API.approval.reject(id);
+    UI.toast('Registration rejected.', 'success');
+    loadPendingApprovals();
+  } catch(e) {
+    UI.toast('Failed to reject: ' + (e.message || 'Unknown error'), 'error');
+  }
+}
+
+// Close reject modal on backdrop click / Escape
+document.addEventListener('DOMContentLoaded', function() {
+  var modal = document.getElementById('rejectModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) { if (e.target === modal) closeRejectModal(); });
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && _rejectWorkerId) closeRejectModal();
+  });
+});
+
+// ── ONLINE STAFF ──────────────────────────────────────────
+function timeAgo(dateStr) {
+  if (!dateStr) return 'Never';
+  var diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 5)    return 'Just now';
+  if (diff < 60)   return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+async function loadOnlineStaff() {
+  var container = document.getElementById('online-staff-list');
+  var badge     = document.getElementById('online-count-badge');
+  var refreshEl = document.getElementById('online-last-refresh');
+  if (!container) return;
+  try {
+    var staff = await API.onlineStatus.getAll();
+    if (!Array.isArray(staff)) staff = [];
+
+    var onlineCount = staff.filter(function(w) { return w.is_online == 1; }).length;
+    if (badge) badge.textContent = onlineCount + ' online';
+    if (refreshEl) refreshEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+
+    if (!staff.length) {
+      container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">No staff records found.</p>';
+      return;
+    }
+
+    container.innerHTML = staff.map(function(w) {
+      var online  = w.is_online == 1;
+      var dot     = online
+        ? '<span style="width:9px;height:9px;border-radius:50%;background:#27ae60;display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px rgba(39,174,96,0.25);"></span>'
+        : '<span style="width:9px;height:9px;border-radius:50%;background:#bdc3c7;display:inline-block;flex-shrink:0;"></span>';
+      var initial = (w.Worker || '?').charAt(0).toUpperCase();
+      var avatarHtml = w.Avatar
+        ? '<img src="' + w.Avatar + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.style.display=\'none\'" />'
+        : '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--olive),var(--olive-light));'
+          + 'display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;color:#fff;flex-shrink:0;">' + initial + '</div>';
+      var roleClass = w.Worker_Role === 'Admin' ? 'badge--green' : 'badge--muted';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light);">'
+        + avatarHtml
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:700;font-size:0.84rem;display:flex;align-items:center;gap:6px;">' + (w.Worker || '') + ' ' + dot + '</div>'
+        + '<div style="font-size:0.72rem;color:var(--muted);margin-top:1px;">'
+        + '<span class="badge ' + roleClass + '" style="font-size:0.62rem;">' + (w.Worker_Role || '') + '</span>'
+        + ' · ' + (online
+          ? '<span style="color:#27ae60;font-weight:600;">Online</span>'
+          : '<span style="color:var(--muted);">Offline</span>')
+        + '</div>'
+        + '</div>'
+        + '<div style="font-size:0.72rem;color:var(--muted);text-align:right;flex-shrink:0;">' + timeAgo(w.last_heartbeat) + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    if (container) container.innerHTML = '<p style="color:var(--danger);font-size:0.84rem;padding:8px 0;">Failed to load online status.</p>';
+  }
+}
+
+// ── HEARTBEAT ─────────────────────────────────────────────
+function startHeartbeat() {
+  function ping() {
+    var csrf = localStorage.getItem('csrf_token');
+    if (!csrf) return;
+    fetch('../dairy_farm_backend/api/heartbeat.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      credentials: 'include'
+    }).catch(function() {}); // silent fail — don't disrupt the UI
+  }
+  ping(); // immediate first ping
+  return setInterval(ping, 30000);
+}
+
 // ── INIT ──────────────────────────────────────────────────
 (async function() {
   renderGreeting();
@@ -987,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderGreeting();
   loadAdminTasks();
   loadNotes();
-  // renderInventoryBars is called via DOMContentLoaded below
+  renderInventoryBars();
 
   // Load all data in parallel, then build alerts and reports
   var results = await Promise.allSettled([
@@ -1002,6 +1511,12 @@ document.addEventListener('DOMContentLoaded', function() {
   var cows      = results[1].status === 'fulfilled' && Array.isArray(results[1].value) ? results[1].value : [];
   var workers   = results[2].status === 'fulfilled' && Array.isArray(results[2].value) ? results[2].value : [];
   var orders    = results[3].status === 'fulfilled' && Array.isArray(results[3].value) ? results[3].value : [];
+
+  // Store in module-level vars so global search can access them
+  allCustomers = customers;
+  allCows      = cows;
+  allWorkers   = workers;
+  allOrders    = orders;
 
   // Stat cards
   var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
@@ -1074,6 +1589,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Reports
   populateReports(cows, orders, customers, workers);
+
+  // Load new sections: approvals + online staff
+  loadPendingApprovals();
+  loadOnlineStaff();
+  startHeartbeat();
+  setInterval(loadOnlineStaff, 30000); // auto-refresh online status every 30s
 
   // Render alerts last (after all data is collected)
   renderAlerts();

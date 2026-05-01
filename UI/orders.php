@@ -25,7 +25,9 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
       <h1 class="page-title">Orders</h1>
       <p class="page-subtitle">Full order history with customer, cow, and worker details.</p>
     </div>
-    <button class="btn btn--primary admin-only" onclick="openModal()">＋ New Order</button>
+    <div style="display:flex;gap:8px;align-items:center;" id="orders-header-actions">
+      <button class="btn btn--primary admin-only" onclick="openModal()">＋ New Order</button>
+    </div>
   </div>
 
   <div class="card">
@@ -106,6 +108,7 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/import-export.js"></script>
 <script>
 let editingId  = null;
 let allOrders  = [];
@@ -113,14 +116,45 @@ let customers  = [];
 let cows       = [];
 let workers    = [];
 
+const ORDER_COLS = [
+  { key: 'Order_ID',      label: 'Order ID'    },
+  { key: 'Customer_Name', label: 'Customer'    },
+  { key: 'Address',       label: 'Address'     },
+  { key: 'Contact_Num',   label: 'Contact'     },
+  { key: 'Order_Type',    label: 'Order Type'  },
+  { key: 'Order_Date',    label: 'Date'        },
+  { key: 'Cow',           label: 'Cow'         },
+  { key: 'Production',    label: 'Production'  },
+  { key: 'Worker',        label: 'Worker'      },
+  { key: 'Worker_Role',   label: 'Role'        },
+];
+
 async function init() {
-  [customers, cows, workers] = await Promise.all([
-    API.customers.getAll(),
-    API.cows.getAll(),
-    API.workers.getAll(),
-  ]);
-  populateSelects();
+  // Only Admin needs customers/cows/workers for the "New Order" modal
+  if (<?= $_isAdmin ? 'true' : 'false' ?>) {
+    try {
+      [customers, cows, workers] = await Promise.all([
+        API.customers.getAll(),
+        API.cows.getAll(),
+        API.workers.getAll(),
+      ]);
+      populateSelects();
+    } catch(e) {
+      console.warn('Could not load modal data:', e.message);
+    }
+  }
   loadOrders();
+
+  // Add export buttons (orders are export-only — no import due to FK complexity)
+  ImportExport.addButtons(
+    document.getElementById('orders-header-actions'),
+    {
+      getData:  function() { return allOrders; },
+      columns:  ORDER_COLS,
+      title:    'Orders — Esperon Dairy Farm',
+      filename: 'orders',
+    }
+  );
 }
 
 function populateSelects() {

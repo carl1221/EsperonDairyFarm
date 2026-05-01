@@ -64,6 +64,20 @@ requireAdminPage();
     .task-row:last-child { border-bottom:none; }
     .task-row.done span { color:var(--muted); text-decoration:line-through; }
     .task-row input[type=checkbox] { width:16px; height:16px; accent-color:var(--olive); cursor:pointer; flex-shrink:0; }
+
+    /* ── Dashboard Tabs ── */
+    .dash-tab {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 11px 16px; background: none; border: none;
+      border-bottom: 2.5px solid transparent; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; color: var(--muted);
+      font-family: var(--font-sans); white-space: nowrap;
+      transition: color .15s, border-color .15s;
+    }
+    .dash-tab:hover { color: var(--text); }
+    .dash-tab--active { color: var(--olive-dark); border-bottom-color: var(--olive); }
+    .dash-tab-panel { animation: tabFadeIn .18s ease; }
+    @keyframes tabFadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
   </style>
 </head>
 <body>
@@ -81,7 +95,7 @@ requireAdminPage();
         <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--muted);">search</span>
         <input type="text" id="global-search" placeholder="Search orders, cows, staff…" />
       </div>
-      <button class="header__icon-btn" title="Notifications" id="notif-btn">
+      <button class="header__icon-btn" title="Notifications" id="notif-btn" style="position:relative;">
         <span class="material-symbols-outlined">notifications</span>
         <span id="notif-dot" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--danger);"></span>
       </button>
@@ -225,113 +239,148 @@ requireAdminPage();
     </div>
   </div>
 
-  <!-- ══ SECTION 4: ORDER MANAGEMENT + STAFF ══════════════ -->
-  <div class="two-col">
+  <!-- ══ SECTIONS 4–7: TABBED PANEL ══════════════════════ -->
+  <div class="card" style="margin-bottom:var(--spacing-xl);">
 
-    <!-- Order Management -->
-    <div class="card">
-      <div class="card__header">
-        <span class="dash-section-title">
-          <span class="material-symbols-outlined" style="color:var(--danger);font-size:1.2rem;">receipt_long</span>
-          Order Management
-        </span>
-        <a href="orders.php" class="btn-xs btn-xs--ghost">Manage All</a>
-      </div>
-      <div style="padding:0 4px;">
-        <div style="padding:8px 16px 4px;display:flex;gap:6px;flex-wrap:wrap;">
+    <!-- Tab bar -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border-light);padding:0 8px;overflow-x:auto;flex-wrap:nowrap;">
+      <button class="dash-tab dash-tab--active" onclick="switchTab('tab-orders',this)" id="btn-tab-orders">
+        <span class="material-symbols-outlined" style="font-size:1rem;">receipt_long</span> Orders
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-staff',this)" id="btn-tab-staff">
+        <span class="material-symbols-outlined" style="font-size:1rem;">manage_accounts</span> Staff
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-livestock',this)" id="btn-tab-livestock">
+        <span class="material-symbols-outlined" style="font-size:1rem;">pets</span> Livestock
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-reminders',this)" id="btn-tab-reminders">
+        <span class="material-symbols-outlined" style="font-size:1rem;">alarm</span> Reminders
+        <span id="reminderBadge" class="badge badge--red" style="display:none;font-size:0.6rem;margin-left:3px;">0</span>
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-tasks',this)" id="btn-tab-tasks">
+        <span class="material-symbols-outlined" style="font-size:1rem;">checklist</span> Tasks
+        <span id="admin-tasks-progress" class="badge badge--green" style="font-size:0.6rem;margin-left:3px;">—</span>
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-notes',this)" id="btn-tab-notes">
+        <span class="material-symbols-outlined" style="font-size:1rem;">edit_note</span> Notes
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-approvals',this)" id="btn-tab-approvals">
+        <span class="material-symbols-outlined" style="font-size:1rem;">how_to_reg</span> Approvals
+        <span id="approval-badge" class="badge badge--red" style="display:none;font-size:0.6rem;margin-left:3px;">0</span>
+      </button>
+      <button class="dash-tab" onclick="switchTab('tab-online',this)" id="btn-tab-online">
+        <span class="material-symbols-outlined" style="font-size:1rem;">wifi</span> Online
+        <span id="online-count-badge" class="badge badge--green" style="font-size:0.6rem;margin-left:3px;">0</span>
+      </button>
+    </div>
+
+    <!-- ── Tab: Orders ── -->
+    <div id="tab-orders" class="dash-tab-panel">
+      <div style="padding:8px 16px 4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('all',this)" style="background:rgba(78,96,64,0.12);border-color:var(--olive);color:var(--olive-dark);">All</button>
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('pending',this)">Pending</button>
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('processing',this)">Processing</button>
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('delivered',this)">Delivered</button>
         </div>
-        <div id="orders-list" style="padding:4px 16px 12px;max-height:300px;overflow-y:auto;">
-          <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders…</p>
-        </div>
+        <a href="orders.php" class="btn-xs btn-xs--ghost">Manage All →</a>
+      </div>
+      <div id="orders-list" style="padding:4px 16px 16px;max-height:340px;overflow-y:auto;">
+        <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders…</p>
       </div>
     </div>
 
-    <!-- Staff Management -->
-    <div class="card">
-      <div class="card__header">
-        <span class="dash-section-title">
-          <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.2rem;">manage_accounts</span>
-          Staff Management
-        </span>
+    <!-- ── Tab: Staff ── -->
+    <div id="tab-staff" class="dash-tab-panel" style="display:none;">
+      <div style="padding:12px 16px 4px;display:flex;justify-content:flex-end;">
         <a href="workers.php" class="btn-xs btn-xs--primary">
           <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> Add Staff
         </a>
       </div>
-      <div id="staff-list" style="padding:12px 20px;max-height:320px;overflow-y:auto;">
+      <div id="staff-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
         <p style="color:var(--muted);font-size:0.84rem;">Loading staff…</p>
       </div>
     </div>
-  </div>
 
-  <!-- ══ SECTION 5: LIVESTOCK + REMINDERS ═════════════════ -->
-  <div class="two-col">
-
-    <!-- Livestock Management -->
-    <div class="card">
-      <div class="card__header">
-        <span class="dash-section-title">
-          <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.2rem;">pets</span>
-          Livestock Management
-        </span>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span id="sick-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0 sick</span>
-          <a href="cows.php" class="btn-xs btn-xs--ghost">Manage All</a>
-        </div>
+    <!-- ── Tab: Livestock ── -->
+    <div id="tab-livestock" class="dash-tab-panel" style="display:none;">
+      <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
+        <span id="sick-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0 sick</span>
+        <a href="cows.php" class="btn-xs btn-xs--ghost" style="margin-left:auto;">Manage All →</a>
       </div>
-      <div id="livestock-list" style="padding:12px 20px;max-height:300px;overflow-y:auto;">
+      <div id="livestock-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
         <p style="color:var(--muted);font-size:0.84rem;">Loading livestock…</p>
       </div>
     </div>
 
-    <!-- Reminders (Admin: full control) -->
-    <div class="card">
-      <div class="card__header">
-        <span class="dash-section-title">
-          <span class="material-symbols-outlined" style="color:var(--danger);font-size:1.2rem;">alarm</span>
-          Reminders &amp; Tasks
-          <span id="reminderBadge" class="badge badge--red" style="display:none;font-size:0.65rem;margin-left:4px;">0</span>
-        </span>
+    <!-- ── Tab: Reminders ── -->
+    <div id="tab-reminders" class="dash-tab-panel" style="display:none;">
+      <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
+        <a href="reminders.php" class="btn-xs btn-xs--ghost">View All →</a>
         <button id="addReminderBtn" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.75rem;font-weight:600;">+ Add Task</button>
       </div>
-      <div id="remindersList" style="padding:12px 20px;max-height:300px;overflow-y:auto;"></div>
-    </div>
-  </div>
-
-  <!-- ══ SECTION 6: DAILY TASKS + NOTES ═══════════════════ -->
-  <div class="two-col">
-
-    <!-- Daily Tasks (Admin) -->
-    <div class="card">
-      <div class="card__header">
-        <span class="dash-section-title">
-          <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.2rem;">checklist</span>
-          Admin Daily Tasks
-        </span>
-        <span id="admin-tasks-progress" class="badge badge--green" style="font-size:0.68rem;">Loading…</span>
-      </div>
-      <div id="admin-tasks-list" style="padding:12px 20px;"></div>
+      <div id="remindersList" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;"></div>
     </div>
 
-    <!-- Notes & Announcements -->
-    <div class="card">
-      <div class="card__header">
-        <span class="dash-section-title">
-          <span class="material-symbols-outlined" style="color:var(--info);font-size:1.2rem;">edit_note</span>
-          Notes &amp; Announcements
-        </span>
-      </div>
-      <div style="padding:14px 20px;">
-        <textarea class="note-input" id="note-input" rows="3" placeholder="Post an announcement or note for staff (e.g. Vet visit tomorrow at 9 AM — all staff must be present)…"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <!-- ── Tab: Tasks ── -->
+    <div id="tab-tasks" class="dash-tab-panel" style="display:none;">
+      <div id="admin-tasks-list" style="padding:16px 20px;"></div>
+    </div>
+
+    <!-- ── Tab: Notes ── -->
+    <div id="tab-notes" class="dash-tab-panel" style="display:none;">
+      <div style="padding:16px 20px;">
+        <textarea class="note-input" id="note-input" rows="3" placeholder="Post an announcement or note for staff…"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <a href="notes.php" class="btn-xs btn-xs--ghost">View All →</a>
           <button class="btn-xs btn-xs--primary" id="save-note-btn">
             <span class="material-symbols-outlined" style="font-size:0.9rem;">send</span> Post Note
           </button>
         </div>
-        <div id="notes-feed" style="margin-top:14px;max-height:200px;overflow-y:auto;"></div>
+        <div id="notes-feed" style="margin-top:14px;max-height:220px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <!-- ── Tab: Approvals ── -->
+    <div id="tab-approvals" class="dash-tab-panel" style="display:none;">
+      <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
+        <a href="approvals.php" class="btn-xs btn-xs--ghost">View All →</a>
+        <button class="btn-xs btn-xs--ghost" onclick="loadPendingApprovals()">
+          <span class="material-symbols-outlined" style="font-size:0.9rem;">refresh</span> Refresh
+        </button>
+      </div>
+      <div id="approvals-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
+        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+      </div>
+    </div>
+
+    <!-- ── Tab: Online Staff ── -->
+    <div id="tab-online" class="dash-tab-panel" style="display:none;">
+      <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
+        <a href="online_staff.php" class="btn-xs btn-xs--ghost">View All →</a>
+        <span id="online-last-refresh" style="font-size:0.72rem;color:var(--muted);"></span>
+      </div>
+      <div id="online-staff-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
+        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Reject Confirmation Modal -->
+  <div id="rejectModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:#faf6f0;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,0.18);width:100%;max-width:400px;margin:16px;font-family:'Lato',sans-serif;overflow:hidden;">
+      <div style="padding:18px 22px 14px;background:linear-gradient(135deg,#c0392b,#e74c3c);display:flex;align-items:center;gap:8px;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:1.2rem;">person_remove</span>
+        <span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#fff;">Reject Registration</span>
+      </div>
+      <div style="padding:20px 22px;">
+        <p style="font-size:0.9rem;color:var(--text);margin-bottom:6px;">Are you sure you want to <strong>reject</strong> this registration?</p>
+        <p id="reject-worker-name" style="font-size:0.84rem;color:var(--muted);margin-bottom:18px;"></p>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button onclick="closeRejectModal()" style="padding:9px 18px;border:1.5px solid #d4c9b8;border-radius:9px;background:#fff;color:#4a3f35;font-family:'Lato',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;">Cancel</button>
+          <button id="confirm-reject-btn" style="padding:9px 20px;border:none;border-radius:9px;background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;font-family:'Lato',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;">Reject</button>
+        </div>
       </div>
     </div>
   </div>

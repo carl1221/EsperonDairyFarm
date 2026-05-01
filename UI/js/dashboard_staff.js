@@ -7,6 +7,22 @@ function getStoredUser() { try { return JSON.parse(localStorage.getItem('user')|
 function today() { return new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' }); }
 function nowTime() { return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true }); }
 
+// ── Tab switcher ──────────────────────────────────────────
+function switchStaffTab(tabId, btn) {
+  document.querySelectorAll('.dash-tab-panel').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.dash-tab').forEach(function(b){ b.classList.remove('dash-tab--active'); });
+  var panel = document.getElementById(tabId);
+  if (panel) panel.style.display = 'block';
+  if (btn)   btn.classList.add('dash-tab--active');
+  try { localStorage.setItem('staff_active_tab', tabId); } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var saved = localStorage.getItem('staff_active_tab') || 'tab-orders';
+  var btn   = document.getElementById('sbtn-' + saved.replace('tab-',''));
+  if (btn) switchStaffTab(saved, btn);
+});
+
 // ── Greeting ──────────────────────────────────────────────
 function renderGreeting() {
   const u = getStoredUser();
@@ -322,12 +338,43 @@ function renderReminders() {
   const sorted = [...reminders].sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
   list.innerHTML = sorted.map(r => {
     const s = getStatusInfo(r.due_date, r.status), done = r.status === 'completed';
+    const doneBtn = !done
+      ? `<button onclick="markReminderComplete(${r.reminder_id})"
+           title="Mark as done"
+           style="background:var(--olive);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.72rem;font-weight:600;display:inline-flex;align-items:center;gap:3px;margin-top:6px;">
+           <span class="material-symbols-outlined" style="font-size:0.85rem;">check</span> Mark Done
+         </button>`
+      : `<span style="font-size:0.72rem;color:var(--olive);font-weight:600;display:inline-flex;align-items:center;gap:3px;margin-top:6px;">
+           <span class="material-symbols-outlined" style="font-size:0.85rem;">check_circle</span> Completed
+         </span>`;
     return `<div style="background:${s.bg};border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid ${s.color};">
       <span style="font-size:0.68rem;color:${s.color};font-weight:700;text-transform:uppercase;">${s.label}</span>
       <p style="font-size:0.86rem;color:var(--text);margin:3px 0;${done?'text-decoration:line-through;opacity:0.6;':''}">${r.title}</p>
       <span style="font-size:0.7rem;color:var(--text-light);">Due: ${formatDueDate(r.due_date)}</span>
+      <div>${doneBtn}</div>
     </div>`;
   }).join('');
+}
+
+async function markReminderComplete(id) {
+  try {
+    const csrf = localStorage.getItem('csrf_token') || '';
+    const res  = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify({ status: 'completed' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      UI.toast('Task marked as done!', 'success');
+      loadReminders(); // refresh the list — admin dashboard will also reflect this
+    } else {
+      UI.toast('Failed: ' + (data.message || 'error'), 'error');
+    }
+  } catch(e) {
+    UI.toast('Network error.', 'error');
+  }
 }
 
 function updateReminderBadge() {
@@ -356,7 +403,61 @@ function renderNotes() {
   } catch(e) { feed.innerHTML = ''; }
 }
 
-// ── MILK STAT ─────────────────────────────────────────────
+// ── INVENTORY (read from localStorage — same key as admin) ─
+function loadStaffInventory() {
+  var INV_KEY = 'admin_inventory';
+  var defaultInv = [
+    { name:'Milk Stock',  pct:65, unit:'L',  icon:'water_drop'  },
+    { name:'Silage A',    pct:78, unit:'kg', icon:'grass'        },
+    { name:'Silo B',      pct:38, unit:'kg', icon:'warehouse'    },
+    { name:'Hay',         pct:88, unit:'kg', icon:'agriculture'  },
+    { name:'Animal Feed', pct:52, unit:'kg', icon:'lunch_dining' },
+  ];
+  var items;
+  try {
+    var stored = localStorage.getItem(INV_KEY);
+    items = stored ? JSON.parse(stored) : defaultInv;
+    if (!Array.isArray(items) || !items.length) items = defaultInv;
+  } catch(e) { items = defaultInv; }
+
+  var container = document.getElementById('staff-inventory-bars');
+  if (!container) return;
+
+  container.innerHTML = items.map(function(item) {
+    var pct  = Math.min(100, Math.max(0, item.pct || 0));
+    var cls  = pct < 30 ? 'inv-bar-fill--low' : pct < 60 ? 'inv-bar-fill--mid' : 'inv-bar-fill--ok';
+    var col  = pct < 30 ? 'var(--danger)' : pct < 60 ? '#7a5a1e' : 'var(--olive-dark)';
+    var warn = pct < 30 ? ' <span style="color:var(--danger);font-size:0.72rem;">⚠ Low</span>' : '';
+    return '<div class="inv-bar-wrap">'
+      + '<div class="inv-bar-label">'
+      + '<span style="display:flex;align-items:center;gap:5px;">'
+      + '<span class="material-symbols-outlined" style="font-size:0.9rem;color:var(--muted);">' + (item.icon||'inventory_2') + '</span>'
+      + item.name + warn + '</span>'
+      + '<span style="color:' + col + ';font-weight:700;">' + pct + '%</span>'
+      + '</div>'
+      + '<div class="inv-bar"><div class="inv-bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>'
+      + '</div>';
+  }).join('');
+
+  // Alert for low items
+  items.forEach(function(item) {
+    if ((item.pct||0) < 30) addAlert(item.name + ' is critically low (' + item.pct + '%) — notify admin.', 'danger');
+  });
+}
+
+// ── HEARTBEAT ─────────────────────────────────────────────
+function startStaffHeartbeat() {
+  function ping() {
+    var csrf = localStorage.getItem('csrf_token');
+    if (!csrf) return;
+    fetch('../dairy_farm_backend/api/heartbeat.php', {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}
+    }).catch(function(){});
+  }
+  ping();
+  return setInterval(ping, 30000);
+}
 async function loadMilkStat() {
   try {
     const cows  = await API.cows.getAll();
@@ -402,6 +503,8 @@ async function loadMilkStat() {
   loadTasks();
   renderActivityLog();
   loadNotes();
+  loadStaffInventory();
+  startStaffHeartbeat();
 
   // Load all API-dependent sections in parallel
   await Promise.allSettled([
@@ -410,4 +513,18 @@ async function loadMilkStat() {
     loadReminders(),
     loadMilkStat(),
   ]);
+
+  // Update quick action subtitles after data loads
+  var tasksDone = document.getElementById('tasks-progress');
+  var qaSub     = document.getElementById('qa-tasks-sub');
+  if (tasksDone && qaSub) qaSub.textContent = tasksDone.textContent;
+  var ordersEl = document.getElementById('stat-orders');
+  var qaOrders = document.getElementById('qa-orders-sub');
+  if (ordersEl && qaOrders) qaOrders.textContent = ordersEl.textContent + ' total orders';
+  var cowEl    = document.getElementById('cow-count');
+  var qaLive   = document.getElementById('qa-livestock-sub');
+  if (cowEl && qaLive) qaLive.textContent = cowEl.textContent || 'Check herd status';
+  var remBadge = document.getElementById('reminderBadge');
+  var qaRem    = document.getElementById('qa-reminders-sub');
+  if (remBadge && qaRem && remBadge.style.display !== 'none') qaRem.textContent = remBadge.textContent + ' urgent reminder(s)';
 })();

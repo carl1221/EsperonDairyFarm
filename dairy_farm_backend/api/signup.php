@@ -59,14 +59,14 @@ try {
     $db->beginTransaction();
     try {
         $stmt = $db->prepare(
-            'INSERT INTO Worker (Worker, Worker_Role, Email, Password)
-             VALUES (?, ?, ?, ?)'
+            'INSERT INTO Worker (Worker, Worker_Role, Email, Password, approval_status)
+             VALUES (?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$username, $role, $email, $hashedPassword]);
+        $stmt->execute([$username, $role, $email, $hashedPassword, 'pending']);
         $newId = $db->lastInsertId();
         $db->commit();
 
-        sendSuccess('Account created successfully!', ['user_id' => $newId], 201);
+        sendSuccess('Account created! Your registration is pending admin approval.', ['user_id' => $newId], 201);
 
     } catch (PDOException $insertEx) {
         $db->rollBack();

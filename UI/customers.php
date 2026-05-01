@@ -22,7 +22,9 @@ requireAdminPage();  // Customers page is Admin-only
       <h1 class="page-title">Customers</h1>
       <p class="page-subtitle">Manage all farm customers and their addresses.</p>
     </div>
-    <button class="btn btn--primary" onclick="openModal()">＋ Add Customer</button>
+    <div style="display:flex;gap:8px;align-items:center;" id="customers-header-actions">
+      <button class="btn btn--primary" onclick="openModal()">＋ Add Customer</button>
+    </div>
   </div>
 
   <div class="card">
@@ -88,14 +90,17 @@ requireAdminPage();  // Customers page is Admin-only
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/import-export.js"></script>
 <script>
 let editingId = null;
+let _customersData = [];
 
 async function loadCustomers() {
   const tbody = document.getElementById('customers-body');
   UI.setLoading(tbody, 5);
   try {
     const rows = await API.customers.getAll();
+    _customersData = rows;
     if (!rows.length) { UI.setEmpty(tbody, 5); return; }
     tbody.innerHTML = rows.map(c => `
       <tr>
@@ -114,6 +119,46 @@ async function loadCustomers() {
     UI.setEmpty(tbody, 5, 'Failed to load customers.');
   }
 }
+
+// ── Import/Export setup ───────────────────────────────────
+const CUSTOMER_COLS = [
+  { key: 'CID',           label: 'Customer ID' },
+  { key: 'Customer_Name', label: 'Name'        },
+  { key: 'Address',       label: 'Address'     },
+  { key: 'Contact_Num',   label: 'Contact No.' },
+];
+
+document.addEventListener('DOMContentLoaded', function() {
+  ImportExport.addButtons(
+    document.getElementById('customers-header-actions'),
+    {
+      getData:   function() { return _customersData; },
+      columns:   CUSTOMER_COLS,
+      title:     'Customers — Esperon Dairy Farm',
+      filename:  'customers',
+      onImport:  async function(records) {
+        if (!records.length) { UI.toast('No records found in file.', 'error'); return; }
+        var ok = await UI.confirm('Import ' + records.length + ' customer(s)? Existing records will not be overwritten.');
+        if (!ok) return;
+        var success = 0, failed = 0;
+        for (var r of records) {
+          try {
+            await API.customers.create({
+              CID:           parseInt(r.CID) || 0,
+              Customer_Name: r.Customer_Name || r.Name || '',
+              Address_ID:    parseInt(r.Address_ID) || 1,
+              Address:       r.Address || '',
+              Contact_Num:   r.Contact_Num || r['Contact No.'] || '',
+            });
+            success++;
+          } catch(e) { failed++; }
+        }
+        UI.toast('Imported ' + success + ' customer(s).' + (failed ? ' ' + failed + ' failed.' : ''), success ? 'success' : 'error');
+        loadCustomers();
+      }
+    }
+  );
+});
 
 function openModal(id = null) {
   editingId = id;

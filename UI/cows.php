@@ -36,7 +36,9 @@ requireAdminPage();  // Cows page is Admin-only
       <h1 class="page-title">Cows</h1>
       <p class="page-subtitle">Track your herd and individual milk production.</p>
     </div>
-    <button class="btn btn--primary" onclick="openModal()">＋ Add Cow</button>
+    <div style="display:flex;gap:8px;align-items:center;" id="cows-header-actions">
+      <button class="btn btn--primary" onclick="openModal()">＋ Add Cow</button>
+    </div>
   </div>
 
   <div class="card">
@@ -91,44 +93,17 @@ requireAdminPage();  // Cows page is Admin-only
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/import-export.js"></script>
 <script>
-// --- Reminders Functionality ---
-let reminders = [];
-function renderReminders() {
-  const list = document.getElementById('remindersList');
-  list.innerHTML = '';
-  reminders.forEach((reminder, idx) => {
-    const div = document.createElement('div');
-    div.style.background = '#fdeaea';
-    div.style.border = '1px solid #e74c3c';
-    div.style.borderRadius = '8px';
-    div.style.padding = '12px';
-    div.style.marginBottom = '10px';
-    div.style.color = '#e74c3c';
-    div.style.cursor = 'pointer';
-    div.innerHTML = `<strong>REMINDER</strong><br>${reminder}`;
-    div.onclick = () => { alert(reminder); };
-    list.appendChild(div);
-  });
-}
-document.getElementById('addReminderBtn').onclick = function() {
-  const text = prompt('Enter reminder text:');
-  if (text && text.trim() !== '') {
-    reminders.push(text.trim());
-    renderReminders();
-    alert(text.trim());
-  }
-};
-renderReminders();
-// --- End Reminders ---
-
 let editingId = null;
+let _cowsData = [];
 
 async function loadCows() {
   const tbody = document.getElementById('cows-body');
   UI.setLoading(tbody, 4);
   try {
     const rows = await API.cows.getAll();
+    _cowsData = rows;
     if (!rows.length) { UI.setEmpty(tbody, 4); return; }
     tbody.innerHTML = rows.map(c => `
       <tr>
@@ -153,6 +128,38 @@ async function loadCows() {
     UI.setEmpty(tbody, 4, 'Failed to load cows.');
   }
 }
+
+const COW_COLS = [
+  { key: 'Cow_ID',     label: 'Cow ID'     },
+  { key: 'Cow',        label: 'Name'       },
+  { key: 'Production', label: 'Production' },
+];
+
+document.addEventListener('DOMContentLoaded', function() {
+  ImportExport.addButtons(
+    document.getElementById('cows-header-actions'),
+    {
+      getData:  function() { return _cowsData; },
+      columns:  COW_COLS,
+      title:    'Cows — Esperon Dairy Farm',
+      filename: 'cows',
+      onImport: async function(records) {
+        if (!records.length) { UI.toast('No records found in file.', 'error'); return; }
+        var ok = await UI.confirm('Import ' + records.length + ' cow(s)?');
+        if (!ok) return;
+        var success = 0, failed = 0;
+        for (var r of records) {
+          try {
+            await API.cows.create({ Cow_ID: parseInt(r.Cow_ID) || 0, Cow: r.Cow || r.Name || '', Production: r.Production || '0L' });
+            success++;
+          } catch(e) { failed++; }
+        }
+        UI.toast('Imported ' + success + ' cow(s).' + (failed ? ' ' + failed + ' failed.' : ''), success ? 'success' : 'error');
+        loadCows();
+      }
+    }
+  );
+});
 
 function openModal(id = null) {
   editingId = id;

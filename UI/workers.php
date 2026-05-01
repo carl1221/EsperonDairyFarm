@@ -22,7 +22,9 @@ requireAdminPage();  // Workers page is Admin-only
       <h1 class="page-title">Workers</h1>
       <p class="page-subtitle">Manage farm staff and their roles.</p>
     </div>
-    <button class="btn btn--primary" onclick="openModal()">＋ Add Worker</button>
+    <div style="display:flex;gap:8px;align-items:center;" id="workers-header-actions">
+      <button class="btn btn--primary" onclick="openModal()">＋ Add Worker</button>
+    </div>
   </div>
 
   <div class="card">
@@ -82,8 +84,10 @@ requireAdminPage();  // Workers page is Admin-only
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/import-export.js"></script>
 <script>
 let editingId = null;
+let _workersData = [];
 
 const roleBadge = r => r === 'Admin' ? 'badge--gold' : r === 'Manager' ? 'badge--muted' : 'badge--green';
 
@@ -92,6 +96,7 @@ async function loadWorkers() {
   UI.setLoading(tbody, 4);
   try {
     const rows = await API.workers.getAll();
+    _workersData = rows;
     if (!rows.length) { UI.setEmpty(tbody, 4); return; }
     tbody.innerHTML = rows.map(w => `
       <tr>
@@ -109,6 +114,38 @@ async function loadWorkers() {
     UI.setEmpty(tbody, 4, 'Failed to load workers.');
   }
 }
+
+const WORKER_COLS = [
+  { key: 'Worker_ID',   label: 'Worker ID' },
+  { key: 'Worker',      label: 'Name'      },
+  { key: 'Worker_Role', label: 'Role'      },
+];
+
+document.addEventListener('DOMContentLoaded', function() {
+  ImportExport.addButtons(
+    document.getElementById('workers-header-actions'),
+    {
+      getData:  function() { return _workersData; },
+      columns:  WORKER_COLS,
+      title:    'Workers — Esperon Dairy Farm',
+      filename: 'workers',
+      onImport: async function(records) {
+        if (!records.length) { UI.toast('No records found in file.', 'error'); return; }
+        var ok = await UI.confirm('Import ' + records.length + ' worker(s)?');
+        if (!ok) return;
+        var success = 0, failed = 0;
+        for (var r of records) {
+          try {
+            await API.workers.create({ Worker_ID: parseInt(r.Worker_ID) || 0, Worker: r.Worker || r.Name || '', Worker_Role: r.Worker_Role || r.Role || 'Staff' });
+            success++;
+          } catch(e) { failed++; }
+        }
+        UI.toast('Imported ' + success + ' worker(s).' + (failed ? ' ' + failed + ' failed.' : ''), success ? 'success' : 'error');
+        loadWorkers();
+      }
+    }
+  );
+});
 
 function openModal(id = null) {
   editingId = id;

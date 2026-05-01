@@ -505,6 +505,8 @@ body::before {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: all var(--transition-fast);
+  position: relative;
+  z-index: 200;
 }
 
 .header__search:focus-within {
@@ -583,6 +585,8 @@ body::before {
   padding: var(--spacing-lg) 0;
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  position: relative;
+  z-index: 200;
 }
 
 .page-title {
@@ -604,6 +608,8 @@ body::before {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  position: relative;
+  z-index: 200;
 }
 
 .dashboard-search {
