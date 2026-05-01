@@ -206,7 +206,7 @@ async function markComplete(id) {
   try {
     var csrf = localStorage.getItem('csrf_token') || '';
     var res  = await fetch('../dairy_farm_backend/api/reminders.php?id='+id, {
-      method:'PUT', credentials:'include',
+      method:'PATCH', credentials:'include',
       headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
       body: JSON.stringify({status:'completed'})
     });

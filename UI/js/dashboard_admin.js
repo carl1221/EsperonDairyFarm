@@ -362,8 +362,7 @@ function submitCustomAlert() {
 // ── MILK STAT ─────────────────────────────────────────────
 function updateMilkStat(cows) {
   var total = cows.reduce(function(sum, c) {
-    var m = String(c.Production).match(/(\d+(\.\d+)?)/);
-    return sum + (m ? parseFloat(m[1]) : 0);
+    return sum + parseFloat(c.Production_Liters || 0);
   }, 0);
 
   var milkEl = document.getElementById('stat-milk');
@@ -568,12 +567,15 @@ var allCustomers = [];
   });
 })();
 var orderFilter = 'all';
-var statusCycle = ['pending', 'processing', 'delivered'];
-var statusLabel = { pending: 'Pending', processing: 'Processing', delivered: 'Delivered' };
 
-function getOrderStatus(order, index) {
-  return statusCycle[index % 3];
-}
+// Status badge classes matching the DB ENUM values
+var statusBadgeClass = {
+  pending:   'order-status--pending',
+  confirmed: 'order-status--processing',
+  delivered: 'order-status--delivered',
+  cancelled: 'order-status--cancelled',
+};
+var statusLabel = { pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered', cancelled: 'Cancelled' };
 
 function renderOrders() {
   var container = document.getElementById('orders-list');
@@ -581,9 +583,7 @@ function renderOrders() {
 
   var list = allOrders.slice().reverse();
   if (orderFilter !== 'all') {
-    list = list.filter(function(o, i) {
-      return getOrderStatus(o, allOrders.length - 1 - i) === orderFilter;
-    });
+    list = list.filter(function(o) { return (o.Order_Status || o.status || '').toLowerCase() === orderFilter; });
   }
 
   if (!list.length) {
@@ -591,15 +591,16 @@ function renderOrders() {
     return;
   }
 
-  container.innerHTML = list.slice(0, 8).map(function(o, i) {
-    var origIdx  = allOrders.indexOf(o);
-    var status   = getOrderStatus(o, origIdx);
+  container.innerHTML = list.slice(0, 8).map(function(o) {
+    var statusKey = (o.Order_Status || o.status || 'pending').toLowerCase();
+    var cls       = statusBadgeClass[statusKey] || 'order-status--pending';
+    var lbl       = statusLabel[statusKey]      || statusKey;
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);">'
       + '<div style="flex:1;min-width:0;">'
-      + '<div style="font-weight:700;font-size:0.83rem;color:var(--text);">#' + o.Order_ID + ' \u2014 ' + o.Customer_Name + '</div>'
-      + '<div style="font-size:0.73rem;color:var(--muted);margin-top:2px;">' + o.Order_Type + ' \u00b7 ' + o.Cow + ' \u00b7 ' + o.Order_Date + '</div>'
+      + '<div style="font-weight:700;font-size:0.83rem;color:var(--text);">#' + o.Order_ID + ' \u2014 ' + (o.Customer_Name || '') + '</div>'
+      + '<div style="font-size:0.73rem;color:var(--muted);margin-top:2px;">' + (o.Order_Type || '') + ' \u00b7 ' + (o.Cow || '') + ' \u00b7 ' + (o.Order_Date || '') + '</div>'
       + '</div>'
-      + '<span class="order-status order-status--' + status + '">' + statusLabel[status] + '</span>'
+      + '<span class="order-status ' + cls + '">' + lbl + '</span>'
       + '</div>';
   }).join('');
 }
@@ -625,7 +626,9 @@ async function loadOrders() {
     var statEl = document.getElementById('stat-orders');
     if (statEl) statEl.textContent = allOrders.length;
 
-    var pending = allOrders.filter(function(o, i) { return getOrderStatus(o, i) === 'pending'; }).length;
+    var pending = allOrders.filter(function(o) {
+      return (o.Order_Status || o.status || '').toLowerCase() === 'pending';
+    }).length;
     if (pending > 0) addAlert(pending + ' order(s) still pending — review required.', 'warning');
 
     renderOrders();
@@ -683,23 +686,23 @@ async function loadLivestock() {
     }
 
     var sickCount = 0;
-    container.innerHTML = cows.map(function(c, i) {
-      var sick = (i % 5 === 0);
-      if (sick) sickCount++;
-      var dotClass    = sick ? 'status-dot--sick' : 'status-dot--healthy';
-      var healthLabel = sick
-        ? '<span style="color:var(--danger);font-weight:700;font-size:0.78rem;">Sick</span>'
-        : '<span style="color:var(--olive);font-weight:700;font-size:0.78rem;">Healthy</span>';
+    container.innerHTML = cows.map(function(c) {
+      // Use real Health_Status from the database
+      var health    = c.Health_Status || 'Healthy';
+      var isSick    = health === 'Sick' || health === 'Under Treatment';
+      if (isSick) sickCount++;
+      var dotClass    = isSick ? 'status-dot--sick' : 'status-dot--healthy';
+      var healthColor = isSick ? 'var(--danger)' : 'var(--olive)';
       return '<div class="cow-row">'
         + '<div style="display:flex;align-items:center;gap:6px;">'
         + '<span class="status-dot ' + dotClass + '"></span>'
         + '<div>'
         + '<div style="font-weight:700;font-size:0.83rem;">' + c.Cow + '</div>'
-        + '<div style="font-size:0.72rem;color:var(--muted);">ID #' + c.Cow_ID + '</div>'
+        + '<div style="font-size:0.72rem;color:var(--muted);">ID #' + c.Cow_ID + (c.Breed ? ' · ' + c.Breed : '') + '</div>'
         + '</div></div>'
         + '<div style="text-align:right;">'
-        + healthLabel
-        + '<div style="font-size:0.72rem;color:var(--muted);">' + c.Production + '</div>'
+        + '<span style="color:' + healthColor + ';font-weight:700;font-size:0.78rem;">' + health + '</span>'
+        + '<div style="font-size:0.72rem;color:var(--muted);">' + parseFloat(c.Production_Liters || 0).toFixed(2) + 'L/day</div>'
         + '</div>'
         + '</div>';
     }).join('');
@@ -749,8 +752,7 @@ function setReportPeriod(period, btn) {
 
 function populateReports(cows, orders, customers, workers) {
   var milkTotal = cows.reduce(function(s, c) {
-    var m = String(c.Production).match(/(\d+(\.\d+)?)/);
-    return s + (m ? parseFloat(m[1]) : 0);
+    return s + parseFloat(c.Production_Liters || 0);
   }, 0);
   reportData = {
     milk:      milkTotal,
@@ -838,7 +840,12 @@ function updateReminderBadge() {
 async function markComplete(id) {
   if (!confirm('Mark as completed?')) return;
   try {
-    var res  = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, { method:'PUT', headers:{'Content-Type':'application/json','X-CSRF-Token':localStorage.getItem('csrf_token')}, credentials:'include', body:JSON.stringify({status:'completed'}) });
+    var res  = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': localStorage.getItem('csrf_token') },
+      credentials: 'include',
+      body: JSON.stringify({ status: 'completed' })
+    });
     var data = await res.json();
     if (data.success) loadReminders(); else UI.toast('Failed to update.', 'error');
   } catch(e) { UI.toast('Error.', 'error'); }

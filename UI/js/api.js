@@ -14,7 +14,7 @@ const API = {
     const headers = { 'Content-Type': 'application/json' };
 
     // Attach CSRF token for all state-changing requests
-    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       const token = localStorage.getItem('csrf_token');
       if (token) headers['X-CSRF-Token'] = token;
     }
@@ -80,11 +80,12 @@ const API = {
 
   // ── Cows ──────────────────────────────────────────────────
   cows: {
-    getAll:   ()        => API.request('cows.php'),
-    getById:  (id)      => API.request(`cows.php?id=${id}`),
-    create:   (data)    => API.request('cows.php', 'POST', data),
-    update:   (id, d)   => API.request(`cows.php?id=${id}`, 'PUT', d),
-    delete:   (id)      => API.request(`cows.php?id=${id}`, 'DELETE'),
+    getAll:     (activeOnly) => API.request(activeOnly ? 'cows.php?active=1' : 'cows.php'),
+    getById:    (id)         => API.request(`cows.php?id=${id}`),
+    create:     (data)       => API.request('cows.php', 'POST', data),
+    update:     (id, d)      => API.request(`cows.php?id=${id}`, 'PUT', d),
+    deactivate: (id)         => API.request(`cows.php?id=${id}`, 'PATCH', { is_active: 0 }),
+    delete:     (id)         => API.request(`cows.php?id=${id}`, 'DELETE'),
   },
 
   // ── Workers ───────────────────────────────────────────────
@@ -98,12 +99,13 @@ const API = {
 
   // ── Orders ────────────────────────────────────────────────
   orders: {
-    getAll:        ()       => API.request('orders.php'),
-    getById:       (id)     => API.request(`orders.php?id=${id}`),
-    getByCustomer: (cid)    => API.request(`orders.php?customer=${cid}`),
-    create:        (data)   => API.request('orders.php', 'POST', data),
-    update:        (id, d)  => API.request(`orders.php?id=${id}`, 'PUT', d),
-    delete:        (id)     => API.request(`orders.php?id=${id}`, 'DELETE'),
+    getAll:        ()            => API.request('orders.php'),
+    getById:       (id)          => API.request(`orders.php?id=${id}`),
+    getByCustomer: (cid)         => API.request(`orders.php?customer=${cid}`),
+    create:        (data)        => API.request('orders.php', 'POST', data),
+    update:        (id, d)       => API.request(`orders.php?id=${id}`, 'PUT', d),
+    updateStatus:  (id, status)  => API.request(`orders.php?id=${id}`, 'PATCH', { status }),
+    delete:        (id)          => API.request(`orders.php?id=${id}`, 'DELETE'),
   },
 
   // ── Approval ──────────────────────────────────────────────
@@ -130,5 +132,17 @@ const API = {
     submit:    (data)    => API.request('reports.php', 'POST', data),
     update:    (id, d)   => API.request(`reports.php?id=${id}`, 'PUT', d),
     delete:    (id)      => API.request(`reports.php?id=${id}`, 'DELETE'),
+  },
+
+  // ── Reminders ─────────────────────────────────────────────
+  reminders: {
+    getAll:       ()           => API.request('reminders.php'),
+    getByAssignee:(workerId)   => API.request(`reminders.php?assignee=${workerId}`),
+    getById:      (id)         => API.request(`reminders.php?id=${id}`),
+    create:       (data)       => API.request('reminders.php', 'POST', data),
+    update:       (id, d)      => API.request(`reminders.php?id=${id}`, 'PUT', d),
+    // PATCH is used for partial updates (e.g. staff marking complete)
+    patch:        (id, d)      => API.request(`reminders.php?id=${id}`, 'PATCH', d),
+    delete:       (id)         => API.request(`reminders.php?id=${id}`, 'DELETE'),
   },
 };

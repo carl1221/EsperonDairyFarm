@@ -105,20 +105,22 @@ async function loadLivestock() {
     if (countEl) countEl.textContent = `${cows.length} cows`;
     if (!cows.length) { container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">No livestock records.</p>'; return; }
     let sickCount = 0;
-    container.innerHTML = cows.map((c, i) => {
-      const sick = (i % 5 === 0);
-      if (sick) sickCount++;
-      const dotClass    = sick ? 'status-dot--sick' : 'status-dot--healthy';
-      const healthLabel = sick
-        ? `<span style="color:var(--danger);font-weight:700;">Sick</span>`
-        : `<span style="color:var(--olive);font-weight:700;">Healthy</span>`;
+    container.innerHTML = cows.map((c) => {
+      // Use real Health_Status from the database
+      const health  = c.Health_Status || 'Healthy';
+      const isSick  = health === 'Sick' || health === 'Under Treatment';
+      if (isSick) sickCount++;
+      const dotClass    = isSick ? 'status-dot--sick' : 'status-dot--healthy';
+      const healthLabel = isSick
+        ? `<span style="color:var(--danger);font-weight:700;">${health}</span>`
+        : `<span style="color:var(--olive);font-weight:700;">${health}</span>`;
       return `<div class="cow-row">
         <div><span class="status-dot ${dotClass}"></span>
           <strong style="font-size:0.84rem;">${c.Cow}</strong>
           <span style="font-size:0.75rem;color:var(--muted);margin-left:6px;">ID #${c.Cow_ID}</span>
         </div>
         <div style="text-align:right;">${healthLabel}
-          <div style="font-size:0.72rem;color:var(--muted);">${c.Production} production</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${parseFloat(c.Production_Liters || 0).toFixed(2)}L/day</div>
         </div>
       </div>`;
     }).join('');
@@ -374,7 +376,7 @@ async function markReminderComplete(id) {
   try {
     const csrf = localStorage.getItem('csrf_token') || '';
     const res  = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
-      method: 'PUT',
+      method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
       body: JSON.stringify({ status: 'completed' })
@@ -382,7 +384,7 @@ async function markReminderComplete(id) {
     const data = await res.json();
     if (data.success) {
       UI.toast('Task marked as done!', 'success');
-      loadReminders(); // refresh the list — admin dashboard will also reflect this
+      loadReminders();
     } else {
       UI.toast('Failed: ' + (data.message || 'error'), 'error');
     }

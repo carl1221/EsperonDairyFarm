@@ -47,15 +47,17 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
             <th>Contact</th>
             <th>Order</th>
             <th>Date</th>
+            <th>Qty (L)</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+            <th>Status</th>
             <th>Cow</th>
-            <th>Production</th>
             <th>Worker</th>
-            <th>Role</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="orders-body">
-          <tr><td colspan="11" class="tbl-empty"><span class="spinner"></span> Loading…</td></tr>
+          <tr><td colspan="13" class="tbl-empty"><span class="spinner"></span> Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -92,9 +94,30 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
           <label>Worker</label>
           <select id="f-worker"></select>
         </div>
-        <div class="form-group form-group--full">
+        <div class="form-group">
           <label>Order Date</label>
           <input id="f-date" type="date" required />
+        </div>
+        <div class="form-group">
+          <label>Quantity (liters)</label>
+          <input id="f-qty" type="number" min="0" step="0.01" placeholder="e.g. 5.00" required />
+        </div>
+        <div class="form-group">
+          <label>Unit Price (₱/liter)</label>
+          <input id="f-price" type="number" min="0" step="0.01" placeholder="e.g. 50.00" required />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group form-group--full">
+          <label>Notes <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+          <input id="f-notes" type="text" placeholder="Any additional notes…" />
         </div>
       </form>
     </div>
@@ -117,16 +140,19 @@ let cows       = [];
 let workers    = [];
 
 const ORDER_COLS = [
-  { key: 'Order_ID',      label: 'Order ID'    },
-  { key: 'Customer_Name', label: 'Customer'    },
-  { key: 'Address',       label: 'Address'     },
-  { key: 'Contact_Num',   label: 'Contact'     },
-  { key: 'Order_Type',    label: 'Order Type'  },
-  { key: 'Order_Date',    label: 'Date'        },
-  { key: 'Cow',           label: 'Cow'         },
-  { key: 'Production',    label: 'Production'  },
-  { key: 'Worker',        label: 'Worker'      },
-  { key: 'Worker_Role',   label: 'Role'        },
+  { key: 'Order_ID',        label: 'Order ID'    },
+  { key: 'Customer_Name',   label: 'Customer'    },
+  { key: 'Address',         label: 'Address'     },
+  { key: 'Contact_Num',     label: 'Contact'     },
+  { key: 'Order_Type',      label: 'Order Type'  },
+  { key: 'Order_Date',      label: 'Date'        },
+  { key: 'quantity_liters', label: 'Qty (L)'     },
+  { key: 'unit_price',      label: 'Unit Price'  },
+  { key: 'total_price',     label: 'Total'       },
+  { key: 'Order_Status',    label: 'Status'      },
+  { key: 'Cow',             label: 'Cow'         },
+  { key: 'Worker_Name',     label: 'Worker'      },
+  { key: 'Worker_Role',     label: 'Role'        },
 ];
 
 async function init() {
@@ -180,7 +206,15 @@ async function loadOrders() {
 
 function renderOrders(rows) {
   const tbody = document.getElementById('orders-body');
-  if (!rows.length) { UI.setEmpty(tbody, 11); return; }
+  if (!rows.length) { UI.setEmpty(tbody, 13); return; }
+
+  const statusBadge = {
+    pending:   'badge--gold',
+    confirmed: 'badge--green',
+    delivered: 'badge--muted',
+    cancelled: 'badge--danger',
+  };
+
   tbody.innerHTML = rows.map(o => `
     <tr>
       <td><strong>#${o.Order_ID}</strong></td>
@@ -189,10 +223,12 @@ function renderOrders(rows) {
       <td>${o.Contact_Num}</td>
       <td><span class="badge badge--green">${o.Order_Type}</span></td>
       <td>${o.Order_Date}</td>
+      <td>${parseFloat(o.quantity_liters || 0).toFixed(2)}L</td>
+      <td>₱${parseFloat(o.unit_price || 0).toFixed(2)}</td>
+      <td>₱${parseFloat(o.total_price || 0).toFixed(2)}</td>
+      <td><span class="badge ${statusBadge[o.Order_Status] || 'badge--muted'}">${o.Order_Status || '—'}</span></td>
       <td>🐄 ${o.Cow}</td>
-      <td>${o.Production}</td>
-      <td>${o.Worker}</td>
-      <td><span class="badge ${o.Worker_Role === 'Admin' ? 'badge--gold' : 'badge--muted'}">${o.Worker_Role}</span></td>
+      <td>${o.Worker_Name || o.Worker || '—'}</td>
       <td class="actions">
         <button class="btn btn--icon btn--edit admin-only" onclick="openModal(${o.Order_ID})">✏</button>
         <button class="btn btn--icon btn--del  admin-only" onclick="deleteOrder(${o.Order_ID})">🗑</button>
@@ -213,18 +249,26 @@ function openModal(id = null) {
   document.getElementById('modal-title').textContent = id ? 'Edit Order' : 'New Order';
 
   if (!id) {
-    document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('f-type').value = 'Milk';
+    document.getElementById('f-date').value   = new Date().toISOString().split('T')[0];
+    document.getElementById('f-type').value   = 'Milk';
+    document.getElementById('f-qty').value    = '';
+    document.getElementById('f-price').value  = '';
+    document.getElementById('f-status').value = 'pending';
+    document.getElementById('f-notes').value  = '';
   } else {
     API.orders.getById(id).then(o => {
-      const custMatch = customers.find(c => c.Customer_Name === o.Customer_Name);
-      const cowMatch  = cows.find(c => c.Cow === o.Cow);
-      const wrkMatch  = workers.find(w => w.Worker === o.Worker);
+      const custMatch = customers.find(c => c.CID === o.CID);
+      const cowMatch  = cows.find(c => c.Cow_ID === o.Cow_ID);
+      const wrkMatch  = workers.find(w => w.Worker_ID === o.Worker_ID);
       if (custMatch) document.getElementById('f-cid').value    = custMatch.CID;
       if (cowMatch)  document.getElementById('f-cow').value    = cowMatch.Cow_ID;
       if (wrkMatch)  document.getElementById('f-worker').value = wrkMatch.Worker_ID;
-      document.getElementById('f-type').value  = o.Order_Type;
-      document.getElementById('f-date').value  = o.Order_Date;
+      document.getElementById('f-type').value   = o.Order_Type;
+      document.getElementById('f-date').value   = o.Order_Date;
+      document.getElementById('f-qty').value    = o.quantity_liters || 0;
+      document.getElementById('f-price').value  = o.unit_price || 0;
+      document.getElementById('f-status').value = o.Order_Status || 'pending';
+      document.getElementById('f-notes').value  = o.Order_Notes || '';
     }).catch(e => UI.toast(e.message, 'error'));
   }
   document.getElementById('modal-overlay').classList.add('modal-overlay--open');
@@ -236,14 +280,25 @@ function closeModal() {
 }
 
 async function saveOrder() {
+  const qty   = parseFloat(document.getElementById('f-qty').value);
+  const price = parseFloat(document.getElementById('f-price').value);
+  const date  = document.getElementById('f-date').value;
+
+  if (!date)          { UI.toast('Please select a date.', 'error'); return; }
+  if (isNaN(qty)   || qty   < 0) { UI.toast('Please enter a valid quantity.', 'error'); return; }
+  if (isNaN(price) || price < 0) { UI.toast('Please enter a valid unit price.', 'error'); return; }
+
   const data = {
-    CID:        parseInt(document.getElementById('f-cid').value),
-    Cow_ID:     parseInt(document.getElementById('f-cow').value),
-    Worker_ID:  parseInt(document.getElementById('f-worker').value),
-    Order_Type: document.getElementById('f-type').value,
-    Order_Date: document.getElementById('f-date').value,
+    CID:             parseInt(document.getElementById('f-cid').value),
+    Cow_ID:          parseInt(document.getElementById('f-cow').value),
+    Worker_ID:       parseInt(document.getElementById('f-worker').value),
+    Order_Type:      document.getElementById('f-type').value,
+    Order_Date:      date,
+    quantity_liters: qty,
+    unit_price:      price,
+    status:          document.getElementById('f-status').value,
+    notes:           document.getElementById('f-notes').value.trim() || null,
   };
-  if (!data.Order_Date) { UI.toast('Please select a date.', 'error'); return; }
 
   try {
     if (editingId) {

@@ -41,15 +41,27 @@ class Worker {
      * Expects $data to contain: Worker_ID, Worker, Worker_Role, Password (already hashed).
      */
     public function create(array $data): bool {
+        // Worker_ID is AUTO_INCREMENT — only specify it if explicitly provided
+        if (!empty($data['Worker_ID'])) {
+            $stmt = $this->db->prepare(
+                'INSERT INTO Worker (Worker_ID, Worker, Worker_Role, Password)
+                 VALUES (:id, :name, :role, :password)'
+            );
+            return $stmt->execute([
+                ':id'       => $data['Worker_ID'],
+                ':name'     => $data['Worker'],
+                ':role'     => $data['Worker_Role'],
+                ':password' => $data['Password'] ?? '',
+            ]);
+        }
         $stmt = $this->db->prepare(
-            'INSERT INTO Worker (Worker_ID, Worker, Worker_Role, Password)
-             VALUES (:id, :name, :role, :password)'
+            'INSERT INTO Worker (Worker, Worker_Role, Password)
+             VALUES (:name, :role, :password)'
         );
         return $stmt->execute([
-            ':id'       => $data['Worker_ID'],
             ':name'     => $data['Worker'],
             ':role'     => $data['Worker_Role'],
-            ':password' => $data['Password'],
+            ':password' => $data['Password'] ?? '',
         ]);
     }
 
