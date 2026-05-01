@@ -6,20 +6,18 @@
   <title>Sign Up — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
 
-  <!--
-    Define onRecaptchaLoad BEFORE the reCAPTCHA script tag so the function
-    exists when the API fires its onload callback (async+defer means the
-    callback can fire before the bottom <script> block runs).
-  -->
+  <!-- reCAPTCHA: use grecaptcha.ready() so the widget renders only after
+       the DOM is fully parsed and recaptcha-container exists.
+       render=explicit prevents auto-render; onload is not used. -->
   <script>
     var recaptchaWidgetId = null;
-    function onRecaptchaLoad() {
-      recaptchaWidgetId = grecaptcha.render('recaptcha-container', {
-        sitekey: '6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n',
-      });
-    }
   </script>
-  <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer
+          onload="grecaptcha.ready(function(){
+            recaptchaWidgetId = grecaptcha.render('recaptcha-container',{
+              sitekey:'6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n'
+            });
+          })"></script>
 
   <style>
     body {
@@ -233,16 +231,18 @@ const form           = document.getElementById('signup-form');
 const submitBtn      = document.getElementById('submit-btn');
 const alertContainer = document.getElementById('alert-container');
 
-// recaptchaWidgetId and onRecaptchaLoad are defined in <head>.
-// Only helpers are defined here.
+// recaptchaWidgetId is declared in <head>.
 function getRecaptchaToken() {
-  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) return '';
-  return grecaptcha.getResponse(recaptchaWidgetId);
+  if (typeof grecaptcha === 'undefined') return '';
+  return recaptchaWidgetId !== null
+    ? grecaptcha.getResponse(recaptchaWidgetId)
+    : grecaptcha.getResponse();
 }
 function resetRecaptcha() {
-  if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId !== null) {
-    try { grecaptcha.reset(recaptchaWidgetId); } catch(e) {}
-  }
+  if (typeof grecaptcha === 'undefined') return;
+  try {
+    recaptchaWidgetId !== null ? grecaptcha.reset(recaptchaWidgetId) : grecaptcha.reset();
+  } catch(e) {}
 }
 
 // ── Alert helpers ─────────────────────────────────────────
@@ -440,7 +440,7 @@ form.addEventListener('submit', async function(e) {
   if (!ok) { var first = form.querySelector('.error'); if (first) first.focus(); return; }
 
   // reCAPTCHA check
-  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) {
+  if (typeof grecaptcha === 'undefined') {
     showError('reCAPTCHA is still loading. Please wait a moment and try again.');
     return;
   }

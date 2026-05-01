@@ -6,18 +6,18 @@
   <title>Login — Esperon Dairy Farm</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-  <!-- Define the callback BEFORE loading the reCAPTCHA script so it exists
-       when the API fires onload. async+defer means the API can call the
-       callback before the bottom <script> block has run. -->
+  <!-- reCAPTCHA: use grecaptcha.ready() so the widget renders only after
+       the DOM is fully parsed and recaptcha-container exists.
+       render=explicit prevents auto-render; onload is not used. -->
   <script>
     var recaptchaWidgetId = null;
-    function onRecaptchaLoad() {
-      recaptchaWidgetId = grecaptcha.render('recaptcha-container', {
-        sitekey: '6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n',
-      });
-    }
   </script>
-  <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer
+          onload="grecaptcha.ready(function(){
+            recaptchaWidgetId = grecaptcha.render('recaptcha-container',{
+              sitekey:'6LdTbcssAAAAAJbLgdoZ98Iu7cZx7Lw7Nwik5C3n'
+            });
+          })"></script>
   <style>
     /* ── Login page specific styles ── */
     body {
@@ -811,17 +811,23 @@ const form           = document.getElementById('login-form');
 // recaptchaWidgetId and onRecaptchaLoad are defined in <head> before the
 // reCAPTCHA script loads — do NOT redeclare them here.
 
-// Helper: get reCAPTCHA response safely regardless of load state
+// Helper: get reCAPTCHA response safely
 function getRecaptchaToken() {
-  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) return '';
-  return grecaptcha.getResponse(recaptchaWidgetId);
+  if (typeof grecaptcha === 'undefined') return '';
+  // Use widget ID if available, otherwise fall back to default widget (id 0)
+  return recaptchaWidgetId !== null
+    ? grecaptcha.getResponse(recaptchaWidgetId)
+    : grecaptcha.getResponse();
 }
 
 // Helper: reset reCAPTCHA safely
 function resetRecaptcha() {
-  if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId !== null) {
-    grecaptcha.reset(recaptchaWidgetId);
-  }
+  if (typeof grecaptcha === 'undefined') return;
+  try {
+    recaptchaWidgetId !== null
+      ? grecaptcha.reset(recaptchaWidgetId)
+      : grecaptcha.reset();
+  } catch(e) {}
 }
 
 // ── Check for URL parameters (e.g., errors) ──────────────
@@ -926,12 +932,11 @@ form.addEventListener('submit', async (e) => {
 
   if (!usernameValid || !passwordValid) return;
 
-  // reCAPTCHA check
-  if (typeof grecaptcha === 'undefined' || recaptchaWidgetId === null) {
+  // reCAPTCHA check — widget renders via grecaptcha.ready() after DOM load
+  if (typeof grecaptcha === 'undefined') {
     showError('reCAPTCHA is still loading. Please wait a moment and try again.');
     return;
   }
-
   const recaptchaToken = getRecaptchaToken();
   if (!recaptchaToken) {
     showError('Please complete the reCAPTCHA verification.');
