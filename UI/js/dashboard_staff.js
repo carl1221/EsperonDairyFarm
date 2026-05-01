@@ -445,6 +445,123 @@ function loadStaffInventory() {
   });
 }
 
+// ── STAFF RESTOCK MODAL ───────────────────────────────────
+function openStaffRestockModal() {
+  var existing = document.getElementById('staffRestockModal');
+  if (existing) { existing.remove(); return; }
+
+  var INV_KEY = 'admin_inventory';
+  var items;
+  try {
+    var stored = localStorage.getItem(INV_KEY);
+    items = stored ? JSON.parse(stored) : null;
+    if (!Array.isArray(items) || !items.length) items = null;
+  } catch(e) { items = null; }
+
+  if (!items) {
+    UI.toast('No inventory data found.', 'error');
+    return;
+  }
+
+  var el = document.createElement('div');
+  el.id = 'staffRestockModal';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+  var options = items.map(function(i) {
+    return '<option value="' + i.id + '">' + i.name + ' (currently ' + i.pct + '%)</option>';
+  }).join('');
+  var initPct = items[0].pct;
+
+  el.innerHTML = '<div style="background:#faf6f0;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,0.18);width:100%;max-width:400px;font-family:\'Lato\',sans-serif;overflow:hidden;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:linear-gradient(135deg,#4e6040,#6b8a5c);">'
+    + '<div style="display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="color:#fff;font-size:1.1rem;">add_circle</span>'
+    + '<span style="font-family:\'Playfair Display\',serif;font-size:1rem;font-weight:700;color:#fff;">Restock Inventory</span></div>'
+    + '<button onclick="document.getElementById(\'staffRestockModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;width:26px;height:26px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.95rem;">close</span></button></div>'
+    + '<div style="padding:18px 20px;">'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Select Item</label>'
+    + '<select id="sr-item" onchange="onSrItemChange()" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-light);border-radius:9px;font-size:0.87rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;box-sizing:border-box;">'
+    + options + '</select></div>'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:0.75rem;font-weight:700;color:#4a3f35;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">New Stock Level (%)</label>'
+    + '<div style="display:flex;align-items:center;gap:10px;">'
+    + '<input id="sr-val" type="range" min="0" max="100" value="' + initPct + '" oninput="syncSrNumber();updateSrPreview();" style="flex:1;accent-color:var(--olive);cursor:pointer;" />'
+    + '<input id="sr-num" type="number" min="0" max="100" value="' + initPct + '" oninput="syncSrSlider();updateSrPreview();" style="width:64px;padding:7px 8px;border:1.5px solid var(--border-light);border-radius:8px;font-size:0.88rem;font-family:\'Lato\',sans-serif;color:var(--text);background:#fff;outline:none;text-align:center;" />'
+    + '<span style="font-size:0.84rem;color:var(--muted);">%</span>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-top:2px;"><span>0%</span><span>50%</span><span>100%</span></div>'
+    + '</div>'
+    + '<div id="sr-preview" style="background:rgba(232,240,224,0.5);border:1px solid rgba(78,96,64,0.2);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:0.84rem;color:var(--olive-dark);">'
+    + '<span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle;margin-right:4px;">info</span>'
+    + '<span id="sr-preview-text">Select an item to preview</span></div>'
+    + '<div style="display:flex;justify-content:flex-end;gap:8px;">'
+    + '<button onclick="document.getElementById(\'staffRestockModal\').remove()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;">Cancel</button>'
+    + '<button onclick="submitStaffRestock()" style="padding:8px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#4e6040,#6b8a5c);color:#fff;font-family:\'Lato\',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">'
+    + '<span class="material-symbols-outlined" style="font-size:0.9rem;">save</span> Save</button>'
+    + '</div></div></div>';
+
+  document.body.appendChild(el);
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+  updateSrPreview();
+}
+
+function syncSrNumber() {
+  var s = document.getElementById('sr-val'), n = document.getElementById('sr-num');
+  if (s && n) n.value = s.value;
+}
+function syncSrSlider() {
+  var s = document.getElementById('sr-val'), n = document.getElementById('sr-num');
+  if (!s || !n) return;
+  var v = Math.min(100, Math.max(0, parseInt(n.value,10)||0));
+  n.value = v; s.value = v;
+}
+function updateSrPreview() {
+  var itemSel = document.getElementById('sr-item');
+  var valInput = document.getElementById('sr-val');
+  var previewEl = document.getElementById('sr-preview-text');
+  if (!itemSel || !valInput || !previewEl) return;
+  var INV_KEY = 'admin_inventory';
+  var items; try { items = JSON.parse(localStorage.getItem(INV_KEY)||'[]'); } catch(e){ items=[]; }
+  var item = items.find(function(i){ return i.id === itemSel.value; });
+  if (!item) return;
+  var newPct = parseInt(valInput.value, 10);
+  var newAmt = Math.round(newPct / 100 * item.capacity);
+  var oldAmt = Math.round(item.pct / 100 * item.capacity);
+  var diff = newAmt - oldAmt;
+  previewEl.textContent = item.name + ': ' + item.pct + '% → ' + newPct + '% ('
+    + oldAmt + ' → ' + newAmt + ' ' + item.unit + ', ' + (diff >= 0 ? '+' : '') + diff + ' ' + item.unit + ')';
+}
+function onSrItemChange() {
+  var itemSel = document.getElementById('sr-item');
+  var slider  = document.getElementById('sr-val');
+  var num     = document.getElementById('sr-num');
+  if (!itemSel || !slider || !num) return;
+  var INV_KEY = 'admin_inventory';
+  var items; try { items = JSON.parse(localStorage.getItem(INV_KEY)||'[]'); } catch(e){ items=[]; }
+  var item = items.find(function(i){ return i.id === itemSel.value; });
+  if (!item) return;
+  slider.value = item.pct; num.value = item.pct;
+  updateSrPreview();
+}
+function submitStaffRestock() {
+  var itemSel = document.getElementById('sr-item');
+  var numInput = document.getElementById('sr-num');
+  if (!itemSel || !numInput) return;
+  var newPct = Math.min(100, Math.max(0, parseInt(numInput.value, 10)));
+  if (isNaN(newPct)) { UI.toast('Please enter a valid percentage.', 'error'); return; }
+  var INV_KEY = 'admin_inventory';
+  var items; try { items = JSON.parse(localStorage.getItem(INV_KEY)||'[]'); } catch(e){ items=[]; }
+  var item = items.find(function(i){ return i.id === itemSel.value; });
+  if (!item) return;
+  item.pct = newPct;
+  localStorage.setItem(INV_KEY, JSON.stringify(items));
+  localStorage.setItem(INV_KEY + '_updated', new Date().toLocaleString());
+  document.getElementById('staffRestockModal').remove();
+  loadStaffInventory(); // refresh the bars
+  UI.toast(item.name + ' updated to ' + newPct + '%.', 'success');
+}
+
 // ── HEARTBEAT ─────────────────────────────────────────────
 function startStaffHeartbeat() {
   function ping() {

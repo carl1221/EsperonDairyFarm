@@ -142,7 +142,9 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
           <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.2rem;">inventory_2</span>
           Inventory Levels
         </span>
-        <span style="font-size:0.72rem;color:var(--muted);font-style:italic;">View only</span>
+        <button class="btn-sm btn-sm--primary" onclick="openStaffRestockModal()" style="font-size:0.78rem;padding:5px 12px;">
+          <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> Restock
+        </button>
       </div>
       <div style="padding:16px 20px;" id="staff-inventory-bars">
         <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
