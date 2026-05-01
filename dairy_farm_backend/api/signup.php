@@ -2,13 +2,14 @@
 // ============================================================
 // api/signup.php
 // Validates and processes new user registration.
+//
+// Role = Staff | Admin  → inserts into Worker table (pending approval)
+// Role = Customer       → inserts into Customer table (no approval)
 // ============================================================
-
-// CORS headers are handled by bootstrap.php
 
 require_once __DIR__ . '/../config/bootstrap.php';
 
-const ALLOWED_ROLES = ['Staff', 'Admin'];
+const ALLOWED_ROLES = ['Staff', 'Admin', 'Customer'];
 
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -18,59 +19,105 @@ try {
     $data     = getRequestBody();
     $username = trim($data['username'] ?? '');
     $email    = trim($data['email']    ?? '');
-    $password = $data['password'] ?? ''; 
+    $password = $data['password']      ?? '';
     $role     = trim($data['role']     ?? 'Staff');
     $recaptchaToken = $data['g-recaptcha-response'] ?? '';
 
-    // Verify reCAPTCHA token
+    // ── reCAPTCHA ───────────────────────────────────────────
     if (!$recaptchaToken || !verifyRecaptcha($recaptchaToken)) {
         sendError('reCAPTCHA verification failed. Please try again.', 400);
     }
 
-    // ── Validation ──────────────────────────────────────────
-    if ($username === '') sendError('Username is required');
-    if ($email    === '') sendError('Email address is required');
-    if ($password === '') sendError('Password is required');
+    // ── Common validation ───────────────────────────────────
+    if ($username === '') sendError('Username is required.');
+    if ($email    === '') sendError('Email address is required.');
+    if ($password === '') sendError('Password is required.');
 
     if (strlen($username) < 3 || strlen($username) > 50) {
-        sendError('Username must be between 3 and 50 characters');
+        sendError('Username must be between 3 and 50 characters.');
     }
-
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        sendError('Please enter a valid email address');
+        sendError('Please enter a valid email address.');
     }
-
     if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password)) {
-        sendError('Password must be 8+ chars, with one uppercase and one number');
+        sendError('Password must be 8+ chars, with one uppercase and one number.');
+    }
+    if (!in_array($role, ALLOWED_ROLES, true)) {
+        sendError('Invalid role selected.');
     }
 
-    $db = getConnection();
-
-    // ── Check Duplicates ────────────────────────────────────
-    $stmt = $db->prepare('SELECT Worker_ID FROM Worker WHERE Worker = ? OR Email = ?');
-    $stmt->execute([$username, $email]);
-    if ($stmt->fetch()) {
-        sendError('Username or Email is already taken.', 409);
-    }
-
-    // ── Hash & Insert ───────────────────────────────────────
+    $db             = getConnection();
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    $db->beginTransaction();
-    try {
-        $stmt = $db->prepare(
-            'INSERT INTO Worker (Worker, Worker_Role, Email, Password, approval_status)
-             VALUES (?, ?, ?, ?, ?)'
-        );
-        $stmt->execute([$username, $role, $email, $hashedPassword, 'pending']);
-        $newId = $db->lastInsertId();
-        $db->commit();
+    // ── Customer signup ─────────────────────────────────────
+    if ($role === 'Customer') {
+        $address    = trim($data['address']     ?? '');
+        $contactNum = trim($data['contact_num'] ?? '');
 
-        sendSuccess('Account created! Your registration is pending admin approval.', ['user_id' => $newId], 201);
+        if ($address === '')    sendError('Address is required for customer accounts.');
+        if ($contactNum === '') sendError('Contact number is required for customer accounts.');
 
-    } catch (PDOException $insertEx) {
-        $db->rollBack();
-        throw $insertEx;
+        // Check for duplicate username in Customer table (Customer_Name)
+        $stmt = $db->prepare('SELECT CID FROM Customer WHERE Customer_Name = ?');
+        $stmt->execute([$username]);
+        if ($stmt->fetch()) {
+            sendError('A customer with that name already exists.', 409);
+        }
+
+        $db->beginTransaction();
+        try {
+            // Insert address
+            $addrStmt = $db->prepare('INSERT INTO Address (Address) VALUES (?)');
+            $addrStmt->execute([$address]);
+            $addressId = (int) $db->lastInsertId();
+
+            // Insert customer
+            $custStmt = $db->prepare(
+                'INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num) VALUES (?, ?, ?)'
+            );
+            $custStmt->execute([$username, $addressId, $contactNum]);
+            $newId = $db->lastInsertId();
+            $db->commit();
+
+            sendSuccess(
+                'Customer account created! You can now be added to orders.',
+                ['customer_id' => $newId],
+                201
+            );
+        } catch (PDOException $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    // ── Staff / Admin signup ────────────────────────────────
+    else {
+        // Check for duplicate username or email in Worker table
+        $stmt = $db->prepare('SELECT Worker_ID FROM Worker WHERE Worker = ? OR Email = ?');
+        $stmt->execute([$username, $email]);
+        if ($stmt->fetch()) {
+            sendError('Username or Email is already taken.', 409);
+        }
+
+        $db->beginTransaction();
+        try {
+            $stmt = $db->prepare(
+                'INSERT INTO Worker (Worker, Worker_Role, Email, Password, approval_status)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$username, $role, $email, $hashedPassword, 'pending']);
+            $newId = $db->lastInsertId();
+            $db->commit();
+
+            sendSuccess(
+                'Account created! Your registration is pending admin approval.',
+                ['user_id' => $newId],
+                201
+            );
+        } catch (PDOException $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 
 } catch (PDOException $e) {
