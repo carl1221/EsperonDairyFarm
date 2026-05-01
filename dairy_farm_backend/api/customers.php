@@ -15,11 +15,18 @@ require_once __DIR__ . '/../models/Customer.php';
 
 requireAuth();
 requireCsrf();
-// Customer management is Admin-only
-requireRole(['Admin']);
+
+// Role-based access:
+// - GET:    both Admin and Staff can read customers
+// - POST:   both Admin and Staff can create customers
+// - PUT:    Admin only (edit existing customer)
+// - DELETE: Admin only
+$method = $_SERVER['REQUEST_METHOD'];
+if (in_array($method, ['PUT', 'DELETE'], true)) {
+    requireRole(['Admin']);
+}
 
 $customer = new Customer();
-$method   = $_SERVER['REQUEST_METHOD'];
 $id       = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 try {
@@ -38,15 +45,17 @@ try {
 
         case 'POST':
             $data = getRequestBody();
-            validateRequired($data, ['CID', 'Customer_Name', 'Address_ID', 'Address', 'Contact_Num']);
+            validateRequired($data, ['Customer_Name', 'Address', 'Contact_Num']);
 
             $validatedData = [
-                'CID' => validateInteger($data['CID'], 'CID'),
                 'Customer_Name' => validateString($data['Customer_Name'], 'Customer_Name', 100),
-                'Address_ID' => validateInteger($data['Address_ID'], 'Address_ID'),
-                'Address' => validateString($data['Address'], 'Address', 100),
-                'Contact_Num' => validateString($data['Contact_Num'], 'Contact_Num', 20)
+                'Address'       => validateString($data['Address'],       'Address',       255),
+                'Contact_Num'   => validateString($data['Contact_Num'],   'Contact_Num',   20),
             ];
+            // CID and Address_ID are optional — DB AUTO_INCREMENT handles CID,
+            // Customer model creates a new Address row if Address_ID is omitted.
+            if (!empty($data['CID']))        $validatedData['CID']        = validateInteger($data['CID'],        'CID');
+            if (!empty($data['Address_ID'])) $validatedData['Address_ID'] = validateInteger($data['Address_ID'], 'Address_ID');
 
             $customer->create($validatedData);
             sendSuccess('Customer created.', null, 201);
