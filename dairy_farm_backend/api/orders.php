@@ -3,11 +3,12 @@
 // api/orders.php
 // Endpoint: /api/orders.php
 //
-// GET    /api/orders.php              → list all orders (full join via view)
+// GET    /api/orders.php              → list all orders
 // GET    /api/orders.php?id=1         → get one order
 // GET    /api/orders.php?customer=1   → get orders by customer ID
 // POST   /api/orders.php              → create order
 // PUT    /api/orders.php?id=1         → update order
+// PATCH  /api/orders.php?id=1         → update order status only
 // DELETE /api/orders.php?id=1         → delete order
 // ============================================================
 
@@ -16,7 +17,7 @@ require_once __DIR__ . '/../models/Order.php';
 
 requireAuth();
 requireCsrf();
-// Staff can view orders (GET), only Admin can create/update/delete
+// Staff can view orders (GET); only Admin can create/update/delete
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
     requireRole(['Admin']);
 }
@@ -44,14 +45,22 @@ try {
 
         case 'POST':
             $data = getRequestBody();
-            validateRequired($data, ['CID', 'Cow_ID', 'Worker_ID', 'Order_Type', 'Order_Date']);
+            validateRequired($data, [
+                'CID', 'Cow_ID', 'Worker_ID',
+                'Order_Type', 'Order_Date',
+                'quantity_liters', 'unit_price',
+            ]);
 
             $validatedData = [
-                'CID' => validateInteger($data['CID'], 'CID'),
-                'Cow_ID' => validateInteger($data['Cow_ID'], 'Cow_ID'),
-                'Worker_ID' => validateInteger($data['Worker_ID'], 'Worker_ID'),
-                'Order_Type' => validateString($data['Order_Type'], 'Order_Type', 100),
-                'Order_Date' => validateDate($data['Order_Date'], 'Order_Date')
+                'CID'             => validateInteger($data['CID'],             'CID'),
+                'Cow_ID'          => validateInteger($data['Cow_ID'],          'Cow_ID'),
+                'Worker_ID'       => validateInteger($data['Worker_ID'],       'Worker_ID'),
+                'Order_Type'      => validateString($data['Order_Type'],       'Order_Type', 100),
+                'Order_Date'      => validateDate($data['Order_Date'],         'Order_Date'),
+                'quantity_liters' => (float) $data['quantity_liters'],
+                'unit_price'      => (float) $data['unit_price'],
+                'status'          => $data['status'] ?? 'pending',
+                'notes'           => $data['notes']  ?? null,
             ];
 
             $newId = $order->create($validatedData);
@@ -60,19 +69,44 @@ try {
 
         case 'PUT':
             if (!$id) sendError('Order ID is required for update.');
-            $data     = getRequestBody();
-            $required = ['CID', 'Cow_ID', 'Worker_ID', 'Order_Type', 'Order_Date'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    sendError("Missing required field: $field");
-                }
-            }
-            $order->update($id, $data)
+            $data = getRequestBody();
+            validateRequired($data, [
+                'CID', 'Cow_ID', 'Worker_ID',
+                'Order_Type', 'Order_Date',
+                'quantity_liters', 'unit_price',
+            ]);
+
+            $validatedData = [
+                'CID'             => validateInteger($data['CID'],             'CID'),
+                'Cow_ID'          => validateInteger($data['Cow_ID'],          'Cow_ID'),
+                'Worker_ID'       => validateInteger($data['Worker_ID'],       'Worker_ID'),
+                'Order_Type'      => validateString($data['Order_Type'],       'Order_Type', 100),
+                'Order_Date'      => validateDate($data['Order_Date'],         'Order_Date'),
+                'quantity_liters' => (float) $data['quantity_liters'],
+                'unit_price'      => (float) $data['unit_price'],
+                'status'          => $data['status'] ?? 'pending',
+                'notes'           => $data['notes']  ?? null,
+            ];
+
+            $order->update($id, $validatedData)
                 ? sendSuccess('Order updated.')
                 : sendError('Order not found or no changes made.', 404);
             break;
 
+        case 'PATCH':
+            // Staff and Admin can update status (e.g. mark as delivered)
+            if (!$id) sendError('Order ID is required.');
+            $data   = getRequestBody();
+            $status = $data['status'] ?? '';
+            if (empty($status)) sendError('status field is required for PATCH.');
+
+            $order->updateStatus($id, $status)
+                ? sendSuccess('Order status updated.')
+                : sendError('Invalid status value or order not found.', 400);
+            break;
+
         case 'DELETE':
+            requireRole(['Admin']);
             if (!$id) sendError('Order ID is required for delete.');
             $order->delete($id)
                 ? sendSuccess('Order deleted.')

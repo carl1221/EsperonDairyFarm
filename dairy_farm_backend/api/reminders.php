@@ -3,11 +3,13 @@
 // api/reminders.php
 // Endpoint: /api/reminders.php
 //
-// GET    /api/reminders.php          → list all reminders
-// GET    /api/reminders.php?id=1      → get one reminder
-// POST   /api/reminders.php          → create reminder
-// PUT    /api/reminders.php?id=1      → update reminder
-// DELETE /api/reminders.php?id=1      → delete reminder
+// GET    /api/reminders.php               → list all reminders
+// GET    /api/reminders.php?id=1          → get one reminder
+// GET    /api/reminders.php?assignee=201  → get reminders assigned to worker
+// POST   /api/reminders.php               → create reminder (Admin only)
+// PUT    /api/reminders.php?id=1          → full update (Admin only)
+// PATCH  /api/reminders.php?id=1          → mark as completed (Staff or Admin)
+// DELETE /api/reminders.php?id=1          → delete reminder (Admin only)
 // ============================================================
 
 require_once __DIR__ . '/../config/bootstrap.php';
@@ -15,27 +17,32 @@ require_once __DIR__ . '/../models/Reminder.php';
 
 requireAuth();
 requireCsrf();
-// Staff can view reminders (GET) and mark them complete (PUT with status only).
-// Only Admin can create, delete, or do full updates.
-$method = $_SERVER['REQUEST_METHOD'];
-if ($method === 'POST' || $method === 'DELETE') {
+
+$method   = $_SERVER['REQUEST_METHOD'];
+$userRole = $_SESSION['user']['role'] ?? '';
+
+// Access control
+if (in_array($method, ['POST', 'DELETE'], true)) {
     requireRole(['Admin']);
 }
 if ($method === 'PUT') {
-    $userRole = $_SESSION['user']['role'] ?? '';
+    requireRole(['Admin']);
+}
+if ($method === 'PATCH') {
+    // Staff may only mark their own assigned reminders as completed
     if ($userRole !== 'Admin') {
-        // Staff may only update the status field to 'completed'
         $body = getRequestBody();
-        $allowedKeys = array_keys($body);
-        $onlyStatus  = $allowedKeys === ['status'] || (count($allowedKeys) === 1 && isset($body['status']));
+        $keys = array_keys($body);
+        $onlyStatus = count($keys) === 1 && isset($body['status']);
         if (!$onlyStatus || $body['status'] !== 'completed') {
             sendError('Access denied. Staff may only mark reminders as completed.', 403);
         }
     }
 }
 
-$reminder = new Reminder();
-$id       = isset($_GET['id']) ? (int) $_GET['id'] : null;
+$reminder  = new Reminder();
+$id        = isset($_GET['id'])       ? (int) $_GET['id']       : null;
+$assignee  = isset($_GET['assignee']) ? (int) $_GET['assignee'] : null;
 
 try {
     switch ($method) {
@@ -46,6 +53,8 @@ try {
                 $row
                     ? sendSuccess('Reminder found.', $row)
                     : sendError('Reminder not found.', 404);
+            } elseif ($assignee) {
+                sendSuccess('Reminders retrieved.', $reminder->getByAssignee($assignee));
             } else {
                 sendSuccess('Reminders retrieved.', $reminder->getAll());
             }
@@ -54,19 +63,45 @@ try {
         case 'POST':
             $data = getRequestBody();
             validateRequired($data, ['title', 'due_date']);
+
             $validatedData = [
                 'created_by'  => $_SESSION['user']['id'] ?? null,
-                'title'       => validateString($data['title'], 'title', 255),
-                'description' => isset($data['description']) ? validateString($data['description'], 'description', 1000) : null,
+                'assigned_to' => isset($data['assigned_to']) ? (int)$data['assigned_to'] : null,
+                'title'       => validateString($data['title'],       'title',       255),
+                'description' => isset($data['description'])
+                                    ? validateString($data['description'], 'description', 1000)
+                                    : null,
                 'due_date'    => $data['due_date'],
-                'status'      => isset($data['status']) ? validateString($data['status'], 'status', 20) : 'pending',
+                'status'      => $data['status'] ?? 'pending',
             ];
+
             $reminder->create($validatedData)
                 ? sendSuccess('Reminder created.', null, 201)
                 : sendError('Failed to create reminder.', 500);
             break;
 
         case 'PUT':
+            if (!$id) sendError('Reminder ID required.');
+            $data = getRequestBody();
+            validateRequired($data, ['title', 'due_date']);
+
+            $validatedData = [
+                'title'       => validateString($data['title'],       'title',       255),
+                'description' => isset($data['description'])
+                                    ? validateString($data['description'], 'description', 1000)
+                                    : null,
+                'due_date'    => $data['due_date'],
+                'status'      => $data['status']      ?? 'pending',
+                'assigned_to' => isset($data['assigned_to']) ? (int)$data['assigned_to'] : null,
+            ];
+
+            $reminder->update($id, $validatedData)
+                ? sendSuccess('Reminder updated.')
+                : sendError('Failed to update reminder.', 500);
+            break;
+
+        case 'PATCH':
+            // Partial update — typically just flipping status to 'completed'
             if (!$id) sendError('Reminder ID required.');
             $data = getRequestBody();
             $reminder->update($id, $data)
