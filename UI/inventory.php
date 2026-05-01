@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/guard.php';
 requireAuthPage();
-requireAdminPage();
+$isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,12 +45,16 @@ requireAdminPage();
   <div class="page-header">
     <div>
       <h1 class="page-title">Inventory Levels</h1>
-      <p class="page-subtitle" id="inv-last-updated-page">Track and manage farm stock levels.</p>
+      <p class="page-subtitle" id="inv-last-updated-page">
+        <?= $isAdmin ? 'Track and manage farm stock levels.' : 'View and update farm stock levels.' ?>
+      </p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <?php if ($isAdmin): ?>
       <button class="btn btn--ghost" onclick="openEditInventoryModal()">
         <span class="material-symbols-outlined" style="font-size:1rem;">edit</span> Edit Items
       </button>
+      <?php endif; ?>
       <button class="btn btn--primary" onclick="openRestockModal()">
         <span class="material-symbols-outlined" style="font-size:1rem;">add</span> Restock
       </button>
@@ -70,9 +74,11 @@ requireAdminPage();
   <!-- Reset + last updated footer -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--spacing-xl);">
     <span style="font-size:0.78rem;color:var(--muted);" id="inv-footer-updated"></span>
+    <?php if ($isAdmin): ?>
     <button class="btn btn--ghost" onclick="doResetInventory()" style="font-size:0.82rem;">
       <span class="material-symbols-outlined" style="font-size:1rem;">restart_alt</span> Reset to Defaults
     </button>
+    <?php endif; ?>
   </div>
 
 </main>
@@ -81,6 +87,7 @@ requireAdminPage();
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
+var IS_ADMIN = <?= $isAdmin ? 'true' : 'false' ?>;
 // ── Shared inventory constants (same key as dashboard) ────
 var INV_KEY = 'admin_inventory';
 
@@ -165,6 +172,12 @@ function renderInventoryCards() {
   if (footerEl) footerEl.textContent = updated ? 'Last updated: ' + updated : '';
 
   renderStatCards(items);
+
+  // Show role-appropriate subtitle
+  var subEl = document.getElementById('inv-last-updated-page');
+  if (subEl && !IS_ADMIN) {
+    subEl.textContent = 'You can update stock levels. Contact admin to add or rename items.';
+  }
 
   grid.innerHTML = items.map(function(item) {
     var pct  = Math.min(100, Math.max(0, item.pct || 0));
@@ -315,6 +328,7 @@ function submitRestock() {
 
 // ── Edit Items Modal ──────────────────────────────────────
 function openEditInventoryModal() {
+  if (!IS_ADMIN) { UI.toast('Only admins can edit inventory items.', 'error'); return; }
   var existing = document.getElementById('editInvModal');
   if (existing) { existing.remove(); return; }
   var items = loadInventory();
@@ -371,6 +385,7 @@ function saveEditInventory() {
 
 // ── Reset ─────────────────────────────────────────────────
 function doResetInventory() {
+  if (!IS_ADMIN) { UI.toast('Only admins can reset inventory.', 'error'); return; }
   // Use UI.confirm if available, otherwise a simple check
   if (typeof UI.confirm === 'function') {
     UI.confirm('Reset all inventory levels to defaults?').then(function(ok) {
