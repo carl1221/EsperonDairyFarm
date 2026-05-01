@@ -77,18 +77,30 @@ async function loadOrders() {
     const orders = await API.orders.getAll();
     const statEl = document.getElementById('stat-orders');
     if (statEl) statEl.textContent = orders.length;
+
+    // Update quick-action sub-label
+    const sub = document.getElementById('qa-orders-sub');
+    if (sub) sub.textContent = orders.length + ' total order' + (orders.length !== 1 ? 's' : '');
+
     if (!orders.length) { container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">No orders found.</p>'; return; }
+
     const recent = [...orders].reverse().slice(0, 6);
-    const statuses = ['pending', 'processing', 'delivered'];
-    const statusLabels = { pending:'Pending', processing:'Processing', delivered:'Delivered' };
-    container.innerHTML = recent.map((o, i) => {
-      const statusKey = statuses[i % 3];
+    const statusBadge = {
+      pending:   'order-status--pending',
+      confirmed: 'order-status--processing',
+      delivered: 'order-status--delivered',
+      cancelled: 'order-status--cancelled',
+    };
+    const statusLabel = { pending:'Pending', confirmed:'Confirmed', delivered:'Delivered', cancelled:'Cancelled' };
+
+    container.innerHTML = recent.map(o => {
+      const statusKey = (o.Order_Status || o.status || 'pending').toLowerCase();
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-light);">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:0.84rem;color:var(--text);">#${o.Order_ID} \u2014 ${o.Customer_Name}</div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">${o.Order_Type} \u00b7 ${o.Cow} \u00b7 ${o.Order_Date}</div>
         </div>
-        <span class="order-status order-status--${statusKey}">${statusLabels[statusKey]}</span>
+        <span class="order-status ${statusBadge[statusKey] || 'order-status--pending'}">${statusLabel[statusKey] || statusKey}</span>
       </div>`;
     }).join('');
   } catch(e) {

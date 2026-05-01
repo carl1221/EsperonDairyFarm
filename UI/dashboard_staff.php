@@ -163,7 +163,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
         <div class="quick-card__sub" id="qa-tasks-sub">Loading…</div>
       </div>
     </div>
-    <div class="quick-card" onclick="switchStaffTab('tab-orders',document.getElementById('sbtn-orders'))">
+    <div class="quick-card" onclick="window.location.href='orders.php'">
       <div class="quick-card__icon" style="background:rgba(192,57,43,0.08);">
         <span class="material-symbols-outlined" style="color:var(--danger);font-size:1.4rem;">receipt_long</span>
       </div>
@@ -248,8 +248,11 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
 
     <!-- Tab: Orders -->
     <div id="tab-orders" class="dash-tab-panel">
-      <div style="padding:12px 16px 4px;display:flex;justify-content:flex-end;">
-        <a href="orders.php" class="btn-sm btn-sm--ghost">View All →</a>
+      <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.78rem;color:var(--muted);" id="qa-orders-sub">Loading…</span>
+        <a href="orders.php" class="btn-sm btn-sm--primary" style="text-decoration:none;">
+          <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> New Order
+        </a>
       </div>
       <div id="orders-list" style="padding:4px 16px 16px;max-height:340px;overflow-y:auto;">
         <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders…</p>
