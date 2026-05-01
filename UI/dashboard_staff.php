@@ -206,6 +206,15 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
         <div class="quick-card__sub">Message admin or staff</div>
       </div>
     </div>
+    <div class="quick-card" onclick="window.location.href='inventory.php'">
+      <div class="quick-card__icon" style="background:rgba(78,96,64,0.1);">
+        <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.4rem;">inventory_2</span>
+      </div>
+      <div>
+        <div class="quick-card__title">Inventory</div>
+        <div class="quick-card__sub" id="qa-inventory-sub">Update stock levels</div>
+      </div>
+    </div>
   </div>
 
   <!-- ── SECTION 4: Tabbed Panel ────────────────────────── -->

@@ -527,4 +527,15 @@ async function loadMilkStat() {
   var remBadge = document.getElementById('reminderBadge');
   var qaRem    = document.getElementById('qa-reminders-sub');
   if (remBadge && qaRem && remBadge.style.display !== 'none') qaRem.textContent = remBadge.textContent + ' urgent reminder(s)';
+
+  // Inventory quick card subtitle
+  var invItems = loadInventory();
+  var lowCount = invItems.filter(function(i){ return (i.pct||0) < 30; }).length;
+  var qaInv    = document.getElementById('qa-inventory-sub');
+  if (qaInv) {
+    qaInv.textContent = lowCount > 0
+      ? lowCount + ' item(s) critically low!'
+      : 'Update stock levels';
+    if (lowCount > 0) qaInv.style.color = 'var(--danger)';
+  }
 })();
