@@ -102,6 +102,8 @@ const API = {
   // ── Orders ────────────────────────────────────────────────
   orders: {
     getAll:        ()            => API.request('orders.php'),
+    getMine:       ()            => API.request('orders.php?mine=1'),
+    search:        (q)           => API.request(`orders.php?search=${encodeURIComponent(q)}`),
     getById:       (id)          => API.request(`orders.php?id=${id}`),
     getByCustomer: (cid)         => API.request(`orders.php?customer=${cid}`),
     create:        (data)        => API.request('orders.php', 'POST', data),

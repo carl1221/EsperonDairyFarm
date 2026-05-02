@@ -350,9 +350,15 @@ function renderOrders() {
     const status = (o.Order_Status || 'pending').toLowerCase();
     const pill   = STATUS_PILL[status] || `<span class="order-pill order-pill--pending">${status}</span>`;
     const date   = new Date(o.Order_Date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+    // Show green dot if order was updated in the last 24 hours
+    const oneDayAgo  = Date.now() - 86400000;
+    const updatedAt  = o.Order_Updated ? new Date(o.Order_Updated).getTime() : 0;
+    const recentDot  = updatedAt > oneDayAgo
+      ? `<span title="Status updated recently" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#27ae60;margin-left:5px;vertical-align:middle;"></span>`
+      : '';
     return `<div class="order-row" onclick="openOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
       <div style="flex:1;min-width:0;">
-        <div class="order-row__id">Order #${o.Order_ID} &mdash; ${o.Order_Type}</div>
+        <div class="order-row__id">Order #${o.Order_ID} &mdash; ${o.Order_Type}${recentDot}</div>
         <div class="order-row__meta">${date} &nbsp;·&nbsp; 🐄 ${o.Cow}${o.Breed ? ' ('+o.Breed+')' : ''} &nbsp;·&nbsp; ${o.Worker_Name}</div>
         <div style="margin-top:5px;">${pill}</div>
       </div>

@@ -92,6 +92,36 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
   </div>
 </div>
 
+<!-- Set Password Modal (Admin only) -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal__head">
+      <span class="modal__title">Set Customer Password</span>
+      <button class="modal__close" onclick="closeSetPassword()">✕</button>
+    </div>
+    <div class="modal__body">
+      <p style="font-size:0.84rem;color:var(--muted);margin-bottom:14px;">
+        Setting password for: <strong id="pw-customer-name"></strong>
+      </p>
+      <div id="pw-err" style="display:none;background:var(--danger-lt);border:1px solid #f5c6cb;color:var(--danger);padding:8px 12px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;"></div>
+      <form class="form-grid" onsubmit="return false">
+        <div class="form-group form-group--full">
+          <label>New Password</label>
+          <input id="pw-new" type="password" placeholder="Min 8 chars, 1 uppercase, 1 number" />
+        </div>
+        <div class="form-group form-group--full">
+          <label>Confirm Password</label>
+          <input id="pw-confirm" type="password" placeholder="Repeat new password" />
+        </div>
+      </form>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--ghost" onclick="closeSetPassword()">Cancel</button>
+      <button class="btn btn--primary" onclick="saveCustomerPassword()">Set Password</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
@@ -117,6 +147,7 @@ async function loadCustomers() {
         <td class="actions">
           ${IS_ADMIN ? `
           <button class="btn btn--icon btn--edit admin-only" onclick="openModal(${c.CID})">✏ Edit</button>
+          <button class="btn btn--icon" onclick="openSetPassword(${c.CID}, '${c.Customer_Name.replace(/'/g,"\\'")}')">🔑 Password</button>
           <button class="btn btn--icon btn--del  admin-only" onclick="deleteCustomer(${c.CID})">🗑 Del</button>
           ` : '<span style="font-size:0.75rem;color:var(--muted);">View only</span>'}
         </td>
@@ -242,6 +273,60 @@ async function deleteCustomer(id) {
     UI.toast('Customer deleted.');
     loadCustomers();
   } catch (e) { UI.toast(e.message, 'error'); }
+}
+
+// ── Set Customer Password (Admin only) ────────────────────
+let _pwCustomerId = null;
+
+function openSetPassword(id, name) {
+  _pwCustomerId = id;
+  document.getElementById('pw-customer-name').textContent = name;
+  document.getElementById('pw-new').value     = '';
+  document.getElementById('pw-confirm').value = '';
+  document.getElementById('pw-err').style.display = 'none';
+  document.getElementById('pw-modal').classList.add('modal-overlay--open');
+}
+
+function closeSetPassword() {
+  document.getElementById('pw-modal').classList.remove('modal-overlay--open');
+  _pwCustomerId = null;
+}
+
+async function saveCustomerPassword() {
+  const pw      = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  const errEl   = document.getElementById('pw-err');
+
+  if (!pw || pw.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/[A-Z]/.test(pw)) {
+    errEl.textContent = 'Must contain at least one uppercase letter.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/[0-9]/.test(pw)) {
+    errEl.textContent = 'Must contain at least one number.';
+    errEl.style.display = 'block'; return;
+  }
+  if (pw !== confirm) {
+    errEl.textContent = 'Passwords do not match.';
+    errEl.style.display = 'block'; return;
+  }
+  errEl.style.display = 'none';
+
+  try {
+    await API.request('set_customer_password.php', 'POST', {
+      customer_id: _pwCustomerId,
+      password: pw,
+      password_confirm: confirm,
+    });
+    UI.toast('Password set successfully!', 'success');
+    closeSetPassword();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
 }
 
 loadCustomers();

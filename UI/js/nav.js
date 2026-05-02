@@ -141,6 +141,10 @@
 
   UI.setActiveNav();
 
+  // Start session timeout warning — PHP default session lifetime is 24 min (1440s)
+  // Warn the user 2 minutes before it expires.
+  UI.startSessionTimer(24);
+
   // ── Logout ────────────────────────────────────────────────
   document.getElementById('logout-btn').addEventListener('click', async function () {
     try {

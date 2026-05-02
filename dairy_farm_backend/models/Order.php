@@ -14,8 +14,31 @@ class Order {
         $this->db = getConnection();
     }
 
-    public function getAll(): array {
-        $stmt = $this->db->query("SELECT * FROM vw_order_details ORDER BY Order_ID");
+    /**
+     * Return all orders, optionally filtered by search term and/or worker.
+     * @param string|null $search  Searches Customer_Name, Order_Type, Cow, Worker_Name
+     * @param int|null    $workerId  Filter to a specific worker (for Staff "my orders")
+     */
+    public function getAll(?string $search = null, ?int $workerId = null): array {
+        $where  = [];
+        $params = [];
+
+        if ($search !== null && $search !== '') {
+            $like     = '%' . $search . '%';
+            $where[]  = "(Customer_Name LIKE ? OR Order_Type LIKE ? OR Cow LIKE ? OR Worker_Name LIKE ?)";
+            $params   = array_merge($params, [$like, $like, $like, $like]);
+        }
+        if ($workerId !== null) {
+            $where[]  = "Worker_ID = ?";
+            $params[] = $workerId;
+        }
+
+        $sql  = "SELECT * FROM vw_order_details";
+        if ($where) $sql .= " WHERE " . implode(' AND ', $where);
+        $sql .= " ORDER BY Order_ID DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
