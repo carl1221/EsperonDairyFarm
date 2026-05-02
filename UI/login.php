@@ -585,6 +585,74 @@
     .fp-dot.active { background: #4e6040; }
     .fp-dot.done   { background: #6b8a5c; }
 
+    /* ── Verification code input ── */
+    .fp-code-wrap {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 8px 0 4px;
+    }
+    .fp-code-digit {
+      width: 44px;
+      height: 52px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-family: 'Lato', sans-serif;
+      border: 2px solid #e8dfd2;
+      border-radius: 10px;
+      color: #2a1f15;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      caret-color: transparent;
+    }
+    .fp-code-digit:focus {
+      border-color: #4e6040;
+      box-shadow: 0 0 0 3px rgba(78,96,64,0.12);
+    }
+    .fp-code-digit.fp-input--error {
+      border-color: #c0392b;
+    }
+    .fp-code-hint {
+      font-size: 0.75rem;
+      color: #8a7f72;
+      text-align: center;
+      margin-top: 6px;
+    }
+    .fp-resend-wrap {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: #8a7f72;
+    }
+    .fp-resend-btn {
+      background: none;
+      border: none;
+      color: #4e6040;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0;
+      text-decoration: underline;
+    }
+    .fp-resend-btn:disabled {
+      color: #b0a898;
+      cursor: default;
+      text-decoration: none;
+    }
+    /* dev-only code hint box */
+    .fp-dev-code {
+      background: #fffbe6;
+      border: 1px dashed #e6c200;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      color: #7a6000;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
     @media (max-width: 480px) {
       .auth-card { padding: 1.5rem 1.25rem; }
       .form-options { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
@@ -708,6 +776,7 @@
         <div class="fp-dot active" id="fpDot1"></div>
         <div class="fp-dot"        id="fpDot2"></div>
         <div class="fp-dot"        id="fpDot3"></div>
+        <div class="fp-dot"        id="fpDot4"></div>
       </div>
 
       <!-- Alert banner (shared across steps) -->
@@ -732,10 +801,43 @@
         </div>
       </div>
 
-      <!-- ── Step 2: New password ── -->
+      <!-- ── Step 2: Verification code ── -->
       <div class="fp-step" id="fpStep2">
         <p class="fp-desc">
-          Identity verified for <strong id="fpWorkerName"></strong>.
+          A 6-digit verification code was sent to the email for
+          <strong id="fpWorkerName"></strong>. Enter it below.
+        </p>
+
+        <!-- Dev-mode: shows the code returned by the API until email is wired up -->
+        <div class="fp-dev-code" id="fpDevCode" style="display:none;">
+          🔑 Dev mode — your code: <strong id="fpDevCodeValue"></strong>
+        </div>
+
+        <div class="fp-field">
+          <label class="fp-label" style="text-align:center;display:block;">Verification Code</label>
+          <div class="fp-code-wrap" id="fpCodeWrap">
+            <input class="fp-code-digit" type="text" inputmode="numeric" maxlength="1" id="fpCode0" autocomplete="one-time-code" />
+            <input class="fp-code-digit" type="text" inputmode="numeric" maxlength="1" id="fpCode1" />
+            <input class="fp-code-digit" type="text" inputmode="numeric" maxlength="1" id="fpCode2" />
+            <input class="fp-code-digit" type="text" inputmode="numeric" maxlength="1" id="fpCode3" />
+            <input class="fp-code-digit" type="text" inputmode="numeric" maxlength="1" id="fpCode4" />
+            <input class="fp-code-digit" type="text" inputmode="numeric" maxlength="1" id="fpCode5" />
+          </div>
+          <div class="fp-code-hint">Enter the 6-digit code</div>
+          <div class="fp-field-err" id="fpCodeErr" style="text-align:center;"></div>
+        </div>
+
+        <div class="fp-resend-wrap">
+          Didn't receive it?
+          <button type="button" class="fp-resend-btn" id="fpResendBtn">Resend code</button>
+          <span id="fpResendTimer" style="display:none;"></span>
+        </div>
+      </div>
+
+      <!-- ── Step 3: New password ── -->
+      <div class="fp-step" id="fpStep3">
+        <p class="fp-desc">
+          Identity verified for <strong id="fpWorkerName2"></strong>.
           Choose a strong new password.
         </p>
 
@@ -777,8 +879,8 @@
         </div>
       </div>
 
-      <!-- ── Step 3: Success ── -->
-      <div class="fp-step" id="fpStep3">
+      <!-- ── Step 4: Success ── -->
+      <div class="fp-step" id="fpStep4">
         <div class="fp-success-icon">
           <span class="material-symbols-outlined">check_circle</span>
         </div>
@@ -1023,12 +1125,17 @@ form.addEventListener('submit', async (e) => {
 
 <script>
 // ══════════════════════════════════════════════════════════
-// FORGOT PASSWORD MODAL
+// FORGOT PASSWORD MODAL  (4 steps)
+// 1 — username + email
+// 2 — 6-digit verification code
+// 3 — new password
+// 4 — success
 // ══════════════════════════════════════════════════════════
 const FP_API = '../dairy_farm_backend/api/v1/reset_password.php';
 
 let fpCurrentStep  = 1;
 let fpResetToken   = null;
+let fpResendTimer  = null;
 
 const fpOverlay    = document.getElementById('fpOverlay');
 const fpAlert      = document.getElementById('fpAlert');
@@ -1036,7 +1143,6 @@ const fpNextBtn    = document.getElementById('fpNextBtn');
 const fpNextLabel  = document.getElementById('fpNextLabel');
 const fpNextSpinner= document.getElementById('fpNextSpinner');
 const fpCancelBtn  = document.getElementById('fpCancelBtn');
-const fpFooter     = document.getElementById('fpFooter');
 
 // ── Open / Close ──────────────────────────────────────────
 function fpOpen() {
@@ -1047,32 +1153,38 @@ function fpOpen() {
 
 function fpClose() {
   fpOverlay.classList.remove('open');
+  clearInterval(fpResendTimer);
 }
 
 function fpReset() {
   fpCurrentStep = 1;
   fpResetToken  = null;
+  clearInterval(fpResendTimer);
   fpShowStep(1);
   fpHideAlert();
   ['fpUsername','fpEmail','fpNewPw','fpConfirmPw'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('fp-input--error'); }
   });
-  ['fpUsernameErr','fpEmailErr','fpNewPwErr','fpConfirmPwErr'].forEach(id => {
+  // Clear code digits
+  for (let i = 0; i < 6; i++) {
+    const d = document.getElementById('fpCode' + i);
+    if (d) { d.value = ''; d.classList.remove('fp-input--error'); }
+  }
+  ['fpUsernameErr','fpEmailErr','fpCodeErr','fpNewPwErr','fpConfirmPwErr'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
+  document.getElementById('fpDevCode').style.display = 'none';
   fpCheckStrength('');
   fpNextLabel.textContent = 'Verify Identity';
   fpNextBtn.style.display = '';
   fpCancelBtn.textContent = 'Cancel';
+  fpCancelBtn.className   = 'fp-btn fp-btn--ghost';
 }
 
 document.getElementById('fpClose').addEventListener('click', fpClose);
-fpCancelBtn.addEventListener('click', () => {
-  if (fpCurrentStep === 3) { fpClose(); return; }
-  fpClose();
-});
+fpCancelBtn.addEventListener('click', () => fpClose());
 fpOverlay.addEventListener('click', e => { if (e.target === fpOverlay) fpClose(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && fpOverlay.classList.contains('open')) fpClose();
@@ -1080,11 +1192,14 @@ document.addEventListener('keydown', e => {
 
 // ── Step navigation ───────────────────────────────────────
 function fpShowStep(n) {
-  [1,2,3].forEach(i => {
-    document.getElementById('fpStep' + i).classList.toggle('active', i === n);
-    const dot = document.getElementById('fpDot' + i);
-    dot.classList.toggle('active', i === n);
-    dot.classList.toggle('done',   i < n);
+  [1,2,3,4].forEach(i => {
+    const step = document.getElementById('fpStep' + i);
+    const dot  = document.getElementById('fpDot'  + i);
+    if (step) step.classList.toggle('active', i === n);
+    if (dot)  {
+      dot.classList.toggle('active', i === n);
+      dot.classList.toggle('done',   i < n);
+    }
   });
   fpCurrentStep = n;
 }
@@ -1137,21 +1252,117 @@ function fpTogglePw(inputId, btn) {
 
 // ── Loading state ─────────────────────────────────────────
 function fpSetLoading(loading) {
-  fpNextBtn.disabled    = loading;
+  fpNextBtn.disabled          = loading;
   fpNextSpinner.style.display = loading ? 'block' : 'none';
 }
+
+// ── 6-digit code input behaviour ─────────────────────────
+(function initCodeInputs() {
+  const digits = Array.from({length: 6}, (_, i) => document.getElementById('fpCode' + i));
+
+  digits.forEach((inp, idx) => {
+    inp.addEventListener('input', e => {
+      // Allow only digits
+      inp.value = inp.value.replace(/\D/g, '').slice(-1);
+      if (inp.value && idx < 5) digits[idx + 1].focus();
+      // Auto-submit when all filled
+      if (digits.every(d => d.value)) fpNextBtn.click();
+    });
+
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && idx > 0) {
+        digits[idx - 1].value = '';
+        digits[idx - 1].focus();
+      }
+      if (e.key === 'ArrowLeft'  && idx > 0) digits[idx - 1].focus();
+      if (e.key === 'ArrowRight' && idx < 5) digits[idx + 1].focus();
+    });
+
+    // Handle paste of full code
+    inp.addEventListener('paste', e => {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      pasted.split('').slice(0, 6).forEach((ch, i) => {
+        if (digits[i]) digits[i].value = ch;
+      });
+      const next = Math.min(pasted.length, 5);
+      digits[next].focus();
+      if (pasted.length >= 6) fpNextBtn.click();
+    });
+  });
+})();
+
+function fpGetCode() {
+  return Array.from({length: 6}, (_, i) => document.getElementById('fpCode' + i).value).join('');
+}
+
+// ── Resend countdown ──────────────────────────────────────
+function fpStartResendCountdown(seconds = 60) {
+  const btn   = document.getElementById('fpResendBtn');
+  const timer = document.getElementById('fpResendTimer');
+  btn.disabled = true;
+  timer.style.display = 'inline';
+  let remaining = seconds;
+  timer.textContent = ` (${remaining}s)`;
+  clearInterval(fpResendTimer);
+  fpResendTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(fpResendTimer);
+      btn.disabled = false;
+      timer.style.display = 'none';
+    } else {
+      timer.textContent = ` (${remaining}s)`;
+    }
+  }, 1000);
+}
+
+document.getElementById('fpResendBtn').addEventListener('click', async () => {
+  fpHideAlert();
+  const username = document.getElementById('fpUsername').value.trim();
+  const email    = document.getElementById('fpEmail').value.trim();
+  // Clear digits
+  for (let i = 0; i < 6; i++) {
+    const d = document.getElementById('fpCode' + i);
+    if (d) { d.value = ''; d.classList.remove('fp-input--error'); }
+  }
+  fpFieldOk(null, 'fpCodeErr');
+  document.getElementById('fpResendBtn').disabled = true;
+
+  try {
+    const res  = await fetch(FP_API + '?action=verify_identity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, email }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      fpShowAlert('A new code has been sent.', 'success');
+      // Dev mode: show new code
+      if (data.data && data.data.code) {
+        document.getElementById('fpDevCodeValue').textContent = data.data.code;
+        document.getElementById('fpDevCode').style.display = 'block';
+      }
+      fpStartResendCountdown(60);
+      setTimeout(() => document.getElementById('fpCode0').focus(), 60);
+    } else {
+      fpShowAlert(data.message || 'Could not resend code. Please try again.');
+      document.getElementById('fpResendBtn').disabled = false;
+    }
+  } catch (e) {
+    fpShowAlert('Network error. Please try again.');
+    document.getElementById('fpResendBtn').disabled = false;
+  }
+});
 
 // ── Main action button ────────────────────────────────────
 fpNextBtn.addEventListener('click', async () => {
   fpHideAlert();
-
-  if (fpCurrentStep === 1) {
-    await fpVerifyIdentity();
-  } else if (fpCurrentStep === 2) {
-    await fpDoReset();
-  } else if (fpCurrentStep === 3) {
-    fpClose();
-  }
+  if      (fpCurrentStep === 1) await fpVerifyIdentity();
+  else if (fpCurrentStep === 2) await fpVerifyCode();
+  else if (fpCurrentStep === 3) await fpDoReset();
+  else if (fpCurrentStep === 4) fpClose();
 });
 
 // ── Step 1: verify identity ───────────────────────────────
@@ -1171,7 +1382,7 @@ async function fpVerifyIdentity() {
   if (!valid) return;
 
   fpSetLoading(true);
-  fpNextLabel.textContent = 'Verifying…';
+  fpNextLabel.textContent = 'Sending…';
 
   try {
     const res  = await fetch(FP_API + '?action=verify_identity', {
@@ -1183,11 +1394,17 @@ async function fpVerifyIdentity() {
     const data = await res.json();
 
     if (data.success) {
-      fpResetToken = data.data.token;
-      document.getElementById('fpWorkerName').textContent = data.data.worker_name;
+      document.getElementById('fpWorkerName').textContent  = data.data.worker_name;
+      document.getElementById('fpWorkerName2').textContent = data.data.worker_name;
+      // Dev mode: display the code in the UI
+      if (data.data && data.data.code) {
+        document.getElementById('fpDevCodeValue').textContent = data.data.code;
+        document.getElementById('fpDevCode').style.display = 'block';
+      }
       fpShowStep(2);
-      fpNextLabel.textContent = 'Reset Password';
-      setTimeout(() => document.getElementById('fpNewPw').focus(), 60);
+      fpNextLabel.textContent = 'Verify Code';
+      fpStartResendCountdown(60);
+      setTimeout(() => document.getElementById('fpCode0').focus(), 60);
     } else {
       fpShowAlert(data.message || 'Verification failed. Please check your details.');
     }
@@ -1199,13 +1416,69 @@ async function fpVerifyIdentity() {
   }
 }
 
-// ── Step 2: reset password ────────────────────────────────
+// ── Step 2: verify code ───────────────────────────────────
+async function fpVerifyCode() {
+  const code = fpGetCode();
+
+  if (code.length < 6) {
+    fpFieldErr(null, 'fpCodeErr', 'Please enter the full 6-digit code.');
+    // Highlight empty boxes
+    for (let i = 0; i < 6; i++) {
+      const d = document.getElementById('fpCode' + i);
+      if (!d.value) d.classList.add('fp-input--error');
+    }
+    return;
+  }
+  // Clear error state
+  for (let i = 0; i < 6; i++) document.getElementById('fpCode' + i).classList.remove('fp-input--error');
+  fpFieldOk(null, 'fpCodeErr');
+
+  fpSetLoading(true);
+  fpNextLabel.textContent = 'Verifying…';
+
+  try {
+    const res  = await fetch(FP_API + '?action=verify_code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      fpResetToken = data.data.token;
+      clearInterval(fpResendTimer);
+      fpShowStep(3);
+      fpNextLabel.textContent = 'Reset Password';
+      setTimeout(() => document.getElementById('fpNewPw').focus(), 60);
+    } else {
+      fpShowAlert(data.message || 'Incorrect code. Please try again.');
+      // Shake the boxes and clear them
+      for (let i = 0; i < 6; i++) {
+        const d = document.getElementById('fpCode' + i);
+        d.value = '';
+        d.classList.add('fp-input--error');
+      }
+      setTimeout(() => document.getElementById('fpCode0').focus(), 60);
+      // If too many attempts, go back to step 1
+      if (res.status === 429) {
+        setTimeout(() => { fpShowStep(1); fpNextLabel.textContent = 'Verify Identity'; }, 1800);
+      }
+    }
+  } catch (e) {
+    fpShowAlert('Network error. Please try again.');
+  } finally {
+    fpSetLoading(false);
+    if (fpCurrentStep === 2) fpNextLabel.textContent = 'Verify Code';
+  }
+}
+
+// ── Step 3: reset password ────────────────────────────────
 async function fpDoReset() {
   const pw      = document.getElementById('fpNewPw').value;
   const confirm = document.getElementById('fpConfirmPw').value;
   let valid = true;
 
-  // Validate password strength
   if (pw.length < 8) {
     fpFieldErr('fpNewPw', 'fpNewPwErr', 'Password must be at least 8 characters.'); valid = false;
   } else if (!/[A-Z]/.test(pw)) {
@@ -1241,8 +1514,7 @@ async function fpDoReset() {
     const data = await res.json();
 
     if (data.success) {
-      fpShowStep(3);
-      // Hide next button, change cancel to "Back to Login"
+      fpShowStep(4);
       fpNextBtn.style.display = 'none';
       fpCancelBtn.textContent = 'Back to Login';
       fpCancelBtn.classList.remove('fp-btn--ghost');
@@ -1250,7 +1522,6 @@ async function fpDoReset() {
     } else {
       fpShowAlert(data.message || 'Reset failed. Please try again.');
       if (data.message && data.message.includes('expired')) {
-        // Token expired — go back to step 1
         setTimeout(() => { fpShowStep(1); fpNextLabel.textContent = 'Verify Identity'; }, 1500);
       }
     }
@@ -1258,7 +1529,7 @@ async function fpDoReset() {
     fpShowAlert('Network error. Please try again.');
   } finally {
     fpSetLoading(false);
-    if (fpCurrentStep === 2) fpNextLabel.textContent = 'Reset Password';
+    if (fpCurrentStep === 3) fpNextLabel.textContent = 'Reset Password';
   }
 }
 </script>
