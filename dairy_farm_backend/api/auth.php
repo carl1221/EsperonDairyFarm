@@ -173,7 +173,33 @@ try {
                     sendError('Username and password are required');
                 }
 
-                // Verify reCAPTCHA token
+                // ── Brute-force protection ────────────────────
+                // Track failed attempts per username in the session.
+                // Max 5 failures within a 15-minute window → HTTP 429.
+                $attemptKey  = '_login_attempts_' . md5(strtolower($username));
+                $windowKey   = '_login_window_'   . md5(strtolower($username));
+                $maxAttempts = 5;
+                $windowSecs  = 900; // 15 minutes
+
+                $attempts  = $_SESSION[$attemptKey] ?? 0;
+                $windowStart = $_SESSION[$windowKey]  ?? 0;
+
+                // Reset counter if the 15-minute window has expired
+                if (time() - $windowStart > $windowSecs) {
+                    $attempts    = 0;
+                    $windowStart = time();
+                    $_SESSION[$attemptKey] = 0;
+                    $_SESSION[$windowKey]  = $windowStart;
+                }
+
+                if ($attempts >= $maxAttempts) {
+                    $waitSecs = $windowSecs - (time() - $windowStart);
+                    $waitMins = (int) ceil($waitSecs / 60);
+                    sendError(
+                        'Too many failed login attempts. Please wait 15 minutes before trying again.',
+                        429
+                    );
+                }                // Verify reCAPTCHA token
                 if (!$recaptchaToken || !verifyRecaptcha($recaptchaToken)) {
                     sendError('reCAPTCHA verification failed. Please try again.', 400);
                 }
@@ -213,9 +239,13 @@ try {
                         }
                         if (!password_verify($password, $customer['Password'])) {
                             error_log('[Auth] Login failed: wrong password for customer — ' . $username);
+                            $_SESSION[$attemptKey] = ($_SESSION[$attemptKey] ?? 0) + 1;
                             sendError('Invalid username or password', 401);
                         }
                         $isCustomer = true;
+                        // Successful login — reset brute-force counter
+                        $_SESSION[$attemptKey] = 0;
+                        $_SESSION[$windowKey]  = 0;
                         session_regenerate_id(true);
                         $_SESSION['user'] = [
                             'id'      => $customer['CID'],
@@ -241,6 +271,7 @@ try {
                     } else {
                         error_log('[Auth] Login failed: wrong password for — ' . $username);
                     }
+                    $_SESSION[$attemptKey] = ($_SESSION[$attemptKey] ?? 0) + 1;
                     sendError('Invalid username or password', 401);
                 }
 
@@ -255,6 +286,9 @@ try {
                         sendError('Your account registration was rejected.', 403);
                     }
                 }
+                // Successful worker login — reset brute-force counter
+                $_SESSION[$attemptKey] = 0;
+                $_SESSION[$windowKey]  = 0;
                 session_regenerate_id(true);
                 $_SESSION['user'] = [
                     'id'     => $user['Worker_ID'],
