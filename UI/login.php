@@ -803,7 +803,7 @@
 </div><!-- /fpOverlay -->
 
 <script>
-const API_BASE       = '../dairy_farm_backend/api';
+const API_BASE       = '../dairy_farm_backend/api'; // matches BASE_URL in api.js
 const alertContainer = document.getElementById('alert-container');
 const loginBtn       = document.getElementById('login-btn');
 const form           = document.getElementById('login-form');

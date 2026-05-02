@@ -39,9 +39,9 @@ try {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         sendError('Please enter a valid email address.');
     }
-    if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password)) {
-        sendError('Password must be 8+ chars, with one uppercase and one number.');
-    }
+    // Use shared password validator from bootstrap.php
+    $pwError = validatePasswordStrength($password);
+    if ($pwError) sendError($pwError);
     if (!in_array($role, ALLOWED_ROLES, true)) {
         sendError('Invalid role selected.');
     }
@@ -55,7 +55,9 @@ try {
         $contactNum = trim($data['contact_num'] ?? '');
 
         if ($address === '')    sendError('Address is required for customer accounts.');
-        if ($contactNum === '') sendError('Contact number is required for customer accounts.');
+        // Use shared contact validator from bootstrap.php
+        $contactError = validateContactNumber($contactNum);
+        if ($contactError) sendError($contactError);
 
         // Check for duplicate username in Customer table (Customer_Name)
         $stmt = $db->prepare('SELECT CID FROM Customer WHERE Customer_Name = ?');

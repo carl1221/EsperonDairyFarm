@@ -27,6 +27,9 @@ $method = $_SERVER['REQUEST_METHOD'];
 $id     = isset($_GET['id'])     ? (int) $_GET['id']     : null;
 $active = isset($_GET['active']) ? (bool)$_GET['active'] : false;
 
+// Defined once — used in both POST and PUT validation
+const ALLOWED_HEALTH_STATUSES = ['Healthy', 'Sick', 'Under Treatment', 'Retired'];
+
 try {
     switch ($method) {
 
@@ -45,7 +48,7 @@ try {
             $data = getRequestBody();
             validateRequired($data, ['Cow']);
 
-            $allowedHealth = ['Healthy', 'Sick', 'Under Treatment', 'Retired'];
+            $allowedHealth = ALLOWED_HEALTH_STATUSES;
             $healthStatus  = $data['Health_Status'] ?? 'Healthy';
             if (!in_array($healthStatus, $allowedHealth, true)) {
                 sendError("Health_Status must be one of: " . implode(', ', $allowedHealth), 400);
@@ -70,10 +73,10 @@ try {
             $data = getRequestBody();
             validateRequired($data, ['Cow']);
 
-            $allowedHealth = ['Healthy', 'Sick', 'Under Treatment', 'Retired'];
-            $healthStatus  = $data['Health_Status'] ?? 'Healthy';
-            if (!in_array($healthStatus, $allowedHealth, true)) {
-                sendError("Health_Status must be one of: " . implode(', ', $allowedHealth), 400);
+            // Reuse same allowed values — defined once above
+            $healthStatus = $data['Health_Status'] ?? 'Healthy';
+            if (!in_array($healthStatus, ALLOWED_HEALTH_STATUSES, true)) {
+                sendError("Health_Status must be one of: " . implode(', ', ALLOWED_HEALTH_STATUSES), 400);
             }
 
             $validatedData = [

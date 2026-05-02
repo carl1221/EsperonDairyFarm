@@ -89,16 +89,10 @@ try {
             sendError('Reset token has expired (15 min limit). Please start over.', 400);
         }
 
-        // Password strength
-        if (strlen($password) < 8) {
-            sendError('Password must be at least 8 characters.', 400);
-        }
-        if (!preg_match('/[A-Z]/', $password)) {
-            sendError('Password must contain at least one uppercase letter.', 400);
-        }
-        if (!preg_match('/[0-9]/', $password)) {
-            sendError('Password must contain at least one number.', 400);
-        }
+        // Use shared password validator from bootstrap.php
+        $pwError = validatePasswordStrength($password);
+        if ($pwError) sendError($pwError, 400);
+
         if ($password !== $confirm) {
             sendError('Passwords do not match.', 400);
         }
