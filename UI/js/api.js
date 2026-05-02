@@ -147,4 +147,25 @@ const API = {
     patch:        (id, d)      => API.request(`reminders.php?id=${id}`, 'PATCH', d),
     delete:       (id)         => API.request(`reminders.php?id=${id}`, 'DELETE'),
   },
+
+  // ── Products ──────────────────────────────────────────────
+  products: {
+    getAll:    ()       => API.request('products.php'),           // active only
+    getAdmin:  ()       => API.request('products.php?all=1'),     // all incl. inactive
+    getById:   (id)     => API.request(`products.php?id=${id}`),
+    create:    (data)   => API.request('products.php', 'POST', data),
+    update:    (id, d)  => API.request(`products.php?id=${id}`, 'PUT', d),
+    patch:     (id, d)  => API.request(`products.php?id=${id}`, 'PATCH', d),
+    delete:    (id)     => API.request(`products.php?id=${id}`, 'DELETE'),
+  },
+
+  // ── Cart (Customer only) ───────────────────────────────────
+  cart: {
+    get:      ()              => API.request('cart.php'),
+    add:      (product_id, quantity) => API.request('cart.php?action=add',      'POST', { product_id, quantity }),
+    remove:   (product_id)   => API.request('cart.php?action=remove',   'POST', { product_id }),
+    update:   (product_id, quantity) => API.request('cart.php?action=update',   'POST', { product_id, quantity }),
+    clear:    ()              => API.request('cart.php?action=clear',    'POST', {}),
+    checkout: ()              => API.request('cart.php?action=checkout', 'POST', {}),
+  },
 };
