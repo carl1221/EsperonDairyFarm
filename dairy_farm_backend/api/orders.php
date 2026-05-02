@@ -29,10 +29,9 @@ if (in_array($method, ['PUT', 'DELETE'], true)) {
     requireRole(['Admin']);
 }
 
-$order  = new Order();
-$method = $_SERVER['REQUEST_METHOD'];
-$id     = isset($_GET['id'])       ? (int) $_GET['id']       : null;
-$cid    = isset($_GET['customer']) ? (int) $_GET['customer'] : null;
+$order = new Order();
+$id    = isset($_GET['id'])       ? (int) $_GET['id']       : null;
+$cid   = isset($_GET['customer']) ? (int) $_GET['customer'] : null;
 
 try {
     switch ($method) {

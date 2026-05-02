@@ -45,12 +45,18 @@ try {
             $data = getRequestBody();
             validateRequired($data, ['Cow']);
 
+            $allowedHealth = ['Healthy', 'Sick', 'Under Treatment', 'Retired'];
+            $healthStatus  = $data['Health_Status'] ?? 'Healthy';
+            if (!in_array($healthStatus, $allowedHealth, true)) {
+                sendError("Health_Status must be one of: " . implode(', ', $allowedHealth), 400);
+            }
+
             $validatedData = [
                 'Cow'              => validateString($data['Cow'],  'Cow',   100),
                 'Breed'            => isset($data['Breed'])         ? validateString($data['Breed'],         'Breed',         100) : null,
                 'Date_Of_Birth'    => $data['Date_Of_Birth']        ?? null,
                 'Production_Liters'=> isset($data['Production_Liters']) ? (float)$data['Production_Liters'] : 0.0,
-                'Health_Status'    => $data['Health_Status']        ?? 'Healthy',
+                'Health_Status'    => $healthStatus,
                 'is_active'        => isset($data['is_active'])     ? (int)$data['is_active'] : 1,
                 'notes'            => $data['notes']                ?? null,
             ];
@@ -64,12 +70,18 @@ try {
             $data = getRequestBody();
             validateRequired($data, ['Cow']);
 
+            $allowedHealth = ['Healthy', 'Sick', 'Under Treatment', 'Retired'];
+            $healthStatus  = $data['Health_Status'] ?? 'Healthy';
+            if (!in_array($healthStatus, $allowedHealth, true)) {
+                sendError("Health_Status must be one of: " . implode(', ', $allowedHealth), 400);
+            }
+
             $validatedData = [
                 'Cow'              => validateString($data['Cow'],  'Cow',   100),
                 'Breed'            => isset($data['Breed'])         ? validateString($data['Breed'],         'Breed',         100) : null,
                 'Date_Of_Birth'    => $data['Date_Of_Birth']        ?? null,
                 'Production_Liters'=> isset($data['Production_Liters']) ? (float)$data['Production_Liters'] : 0.0,
-                'Health_Status'    => $data['Health_Status']        ?? 'Healthy',
+                'Health_Status'    => $healthStatus,
                 'is_active'        => isset($data['is_active'])     ? (int)$data['is_active'] : 1,
                 'notes'            => $data['notes']                ?? null,
             ];

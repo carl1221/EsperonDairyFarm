@@ -14,10 +14,10 @@ $method = $_SERVER['REQUEST_METHOD'];
 $db = getConnection();
 
 try {
-    // Check if migration columns exist
-    $colCheck    = $db->query("SHOW COLUMNS FROM Worker")->fetchAll(PDO::FETCH_COLUMN);
-    $hasApproval = in_array('approval_status', $colCheck);
-    $hasCreated  = in_array('created_at',      $colCheck);
+    // approval_status and created_at are guaranteed present after migration.
+    // No need to SHOW COLUMNS on every request.
+    $hasApproval = true;
+    $hasCreated  = true;
 
     if ($method === 'GET') {
         $filter  = $_GET['filter'] ?? 'pending';

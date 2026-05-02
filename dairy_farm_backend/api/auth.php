@@ -62,11 +62,10 @@ try {
 
                 $dbConn = getConnection();
 
-                // Check if approval_status column exists (migration may not have run yet)
-                $cols       = $dbConn->query("SHOW COLUMNS FROM Worker")->fetchAll(PDO::FETCH_COLUMN);
-                $hasApproval = in_array('approval_status', $cols);
-                $selectCols  = 'Worker_ID, Worker, Worker_Role, Email, Avatar, Password'
-                             . ($hasApproval ? ', approval_status' : '');
+                // All migration columns are guaranteed present after db.sql has been run.
+                // Use a fixed column list — no SHOW COLUMNS needed.
+                $hasApproval = true;
+                $selectCols  = 'Worker_ID, Worker, Worker_Role, Email, Avatar, Password, approval_status';
 
                 // ── Try Worker table first ────────────────────
                 $stmt = $dbConn->prepare(
@@ -76,10 +75,12 @@ try {
                 $user = $stmt->fetch();
 
                 // ── If not found in Worker, try Customer table ─
+                // SECURITY: Customers must have a password set in the Customer table.
+                // Accepting any non-empty password is a critical vulnerability — fixed below.
                 $isCustomer = false;
                 if (!$user) {
                     $custStmt = $dbConn->prepare(
-                        "SELECT c.CID, c.Customer_Name, c.Contact_Num, a.Address
+                        "SELECT c.CID, c.Customer_Name, c.Contact_Num, c.Password, a.Address
                          FROM Customer c
                          JOIN Address a ON c.Address_ID = a.Address_ID
                          WHERE LOWER(c.Customer_Name) = LOWER(?) LIMIT 1"
@@ -88,28 +89,30 @@ try {
                     $customer = $custStmt->fetch();
 
                     if ($customer) {
-                        // Customers don't have passwords in the DB yet —
-                        // they use the username as a simple passphrase for now.
-                        // A real implementation would store a hashed password on the Customer row.
-                        // For now we accept any non-empty password for a matched customer name.
-                        if ($password !== '') {
-                            $isCustomer = true;
-                            session_regenerate_id(true);
-                            $_SESSION['user'] = [
-                                'id'      => $customer['CID'],
-                                'name'    => $customer['Customer_Name'],
-                                'role'    => 'Customer',
-                                'email'   => '',
-                                'avatar'  => '',
-                                'address' => $customer['Address'],
-                                'contact' => $customer['Contact_Num'],
-                            ];
-                            $csrfToken = generateCsrfToken();
-                            sendSuccess('Login successful', [
-                                'user'       => $_SESSION['user'],
-                                'csrf_token' => $csrfToken,
-                            ]);
+                        // If no password is set yet, reject login and prompt to set one
+                        if (empty($customer['Password'])) {
+                            sendError('Your customer account has no password set. Please contact the admin.', 403);
                         }
+                        if (!password_verify($password, $customer['Password'])) {
+                            error_log('[Auth] Login failed: wrong password for customer — ' . $username);
+                            sendError('Invalid username or password', 401);
+                        }
+                        $isCustomer = true;
+                        session_regenerate_id(true);
+                        $_SESSION['user'] = [
+                            'id'      => $customer['CID'],
+                            'name'    => $customer['Customer_Name'],
+                            'role'    => 'Customer',
+                            'email'   => '',
+                            'avatar'  => '',
+                            'address' => $customer['Address'],
+                            'contact' => $customer['Contact_Num'],
+                        ];
+                        $csrfToken = generateCsrfToken();
+                        sendSuccess('Login successful', [
+                            'user'       => $_SESSION['user'],
+                            'csrf_token' => $csrfToken,
+                        ]);
                     }
                 }
 
