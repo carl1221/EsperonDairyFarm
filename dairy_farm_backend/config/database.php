@@ -2,56 +2,9 @@
 // ============================================================
 // config/database.php
 // Singleton PDO connection.
-// Credentials are loaded from the project-root .env file.
+// Credentials are loaded from the project-root .env file by
+// bootstrap.php, which is always included before this file.
 // ============================================================
-
-/**
- * Minimal .env loader.
- * Only sets a variable if it isn't already defined in the environment.
- */
-function loadEnv(string $path): void {
-    if (!file_exists($path)) {
-        return;
-    }
-
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-    foreach ($lines as $line) {
-        $line = trim($line);
-
-        // Skip comments and blank lines
-        if ($line === '' || $line[0] === '#') {
-            continue;
-        }
-
-        // Only process lines that contain '='
-        if (strpos($line, '=') === false) {
-            continue;
-        }
-
-        [$name, $value] = explode('=', $line, 2);
-        $name  = trim($name);
-        $value = trim($value);
-
-        // Strip surrounding quotes if present
-        if (strlen($value) >= 2) {
-            $first = $value[0];
-            $last  = $value[strlen($value) - 1];
-            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
-                $value = substr($value, 1, -1);
-            }
-        }
-
-        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-            putenv("{$name}={$value}");
-            $_ENV[$name]    = $value;
-            $_SERVER[$name] = $value;
-        }
-    }
-}
-
-// Load .env from the project root (two levels above this file)
-loadEnv(__DIR__ . '/../../.env');
 
 define('DB_HOST',    getenv('DB_HOST')    ?: 'localhost');
 define('DB_NAME',    getenv('DB_NAME')    ?: 'esperon_dairy_farm');
