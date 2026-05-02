@@ -70,19 +70,19 @@ function loadAlerts() {
   addAlert('Milk collection truck arrives at 4:00 PM today.', 'info');
 }
 
-// ── ORDERS ────────────────────────────────────────────────
+// ── ORDERS (staff sees their own orders on dashboard) ─────
 async function loadOrders() {
   const container = document.getElementById('orders-list');
   try {
-    const orders = await API.orders.getAll();
+    // Staff dashboard shows only this staff member's orders
+    const orders = await API.orders.getMine();
     const statEl = document.getElementById('stat-orders');
     if (statEl) statEl.textContent = orders.length;
 
-    // Update quick-action sub-label
     const sub = document.getElementById('qa-orders-sub');
-    if (sub) sub.textContent = orders.length + ' total order' + (orders.length !== 1 ? 's' : '');
+    if (sub) sub.textContent = orders.length + ' order' + (orders.length !== 1 ? 's' : '') + ' assigned to you';
 
-    if (!orders.length) { container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">No orders found.</p>'; return; }
+    if (!orders.length) { container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">No orders assigned to you yet.</p>'; return; }
 
     const recent = [...orders].reverse().slice(0, 6);
     const statusBadge = {
@@ -284,21 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const saveNoteBtn = document.getElementById('save-note-btn');
   if (saveNoteBtn) {
-    saveNoteBtn.addEventListener('click', () => {
+    saveNoteBtn.addEventListener('click', async () => {
       const input = document.getElementById('note-input');
       const text  = input ? input.value.trim() : '';
       if (!text) { UI.toast('Please write a note first.', 'error'); return; }
       try {
-        const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
-        const u     = getStoredUser();
-        notes.unshift({ text, author: u.name || 'Staff', time: `${today()} ${nowTime()}` });
-        if (notes.length > 10) notes.pop();
-        localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+        await API.notes.post(text);
         input.value = '';
         renderNotes();
-        logActivity('Submitted a note to admin.');
+        logActivity('Submitted a note.');
         UI.toast('Note submitted!', 'success');
-      } catch(e) { UI.toast('Failed to save note.', 'error'); }
+      } catch(e) { UI.toast(e.message || 'Failed to save note.', 'error'); }
     });
   }
 });
@@ -412,23 +408,25 @@ function updateReminderBadge() {
   badge.textContent = n; badge.style.display = n > 0 ? 'inline-block' : 'none';
 }
 
-// ── NOTES ─────────────────────────────────────────────────
-const NOTES_KEY = 'staff_notes_' + (getStoredUser().id || 'default');
+// ── NOTES (DB-backed) ─────────────────────────────────────
+const NOTES_KEY = 'staff_notes_legacy'; // kept for backward compat, not used
 
-function loadNotes() { renderNotes(); }
+async function loadNotes() { await renderNotes(); }
 
-function renderNotes() {
+async function renderNotes() {
   const feed = document.getElementById('notes-feed');
   if (!feed) return;
   try {
-    const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
+    const notes = await API.notes.getAll();
     if (!notes.length) { feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No notes yet.</p>'; return; }
-    feed.innerHTML = notes.map(n => `
-      <div class="note-bubble">
-        <div>${n.text}</div>
-        <div class="note-bubble__meta">${n.author} \u00b7 ${n.time}</div>
-      </div>`).join('');
-  } catch(e) { feed.innerHTML = ''; }
+    feed.innerHTML = notes.map(n => {
+      const timeStr = new Date(n.created_at).toLocaleString();
+      return `<div class="note-bubble">
+        <div>${n.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        <div class="note-bubble__meta">${n.author} \u00b7 ${timeStr}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Could not load notes.</p>'; }
 }
 
 // ── INVENTORY (read from localStorage — same key as admin) ─

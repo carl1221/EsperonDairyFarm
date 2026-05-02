@@ -134,6 +134,10 @@ async function loadCows() {
           <button class="btn btn--icon btn--edit" onclick="openModal(${c.Cow_ID})">
             <span class="material-symbols-outlined" style="font-size:1rem;">edit</span> Edit
           </button>
+          <button class="btn btn--icon" onclick="openLogProduction(${c.Cow_ID}, '${c.Cow.replace(/'/g,"\\'")}', ${c.Production_Liters || 0})"
+                  style="background:rgba(78,96,64,0.08);color:var(--olive);">
+            <span class="material-symbols-outlined" style="font-size:1rem;">water_drop</span> Log
+          </button>
           <button class="btn btn--icon btn--del" onclick="deleteCow(${c.Cow_ID})">
             <span class="material-symbols-outlined" style="font-size:1rem;">delete</span> Del
           </button>
@@ -253,6 +257,79 @@ async function deleteCow(id) {
 }
 
 loadCows();
+</script>
+
+<!-- Production Log Modal -->
+<div class="modal-overlay" id="prod-log-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal__head">
+      <span class="modal__title">Log Today's Production</span>
+      <button class="modal__close" onclick="closeLogProduction()">✕</button>
+    </div>
+    <div class="modal__body">
+      <p style="font-size:0.84rem;color:var(--muted);margin-bottom:14px;">
+        Cow: <strong id="log-cow-name"></strong>
+      </p>
+      <form class="form-grid" onsubmit="return false">
+        <div class="form-group form-group--full">
+          <label>Date</label>
+          <input id="log-date" type="date" />
+        </div>
+        <div class="form-group form-group--full">
+          <label>Liters Produced Today</label>
+          <input id="log-liters" type="number" min="0" step="0.01" placeholder="e.g. 12.50" required />
+        </div>
+        <div class="form-group form-group--full">
+          <label>Notes <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+          <input id="log-notes" type="text" placeholder="Any observations…" />
+        </div>
+      </form>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--ghost" onclick="closeLogProduction()">Cancel</button>
+      <button class="btn btn--primary" onclick="saveProductionLog()">
+        <span class="material-symbols-outlined" style="font-size:1rem;">save</span> Save Log
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _logCowId = null;
+
+function openLogProduction(cowId, cowName, currentLiters) {
+  _logCowId = cowId;
+  document.getElementById('log-cow-name').textContent = cowName;
+  document.getElementById('log-date').value   = new Date().toISOString().split('T')[0];
+  document.getElementById('log-liters').value = currentLiters || '';
+  document.getElementById('log-notes').value  = '';
+  document.getElementById('prod-log-modal').classList.add('modal-overlay--open');
+  setTimeout(() => document.getElementById('log-liters').focus(), 60);
+}
+
+function closeLogProduction() {
+  document.getElementById('prod-log-modal').classList.remove('modal-overlay--open');
+  _logCowId = null;
+}
+
+async function saveProductionLog() {
+  const liters = parseFloat(document.getElementById('log-liters').value);
+  const date   = document.getElementById('log-date').value;
+  if (!date)          { UI.toast('Please select a date.', 'error'); return; }
+  if (isNaN(liters) || liters < 0) { UI.toast('Please enter a valid amount.', 'error'); return; }
+
+  try {
+    await API.productionLogs.record({
+      cow_id:   _logCowId,
+      log_date: date,
+      liters:   liters,
+      notes:    document.getElementById('log-notes').value.trim() || null,
+    });
+    UI.toast('Production logged!', 'success');
+    closeLogProduction();
+    loadCows(); // refresh to show updated Production_Liters
+  } catch(e) { UI.toast(e.message, 'error'); }
+}
 </script>
 </body>
 </html>
