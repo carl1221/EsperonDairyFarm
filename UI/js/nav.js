@@ -117,9 +117,12 @@
         + '<a href="reminders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">alarm</span><span>Reminders</span></a>'
         + '<a href="notes.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">edit_note</span><span>Notes</span></a>'
         + '<a href="report.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">description</span><span>Staff Reports</span></a>'
+        + '<span class="nav__section">Shop</span>'
+        + '<a href="admin_products.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">storefront</span><span>Products</span></a>'
       : isCustomer
       ? '<span class="nav__section">My Account</span>'
         + '<a href="dashboard_customer.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">home</span><span>My Dashboard</span></a>'
+        + '<a href="shop.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">storefront</span><span>Shop</span></a>'
         + '<a href="dashboard_customer.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">receipt_long</span><span>My Orders</span></a>'
       : '<span class="nav__section">My Work</span>'
         + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'

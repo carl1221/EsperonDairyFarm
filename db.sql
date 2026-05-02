@@ -45,6 +45,66 @@ CREATE TABLE IF NOT EXISTS Address (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- [STRONG ENTITY] Products
+-- Dairy farm products available for purchase.
+-- stock_qty decreases when a cart order is placed.
+-- is_active = 0 hides the product from the shop without deleting it.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS Products (
+    product_id   INT            NOT NULL AUTO_INCREMENT,
+    name         VARCHAR(150)   NOT NULL,
+    description  TEXT           NULL,
+    price        DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
+    stock_qty    INT            NOT NULL DEFAULT 0,
+    unit         VARCHAR(30)    NOT NULL DEFAULT 'pcs',  -- e.g. pcs, L, kg
+    image_url    VARCHAR(255)   NULL,
+    is_active    TINYINT(1)     NOT NULL DEFAULT 1,
+    created_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_products PRIMARY KEY (product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- [STRONG ENTITY] Cart
+-- One active cart per customer at a time.
+-- status: 'active' while shopping, 'checked_out' after purchase.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS Cart (
+    cart_id     INT      NOT NULL AUTO_INCREMENT,
+    CID         INT      NOT NULL,   -- FK → Customer
+    status      ENUM('active','checked_out') NOT NULL DEFAULT 'active',
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_cart     PRIMARY KEY (cart_id),
+    CONSTRAINT fk_cart_cid FOREIGN KEY (CID)
+        REFERENCES Customer (CID) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- [STRONG ENTITY] CartItems
+-- Line items inside a cart.
+-- unit_price is a snapshot of the product price at add-to-cart time.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS CartItems (
+    item_id     INT            NOT NULL AUTO_INCREMENT,
+    cart_id     INT            NOT NULL,   -- FK → Cart
+    product_id  INT            NOT NULL,   -- FK → Products
+    quantity    INT            NOT NULL DEFAULT 1,
+    unit_price  DECIMAL(10,2)  NOT NULL DEFAULT 0.00,  -- price snapshot
+    CONSTRAINT pk_cart_items      PRIMARY KEY (item_id),
+    CONSTRAINT fk_ci_cart         FOREIGN KEY (cart_id)
+        REFERENCES Cart (cart_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_ci_product      FOREIGN KEY (product_id)
+        REFERENCES Products (product_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT uq_cart_product    UNIQUE (cart_id, product_id)  -- one row per product per cart
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Indexes for shop queries
+CREATE INDEX IF NOT EXISTS idx_products_active  ON Products(is_active);
+CREATE INDEX IF NOT EXISTS idx_cart_cid_status  ON Cart(CID, status);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart  ON CartItems(cart_id);
+
+-- ============================================================
 -- [STRONG ENTITY] Worker
 -- Stores all system users (Admin and Staff).
 -- Worker_Role uses ENUM to enforce valid values at DB level.
@@ -384,6 +444,17 @@ ON DUPLICATE KEY UPDATE Order_Type = VALUES(Order_Type);
 INSERT INTO reminders (created_by, assigned_to, title, description, due_date, status) VALUES
     (202, 201, 'Morning Feeding',  'Feed all cows at 6AM',          '2026-05-02 06:00:00', 'pending'),
     (202, NULL, 'Vet Checkup',     'Schedule quarterly vet visit',  '2026-05-10 09:00:00', 'pending');
+
+-- ── Sample Products ───────────────────────────────────────
+INSERT INTO Products (product_id, name, description, price, stock_qty, unit) VALUES
+    (1, 'Fresh Whole Milk',    'Farm-fresh whole milk, collected daily from our healthy herd.',         55.00, 100, 'L'),
+    (2, 'Aged Cheddar Cheese', 'Rich, sharp cheddar aged for 3 months. Perfect for cooking or snacking.', 180.00, 40, 'pcs'),
+    (3, 'Creamy Butter',       'Pure churned butter made from fresh cream. Unsalted.',                  120.00, 60, 'pcs'),
+    (4, 'Natural Yogurt',      'Thick, creamy yogurt with live cultures. No added sugar.',              75.00, 50, 'pcs'),
+    (5, 'Fresh Cream',         'Heavy whipping cream, ideal for desserts and cooking.',                 90.00, 35, 'L'),
+    (6, 'Skim Milk',           'Low-fat skim milk, great for health-conscious customers.',              45.00, 80, 'L'),
+    (7, 'Mozzarella Cheese',   'Soft, fresh mozzarella. Perfect for pizza and salads.',                 160.00, 0,  'pcs')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- ============================================================
 -- MIGRATION: Upgrade an existing live database
