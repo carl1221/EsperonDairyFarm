@@ -452,6 +452,45 @@ INSERT INTO Products (product_id, name, description, price, stock_qty, unit) VAL
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- ============================================================
+-- [STRONG ENTITY] notes
+-- Persistent announcements/notes shared across all staff.
+-- Replaces the localStorage-only implementation.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notes (
+    note_id    INT          NOT NULL AUTO_INCREMENT,
+    author_id  INT          NOT NULL,
+    author     VARCHAR(100) NOT NULL,
+    text       TEXT         NOT NULL,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_notes PRIMARY KEY (note_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at);
+
+-- ============================================================
+-- [STRONG ENTITY] production_logs
+-- Daily milk production per cow — enables trend tracking.
+-- Composite unique key prevents duplicate entries per cow per day.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS production_logs (
+    log_id      INT           NOT NULL AUTO_INCREMENT,
+    cow_id      INT           NOT NULL,
+    log_date    DATE          NOT NULL,
+    liters      DECIMAL(8,2)  NOT NULL DEFAULT 0.00,
+    notes       TEXT          NULL,
+    recorded_by INT           NOT NULL,
+    created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_prod_logs PRIMARY KEY (log_id),
+    CONSTRAINT uq_cow_date  UNIQUE (cow_id, log_date),
+    CONSTRAINT fk_pl_cow    FOREIGN KEY (cow_id)
+        REFERENCES Cow (Cow_ID) ON DELETE CASCADE,
+    CONSTRAINT fk_pl_worker FOREIGN KEY (recorded_by)
+        REFERENCES Worker (Worker_ID) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX IF NOT EXISTS idx_prod_logs_date ON production_logs(log_date);
+
+-- ============================================================
 -- MIGRATION: Upgrade an existing live database
 -- Safe to run multiple times (uses IF NOT EXISTS / IF EXISTS).
 -- ============================================================

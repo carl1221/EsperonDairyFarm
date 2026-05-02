@@ -138,6 +138,21 @@ const API = {
     delete:    (id)      => API.request(`reports.php?id=${id}`, 'DELETE'),
   },
 
+  // ── Notes (persistent DB) ─────────────────────────────────
+  notes: {
+    getAll:   ()        => API.request('notes.php'),
+    post:     (text)    => API.request('notes.php', 'POST', { text }),
+    delete:   (id)      => API.request(`notes.php?id=${id}`, 'DELETE'),
+    clearAll: ()        => API.request('notes.php?all=1', 'DELETE'),
+  },
+
+  // ── Production Logs ───────────────────────────────────────
+  productionLogs: {
+    getTotals: (days)   => API.request(`production_logs.php?days=${days || 30}`),
+    getByCow:  (cowId)  => API.request(`production_logs.php?cow=${cowId}`),
+    record:    (data)   => API.request('production_logs.php', 'POST', data),
+  },
+
   // ── Reminders ─────────────────────────────────────────────
   reminders: {
     getAll:       ()           => API.request('reminders.php'),
@@ -152,13 +167,14 @@ const API = {
 
   // ── Products ──────────────────────────────────────────────
   products: {
-    getAll:    ()       => API.request('products.php'),           // active only
-    getAdmin:  ()       => API.request('products.php?all=1'),     // all incl. inactive
-    getById:   (id)     => API.request(`products.php?id=${id}`),
-    create:    (data)   => API.request('products.php', 'POST', data),
-    update:    (id, d)  => API.request(`products.php?id=${id}`, 'PUT', d),
-    patch:     (id, d)  => API.request(`products.php?id=${id}`, 'PATCH', d),
-    delete:    (id)     => API.request(`products.php?id=${id}`, 'DELETE'),
+    getAll:       ()       => API.request('products.php'),           // active only
+    getAdmin:     ()       => API.request('products.php?all=1'),     // all incl. inactive
+    getLowStock:  ()       => API.request('products.php?low_stock=1'), // stock <= 5
+    getById:      (id)     => API.request(`products.php?id=${id}`),
+    create:       (data)   => API.request('products.php', 'POST', data),
+    update:       (id, d)  => API.request(`products.php?id=${id}`, 'PUT', d),
+    patch:        (id, d)  => API.request(`products.php?id=${id}`, 'PATCH', d),
+    delete:       (id)     => API.request(`products.php?id=${id}`, 'DELETE'),
   },
 
   // ── Cart (Customer only) ───────────────────────────────────

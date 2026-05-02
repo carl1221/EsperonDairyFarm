@@ -1264,40 +1264,41 @@ function toggleAdminTask(id, checked) {
   } catch(e) {}
 }
 
-// ── NOTES ─────────────────────────────────────────────────
-var NOTES_KEY = 'admin_notes';
-
-function loadNotes() { renderNotes(); }
-
-function renderNotes() {
+// ── NOTES (DB-backed) ─────────────────────────────────────
+async function loadNotes() {
   var feed = document.getElementById('notes-feed');
   if (!feed) return;
   try {
-    var notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
-    if (!notes.length) { feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No announcements yet.</p>'; return; }
+    var notes = await API.notes.getAll();
+    if (!notes.length) {
+      feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No announcements yet.</p>';
+      return;
+    }
     feed.innerHTML = notes.map(function(n) {
-      return '<div class="note-bubble"><div>' + n.text + '</div><div class="note-bubble__meta">' + n.author + ' \u00b7 ' + n.time + '</div></div>';
+      var timeStr = new Date(n.created_at).toLocaleString();
+      return '<div class="note-bubble">'
+        + '<div>' + n.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+        + '<div class="note-bubble__meta">' + n.author + ' \u00b7 ' + timeStr + '</div>'
+        + '</div>';
     }).join('');
-  } catch(e) { feed.innerHTML = ''; }
+  } catch(e) {
+    if (feed) feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Could not load notes.</p>';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
   var saveBtn = document.getElementById('save-note-btn');
   if (saveBtn) {
-    saveBtn.addEventListener('click', function() {
+    saveBtn.addEventListener('click', async function() {
       var input = document.getElementById('note-input');
       var text  = input ? input.value.trim() : '';
       if (!text) { UI.toast('Please write a note first.', 'error'); return; }
       try {
-        var notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
-        var u     = getStoredUser();
-        notes.unshift({ text:text, author:u.name||'Admin', time: new Date().toLocaleString() });
-        if (notes.length > 15) notes.pop();
-        localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+        await API.notes.post(text);
         input.value = '';
-        renderNotes();
+        loadNotes();
         UI.toast('Announcement posted!', 'success');
-      } catch(e) { UI.toast('Failed to save.', 'error'); }
+      } catch(e) { UI.toast(e.message || 'Failed to save.', 'error'); }
     });
   }
 });
@@ -1564,20 +1565,20 @@ function startHeartbeat() {
   var sickBadge     = document.getElementById('sick-badge');
   if (liveContainer && cows.length) {
     var sickCount = 0;
-    liveContainer.innerHTML = cows.map(function(c, i) {
-      var sick = (i % 5 === 0);
-      if (sick) sickCount++;
-      var dotClass    = sick ? 'status-dot--sick' : 'status-dot--healthy';
-      var healthLabel = sick
-        ? '<span style="color:var(--danger);font-weight:700;font-size:0.78rem;">Sick</span>'
-        : '<span style="color:var(--olive);font-weight:700;font-size:0.78rem;">Healthy</span>';
+    liveContainer.innerHTML = cows.map(function(c) {
+      var health    = c.Health_Status || 'Healthy';
+      var isSick    = health === 'Sick' || health === 'Under Treatment';
+      if (isSick) sickCount++;
+      var dotClass    = isSick ? 'status-dot--sick' : 'status-dot--healthy';
+      var healthColor = isSick ? 'var(--danger)' : 'var(--olive)';
       return '<div class="cow-row">'
         + '<div style="display:flex;align-items:center;gap:6px;">'
         + '<span class="status-dot ' + dotClass + '"></span>'
         + '<div><div style="font-weight:700;font-size:0.83rem;">' + c.Cow + '</div>'
-        + '<div style="font-size:0.72rem;color:var(--muted);">ID #' + c.Cow_ID + '</div></div></div>'
-        + '<div style="text-align:right;">' + healthLabel
-        + '<div style="font-size:0.72rem;color:var(--muted);">' + c.Production + '</div></div>'
+        + '<div style="font-size:0.72rem;color:var(--muted);">ID #' + c.Cow_ID + (c.Breed ? ' · ' + c.Breed : '') + '</div></div></div>'
+        + '<div style="text-align:right;">'
+        + '<span style="color:' + healthColor + ';font-weight:700;font-size:0.78rem;">' + health + '</span>'
+        + '<div style="font-size:0.72rem;color:var(--muted);">' + parseFloat(c.Production_Liters || 0).toFixed(2) + 'L/day</div></div>'
         + '</div>';
     }).join('');
     if (sickCount > 0) {
@@ -1592,6 +1593,19 @@ function startHeartbeat() {
     if (item.pct < 30) addAlert(item.name + ' is critically low (' + item.pct + '%) \u2014 restock urgently.', 'danger');
     else if (item.pct < 50) addAlert(item.name + ' is below 50% (' + item.pct + '%).', 'warning');
   });
+
+  // Low stock alerts from shop Products table
+  try {
+    var lowStockItems = await API.products.getLowStock();
+    lowStockItems.forEach(function(p) {
+      if (p.stock_qty === 0) {
+        addAlert('\u2018' + p.name + '\u2019 is out of stock in the shop.', 'danger');
+      } else {
+        addAlert('\u2018' + p.name + '\u2019 is low in stock (' + p.stock_qty + ' ' + p.unit + ' left).', 'warning');
+      }
+    });
+  } catch(e) { /* non-critical */ }
+
   addAlert('Milk collection truck scheduled for 4:00 PM today.', 'info');
 
   // Reports
