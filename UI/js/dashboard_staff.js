@@ -73,6 +73,9 @@ function loadAlerts() {
 // ── ORDERS (staff sees their own orders on dashboard) ─────
 async function loadOrders() {
   const container = document.getElementById('orders-list');
+  if (container) {
+    container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  }
   try {
     // Staff dashboard shows only this staff member's orders
     const orders = await API.orders.getMine();
@@ -112,6 +115,9 @@ async function loadOrders() {
 async function loadLivestock() {
   const container = document.getElementById('livestock-list');
   const countEl   = document.getElementById('cow-count');
+  if (container) {
+    container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  }
   try {
     const cows = await API.cows.getAll();
     if (countEl) countEl.textContent = `${cows.length} cows`;
@@ -337,7 +343,7 @@ function formatDueDate(dateStr) {
 async function loadReminders() {
   const list = document.getElementById('remindersList');
   if (!list) return;
-  list.innerHTML = '<p style="color:var(--text-light);font-size:0.84rem;"><span class="spinner"></span> Loading\u2026</p>';
+  list.innerHTML = '<div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div>';
   try {
     const res  = await fetch('../dairy_farm_backend/api/reminders.php', { credentials:'include' });
     const data = await res.json();
@@ -416,6 +422,7 @@ async function loadNotes() { await renderNotes(); }
 async function renderNotes() {
   const feed = document.getElementById('notes-feed');
   if (!feed) return;
+  feed.innerHTML = '<div class="skeleton-line"></div><div class="skeleton-line"></div>';
   try {
     const notes = await API.notes.getAll();
     if (!notes.length) { feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No notes yet.</p>'; return; }

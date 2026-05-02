@@ -621,6 +621,10 @@ function filterOrders(filter, btn) {
 }
 
 async function loadOrders() {
+  var container = document.getElementById('orders-list');
+  if (container) {
+    container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  }
   try {
     allOrders = await API.orders.getAll();
     var statEl = document.getElementById('stat-orders');
@@ -641,6 +645,9 @@ async function loadOrders() {
 // ── STAFF ─────────────────────────────────────────────────
 async function loadStaff() {
   var container = document.getElementById('staff-list');
+  if (container) {
+    container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  }
   try {
     var workers = await API.workers.getAll();
     var statEl  = document.getElementById('stat-workers');
@@ -673,6 +680,9 @@ async function loadStaff() {
 async function loadLivestock() {
   var container = document.getElementById('livestock-list');
   var sickBadge = document.getElementById('sick-badge');
+  if (container) {
+    container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  }
   try {
     var cows   = await API.cows.getAll();
     var statEl = document.getElementById('stat-cows');
@@ -788,7 +798,7 @@ function formatDueDate(dateStr) {
 async function loadReminders() {
   var list = document.getElementById('remindersList');
   if (!list) return;
-  list.innerHTML = '<p style="color:var(--text-light);font-size:0.84rem;">Loading\u2026</p>';
+  list.innerHTML = '<div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div>';
   try {
     var res  = await fetch('../dairy_farm_backend/api/reminders.php', { credentials:'include' });
     var data = await res.json();
@@ -1268,6 +1278,7 @@ function toggleAdminTask(id, checked) {
 async function loadNotes() {
   var feed = document.getElementById('notes-feed');
   if (!feed) return;
+  feed.innerHTML = '<div class="skeleton-line"></div><div class="skeleton-line"></div>';
   try {
     var notes = await API.notes.getAll();
     if (!notes.length) {
@@ -1308,6 +1319,7 @@ async function loadPendingApprovals() {
   var container = document.getElementById('approvals-list');
   var badge     = document.getElementById('approval-badge');
   if (!container) return;
+  container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div>';
   try {
     var pending = await API.approval.getPending();
     if (!Array.isArray(pending)) pending = [];
@@ -1422,6 +1434,7 @@ async function loadOnlineStaff() {
   var badge     = document.getElementById('online-count-badge');
   var refreshEl = document.getElementById('online-last-refresh');
   if (!container) return;
+  container.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div>';
   try {
     var staff = await API.onlineStatus.getAll();
     if (!Array.isArray(staff)) staff = [];
