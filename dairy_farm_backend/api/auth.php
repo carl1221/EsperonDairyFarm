@@ -91,7 +91,7 @@ try {
                     if ($customer) {
                         // If no password is set yet, reject login and prompt to set one
                         if (empty($customer['Password'])) {
-                            sendError('Your customer account has no password set. Please contact the admin.', 403);
+                            sendError('Your customer account does not have a password yet. Please ask an admin to set one for you via the Customers page.', 403);
                         }
                         if (!password_verify($password, $customer['Password'])) {
                             error_log('[Auth] Login failed: wrong password for customer — ' . $username);

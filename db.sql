@@ -429,10 +429,11 @@ INSERT INTO Cow (Cow_ID, Cow, Breed, Date_Of_Birth, Production_Liters, Health_St
     (102, 'Cow2', 'Jersey',   '2019-07-22', 15.00, 'Healthy')
 ON DUPLICATE KEY UPDATE Cow = VALUES(Cow);
 
-INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num) VALUES
-    (1, 'Ana',  301, '09010000001'),
-    (2, 'Juan', 302, '09020000002')
-ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name);
+-- Default customer password is 'Password1' — admin should change via Customers > 🔑 Password
+INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num, Password) VALUES
+    (1, 'Ana',  301, '09010000001', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m'),
+    (2, 'Juan', 302, '09020000002', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m')
+ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name), Password = VALUES(Password);
 
 -- Orders are created by staff and customers through the system — no sample data.
 
