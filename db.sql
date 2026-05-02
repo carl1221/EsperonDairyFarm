@@ -155,6 +155,7 @@ CREATE TABLE IF NOT EXISTS Customer (
     Customer_Name VARCHAR(100) NOT NULL,
     Address_ID    INT          NOT NULL,   -- FK → Address
     Contact_Num   VARCHAR(20)  NOT NULL,
+    Password      VARCHAR(255) NOT NULL DEFAULT '',  -- bcrypt hash; set on signup
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_customer  PRIMARY KEY (CID),
     CONSTRAINT fk_cust_addr FOREIGN KEY (Address_ID)
@@ -653,3 +654,70 @@ LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
 -- ============================================================
 -- END OF SCRIPT
 -- ============================================================
+
+-- ============================================================
+-- MIGRATION: Upgrade an existing live database
+-- Safe to run multiple times.
+-- ============================================================
+
+-- 1. Customer: add Password column (for customer login)
+ALTER TABLE Customer
+    ADD COLUMN IF NOT EXISTS Password VARCHAR(255) NOT NULL DEFAULT '' AFTER Contact_Num;
+
+-- 2. Products table (shop feature)
+CREATE TABLE IF NOT EXISTS Products (
+    product_id   INT            NOT NULL AUTO_INCREMENT,
+    name         VARCHAR(150)   NOT NULL,
+    description  TEXT           NULL,
+    price        DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
+    stock_qty    INT            NOT NULL DEFAULT 0,
+    unit         VARCHAR(30)    NOT NULL DEFAULT 'pcs',
+    image_url    VARCHAR(255)   NULL,
+    is_active    TINYINT(1)     NOT NULL DEFAULT 1,
+    created_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_products PRIMARY KEY (product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Cart table
+CREATE TABLE IF NOT EXISTS Cart (
+    cart_id     INT      NOT NULL AUTO_INCREMENT,
+    CID         INT      NOT NULL,
+    status      ENUM('active','checked_out') NOT NULL DEFAULT 'active',
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_cart     PRIMARY KEY (cart_id),
+    CONSTRAINT fk_cart_cid FOREIGN KEY (CID)
+        REFERENCES Customer (CID) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. CartItems table
+CREATE TABLE IF NOT EXISTS CartItems (
+    item_id     INT            NOT NULL AUTO_INCREMENT,
+    cart_id     INT            NOT NULL,
+    product_id  INT            NOT NULL,
+    quantity    INT            NOT NULL DEFAULT 1,
+    unit_price  DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
+    CONSTRAINT pk_cart_items   PRIMARY KEY (item_id),
+    CONSTRAINT fk_ci_cart      FOREIGN KEY (cart_id)
+        REFERENCES Cart (cart_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_ci_product   FOREIGN KEY (product_id)
+        REFERENCES Products (product_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT uq_cart_product UNIQUE (cart_id, product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Indexes for shop queries
+CREATE INDEX IF NOT EXISTS idx_products_active  ON Products(is_active);
+CREATE INDEX IF NOT EXISTS idx_cart_cid_status  ON Cart(CID, status);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart  ON CartItems(cart_id);
+
+-- 6. Sample products (idempotent)
+INSERT INTO Products (product_id, name, description, price, stock_qty, unit) VALUES
+    (1, 'Fresh Whole Milk',    'Farm-fresh whole milk, collected daily.',                  55.00, 100, 'L'),
+    (2, 'Aged Cheddar Cheese', 'Rich, sharp cheddar aged for 3 months.',                  180.00, 40, 'pcs'),
+    (3, 'Creamy Butter',       'Pure churned butter. Unsalted.',                           120.00, 60, 'pcs'),
+    (4, 'Natural Yogurt',      'Thick yogurt with live cultures. No added sugar.',         75.00,  50, 'pcs'),
+    (5, 'Fresh Cream',         'Heavy whipping cream for desserts and cooking.',           90.00,  35, 'L'),
+    (6, 'Skim Milk',           'Low-fat skim milk for health-conscious customers.',        45.00,  80, 'L'),
+    (7, 'Mozzarella Cheese',   'Soft, fresh mozzarella. Perfect for pizza and salads.',   160.00,  0, 'pcs')
+ON DUPLICATE KEY UPDATE name = VALUES(name);

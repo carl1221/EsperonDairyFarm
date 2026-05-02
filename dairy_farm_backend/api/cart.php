@@ -125,15 +125,18 @@ try {
             $qty       = (int) ($data['quantity']   ?? 0);
             if (!$productId) sendError('product_id is required.', 400);
 
+            $cartId = getOrCreateCart($db, $customerId);
+
             if ($qty <= 0) {
-                // Treat qty=0 as remove
-                $cartId = getOrCreateCart($db, $customerId);
+                // qty=0 means remove the item entirely
                 $db->prepare("DELETE FROM CartItems WHERE cart_id = ? AND product_id = ?")
                    ->execute([$cartId, $productId]);
                 sendSuccess('Item removed.', fetchCart($db, $cartId));
+                // sendSuccess calls exit() — code below is unreachable but return is explicit
+                return;
             }
 
-            // Check stock
+            // Check stock before updating
             $prod = $db->prepare("SELECT stock_qty FROM Products WHERE product_id = ?");
             $prod->execute([$productId]);
             $product = $prod->fetch();
@@ -142,7 +145,6 @@ try {
                 sendError("Only {$product['stock_qty']} unit(s) available.", 400);
             }
 
-            $cartId = getOrCreateCart($db, $customerId);
             $db->prepare("UPDATE CartItems SET quantity = ? WHERE cart_id = ? AND product_id = ?")
                ->execute([$qty, $cartId, $productId]);
 

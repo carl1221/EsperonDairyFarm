@@ -71,16 +71,16 @@ try {
             $addrStmt->execute([$address]);
             $addressId = (int) $db->lastInsertId();
 
-            // Insert customer
+            // Insert customer — store hashed password so they can log in
             $custStmt = $db->prepare(
-                'INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num) VALUES (?, ?, ?)'
+                'INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num, Password) VALUES (?, ?, ?, ?)'
             );
-            $custStmt->execute([$username, $addressId, $contactNum]);
+            $custStmt->execute([$username, $addressId, $contactNum, $hashedPassword]);
             $newId = $db->lastInsertId();
             $db->commit();
 
             sendSuccess(
-                'Customer account created! You can now be added to orders.',
+                'Customer account created! You can now log in.',
                 ['customer_id' => $newId],
                 201
             );

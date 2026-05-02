@@ -131,17 +131,22 @@ try {
             if ($name    === '') sendError('Name is required.', 400);
             if ($address === '') sendError('Address is required.', 400);
             if ($contact === '') sendError('Contact number is required.', 400);
+            if (!preg_match('/^[0-9+\-\s()]{7,20}$/', $contact)) {
+                sendError('Please enter a valid contact number.', 400);
+            }
 
-            // Update address text
-            $db->prepare("
-                UPDATE Address SET Address = ?
-                WHERE Address_ID = (SELECT Address_ID FROM Customer WHERE CID = ?)
-            ")->execute([$address, $customerId]);
+            // Get the Address_ID for this customer first, then update it directly
+            $addrRow = $db->prepare("SELECT Address_ID FROM Customer WHERE CID = ?");
+            $addrRow->execute([$customerId]);
+            $addrId  = $addrRow->fetchColumn();
 
-            // Update customer name and contact
-            $db->prepare("
-                UPDATE Customer SET Customer_Name = ?, Contact_Num = ? WHERE CID = ?
-            ")->execute([$name, $contact, $customerId]);
+            if (!$addrId) sendError('Customer not found.', 404);
+
+            $db->prepare("UPDATE Address SET Address = ? WHERE Address_ID = ?")
+               ->execute([$address, $addrId]);
+
+            $db->prepare("UPDATE Customer SET Customer_Name = ?, Contact_Num = ? WHERE CID = ?")
+               ->execute([$name, $contact, $customerId]);
 
             // Refresh session
             $_SESSION['user']['name']    = $name;

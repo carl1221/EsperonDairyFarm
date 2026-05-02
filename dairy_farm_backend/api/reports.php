@@ -15,37 +15,14 @@ require_once __DIR__ . '/../config/bootstrap.php';
 requireAuth();
 requireCsrf();
 
-$db     = getConnection();
-$method = $_SERVER['REQUEST_METHOD'];
-$id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
-$user   = $_SESSION['user'];
+$db      = getConnection();
+$method  = $_SERVER['REQUEST_METHOD'];
+$id      = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$user    = $_SESSION['user'];
 $isAdmin = ($user['role'] ?? '') === 'Admin';
 
-// Ensure table exists (auto-migrate) and view exists
-$db->exec("
-    CREATE TABLE IF NOT EXISTS staff_reports (
-        report_id   INT          NOT NULL AUTO_INCREMENT,
-        worker_id   INT          NOT NULL,
-        report_type VARCHAR(50)  NOT NULL DEFAULT 'Daily Report',
-        title       VARCHAR(255) NOT NULL,
-        content     TEXT         NOT NULL,
-        status      ENUM('pending','reviewed','acknowledged') NOT NULL DEFAULT 'pending',
-        admin_note  TEXT         NULL,
-        created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        CONSTRAINT pk_reports    PRIMARY KEY (report_id),
-        CONSTRAINT fk_rep_worker FOREIGN KEY (worker_id) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-");
-
-// Create view for joined queries
-$db->exec("
-    CREATE OR REPLACE VIEW vw_staff_reports AS
-    SELECT r.report_id, r.worker_id, w.Worker AS worker_name, w.Worker_Role AS worker_role,
-           r.report_type, r.title, r.content, r.status, r.admin_note, r.created_at, r.updated_at
-    FROM staff_reports r
-    JOIN Worker w ON r.worker_id = w.Worker_ID
-");
+// staff_reports table and vw_staff_reports view are created by db.sql.
+// No need to CREATE TABLE/VIEW on every request — removed for performance.
 
 try {
     switch ($method) {
