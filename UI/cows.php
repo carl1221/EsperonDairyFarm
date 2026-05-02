@@ -16,20 +16,6 @@ requireAdminPage();  // Cows page is Admin-only
 
 <nav class="nav" id="app-nav"></nav>
 
-<!-- Reminders Section (replaces Health Alerts) -->
-<div class="card" style="max-width: 500px; margin: 24px auto 0 auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: center;">
-      <span style="color: #e74c3c; margin-right: 8px;">
-        <span class="material-symbols-outlined" style="vertical-align: middle;">warning</span>
-      </span>
-      <span style="font-weight: bold;">Reminders</span>
-    </div>
-    <button id="addReminderBtn" style="background: #e74c3c; color: #fff; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 0.95rem;">Add Reminder</button>
-  </div>
-  <div id="remindersList" style="margin-top: 12px;"></div>
-</div>
-
 <main class="main">
   <div class="page-header">
     <div>

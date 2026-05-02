@@ -130,10 +130,9 @@ try {
 
             if ($name    === '') sendError('Name is required.', 400);
             if ($address === '') sendError('Address is required.', 400);
-            if ($contact === '') sendError('Contact number is required.', 400);
-            if (!preg_match('/^[0-9+\-\s()]{7,20}$/', $contact)) {
-                sendError('Please enter a valid contact number.', 400);
-            }
+            // Use shared contact validator from bootstrap.php
+            $contactError = validateContactNumber($contact);
+            if ($contactError) sendError($contactError, 400);
 
             // Get the Address_ID for this customer first, then update it directly
             $addrRow = $db->prepare("SELECT Address_ID FROM Customer WHERE CID = ?");

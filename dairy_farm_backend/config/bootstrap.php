@@ -304,3 +304,37 @@ function getRequestBody(): array {
     $data = json_decode($body, true);
     return is_array($data) ? $data : [];
 }
+
+// ── Shared domain validators ──────────────────────────────
+
+/**
+ * Validate password strength.
+ * Returns an error string on failure, null on success.
+ * Rules: 8+ chars, at least one uppercase, at least one digit.
+ */
+function validatePasswordStrength(string $password): ?string {
+    if (strlen($password) < 8) {
+        return 'Password must be at least 8 characters.';
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        return 'Password must contain at least one uppercase letter.';
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        return 'Password must contain at least one number.';
+    }
+    return null;
+}
+
+/**
+ * Validate a contact/phone number.
+ * Returns an error string on failure, null on success.
+ */
+function validateContactNumber(string $contact): ?string {
+    if ($contact === '') {
+        return 'Contact number is required.';
+    }
+    if (!preg_match('/^[0-9+\-\s()]{7,20}$/', $contact)) {
+        return 'Please enter a valid contact number (7–20 digits).';
+    }
+    return null;
+}
