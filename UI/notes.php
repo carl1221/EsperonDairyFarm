@@ -129,86 +129,94 @@ $userName = $_SESSION['user']['name'] ?? 'Staff';
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
-// Staff use a shared key so they see admin notes; admin uses admin_notes
-var NOTES_KEY = 'admin_notes';
-var IS_ADMIN  = <?= $isAdmin ? 'true' : 'false' ?>;
+var IS_ADMIN     = <?= $isAdmin ? 'true' : 'false' ?>;
 var CURRENT_USER = '<?= htmlspecialchars($userName) ?>';
+var CURRENT_ID   = <?= (int)($_SESSION['user']['id'] ?? 0) ?>;
+var _notes       = [];
 
-function getStoredUser() {
-  try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
-}
-function loadNotes() {
-  try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '[]'); } catch { return []; }
+// ── Load notes from DB ────────────────────────────────────
+async function loadNotes() {
+  try {
+    _notes = await API.notes.getAll();
+    renderNotes();
+  } catch(e) {
+    document.getElementById('notes-feed').innerHTML =
+      `<p style="color:var(--danger);font-size:0.84rem;">${e.message}</p>`;
+  }
 }
 
 function renderNotes() {
   var feed  = document.getElementById('notes-feed');
   var badge = document.getElementById('notes-count-badge');
-  var sub   = document.getElementById('notes-subtitle');
   if (!feed) return;
-  var notes = loadNotes();
-  var today = new Date().toDateString();
-  var todayCount = notes.filter(function(n){ return new Date(n.time).toDateString() === today; }).length;
-  var lastAuthor = notes.length ? notes[0].author : '—';
+
+  var today      = new Date().toDateString();
+  var todayCount = _notes.filter(function(n){ return new Date(n.created_at).toDateString() === today; }).length;
+  var lastAuthor = _notes.length ? _notes[0].author : '—';
+
   var set = function(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; };
-  set('stat-total',  notes.length);
+  set('stat-total',  _notes.length);
   set('stat-today',  todayCount);
   set('stat-author', lastAuthor);
-  if (badge) badge.textContent = notes.length;
+  if (badge) badge.textContent = _notes.length;
 
-  if (!notes.length) {
+  if (!_notes.length) {
     feed.innerHTML = '<div style="text-align:center;padding:28px 0;">'
       + '<span class="material-symbols-outlined" style="font-size:2.2rem;color:var(--muted);display:block;margin-bottom:8px;">edit_note</span>'
       + '<p style="color:var(--muted);font-size:0.84rem;">No announcements yet.</p></div>';
     return;
   }
 
-  feed.innerHTML = notes.map(function(n, idx) {
-    // Staff can only delete their own notes; Admin can delete any
-    var canDelete = IS_ADMIN || n.author === CURRENT_USER;
+  feed.innerHTML = _notes.map(function(n) {
+    var canDelete = IS_ADMIN || (int(n.author_id) === CURRENT_ID);
     var deleteBtn = canDelete
-      ? '<button onclick="deleteNote('+idx+')" title="Delete note" '
+      ? '<button onclick="deleteNote(' + n.note_id + ')" title="Delete note" '
         + 'style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center;gap:3px;font-size:0.72rem;" '
         + 'onmouseover="this.style.color=\'var(--danger)\'" onmouseout="this.style.color=\'var(--muted)\'">'
         + '<span class="material-symbols-outlined" style="font-size:0.9rem;">delete</span> Delete</button>'
       : '';
+    var timeStr = new Date(n.created_at).toLocaleString();
     return '<div class="note-bubble">'
-      + '<div class="note-bubble__text">' + n.text + '</div>'
+      + '<div class="note-bubble__text">' + escapeHtml(n.text) + '</div>'
       + '<div class="note-bubble__meta">'
-      + '<span><strong>' + n.author + '</strong> · ' + n.time + '</span>'
+      + '<span><strong>' + escapeHtml(n.author) + '</strong> · ' + timeStr + '</span>'
       + deleteBtn
       + '</div>'
       + '</div>';
   }).join('');
 }
 
-function deleteNote(idx) {
-  UI.confirm('Delete this note?').then(function(ok) {
-    if (!ok) return;
-    var notes = loadNotes();
-    // Double-check permission
-    if (!IS_ADMIN && notes[idx] && notes[idx].author !== CURRENT_USER) {
-      UI.toast('You can only delete your own notes.', 'error'); return;
-    }
-    notes.splice(idx, 1);
-    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-    renderNotes();
+function int(v) { return parseInt(v, 10) || 0; }
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function deleteNote(id) {
+  var ok = await UI.confirm('Delete this note?');
+  if (!ok) return;
+  try {
+    await API.notes.delete(id);
     UI.toast('Note deleted.', 'success');
-  });
+    loadNotes();
+  } catch(e) { UI.toast(e.message, 'error'); }
 }
 
 <?php if ($isAdmin): ?>
-function clearAllNotes() {
-  UI.confirm('Clear all notes and announcements? This cannot be undone.').then(function(ok) {
-    if (!ok) return;
-    localStorage.removeItem(NOTES_KEY);
-    renderNotes();
+async function clearAllNotes() {
+  var ok = await UI.confirm('Clear all notes and announcements? This cannot be undone.');
+  if (!ok) return;
+  try {
+    await API.notes.clearAll();
     UI.toast('All notes cleared.', 'success');
-  });
+    loadNotes();
+  } catch(e) { UI.toast(e.message, 'error'); }
 }
 <?php endif; ?>
 
-// Character counter
+// ── Character counter ─────────────────────────────────────
 var noteInput = document.getElementById('note-input');
 var charCount = document.getElementById('char-count');
 if (noteInput) {
@@ -220,33 +228,31 @@ if (noteInput) {
   });
 }
 
-// Post note
+// ── Post note ─────────────────────────────────────────────
 var saveBtn = document.getElementById('save-note-btn');
 if (saveBtn) {
-  saveBtn.addEventListener('click', function() {
+  saveBtn.addEventListener('click', async function() {
     var text = noteInput.value.trim();
     if (!text) { UI.toast('Please write a note first.', 'error'); return; }
-    var notes = loadNotes();
-    var u     = getStoredUser();
-    notes.unshift({ text: text, author: u.name || CURRENT_USER, time: new Date().toLocaleString() });
-    if (notes.length > 15) notes.pop();
-    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-    noteInput.value = '';
-    if (charCount) charCount.textContent = '0 / 500 characters';
-    renderNotes();
-    UI.toast('Note posted!', 'success');
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Posting…';
+    try {
+      await API.notes.post(text);
+      noteInput.value = '';
+      if (charCount) charCount.textContent = '0 / 500 characters';
+      UI.toast('Note posted!', 'success');
+      loadNotes();
+    } catch(e) {
+      UI.toast(e.message, 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem;">send</span> Post Note';
+    }
   });
 }
 
-(async function() {
-  var res  = await fetch('../dairy_farm_backend/api/auth.php?action=status', { credentials:'include' });
-  var data = await res.json();
-  if (data.success && data.data) {
-    localStorage.setItem('csrf_token', data.data.csrf_token || '');
-    if (data.data.user) localStorage.setItem('user', JSON.stringify(data.data.user));
-  }
-  renderNotes();
-})();
+loadNotes();
 </script>
 </body>
 </html>

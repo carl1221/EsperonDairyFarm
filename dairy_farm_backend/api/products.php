@@ -43,7 +43,13 @@ try {
                     : sendError('Product not found.', 404);
             } else {
                 $where = $all ? '' : 'WHERE is_active = 1';
-                $stmt  = $db->query("SELECT * FROM Products $where ORDER BY product_id ASC");
+                // Optional low-stock filter: ?low_stock=1 returns items with stock_qty <= 5
+                $lowStock = isset($_GET['low_stock']) && $_GET['low_stock'] === '1';
+                if ($lowStock) {
+                    requireRole(['Admin']);
+                    $where = 'WHERE is_active = 1 AND stock_qty <= 5';
+                }
+                $stmt = $db->query("SELECT * FROM Products $where ORDER BY stock_qty ASC, product_id ASC");
                 sendSuccess('Products retrieved.', $stmt->fetchAll());
             }
             break;
