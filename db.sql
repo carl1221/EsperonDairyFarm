@@ -431,15 +431,7 @@ INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num) VALUES
     (2, 'Juan', 302, '09020000002')
 ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name);
 
-INSERT INTO Orders (CID, Cow_ID, Worker_ID, Order_Type, Order_Date, quantity_liters, unit_price, status) VALUES
-    (1, 101, 201, 'Milk',   '2026-03-26', 5.00,  50.00, 'delivered'),
-    (2, 102, 202, 'Milk',   '2026-03-21', 8.00,  50.00, 'delivered'),
-    (1, 102, 202, 'Cheese', '2026-04-01', 3.50,  75.00, 'delivered'),
-    (1, 101, 201, 'Yogurt', '2026-04-10', 4.00,  60.00, 'confirmed'),
-    (2, 101, 201, 'Butter', '2026-04-05', 6.00,  55.00, 'delivered'),
-    (2, 102, 202, 'Milk',   '2026-04-15', 10.00, 50.00, 'pending'),
-    (1, 102, 201, 'Milk',   '2026-04-20', 7.50,  50.00, 'confirmed')
-ON DUPLICATE KEY UPDATE Order_Type = VALUES(Order_Type);
+-- Orders are created by staff and customers through the system — no sample data.
 
 INSERT INTO reminders (created_by, assigned_to, title, description, due_date, status) VALUES
     (202, 201, 'Morning Feeding',  'Feed all cows at 6AM',          '2026-05-02 06:00:00', 'pending'),
