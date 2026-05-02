@@ -41,9 +41,11 @@ esperon/
 │       ├── nav.js               ← Sidebar + user profile card
 │       └── ui.js                ← Toast / modal / utilities
 │
+├── migrations/                  ← SQL migration files (run with php migrate.php)
+│   └── 001_initial_schema.sql   ← Full schema, views, indexes, and seed data
+├── migrate.php                  ← Migration runner (CLI only)
 ├── .env                         ← Database + OAuth credentials (never commit)
-├── esperon_dairyfarm.sql        ← Full database schema + seed data
-└── esperon_add_email.sql        ← Migration: adds Email column
+├── db.sql                       ← Original schema file (superseded by migrations/)
 ```
 
 ---
@@ -57,20 +59,17 @@ Copy the entire `esperon_final` folder into your XAMPP `htdocs` directory:
 C:\xampp\htdocs\esperon_final\
 ```
 
-### 2. Import the database
+### 2. Set up the database
 
-Open **phpMyAdmin** (`http://localhost/phpmyadmin`) and run these two SQL files in order:
+Run the migration script from the project root:
 
-| Order | File | What it does |
-|---|---|---|
-| 1st | `esperon_dairyfarm.sql` | Creates the database, all tables, indexes, views, and seed data |
-| 2nd | `esperon_add_email.sql` | Adds the `Email` column to the `Worker` table |
-
-Or via terminal:
 ```bash
-mysql -u root esperon_dairy_farm < esperon_dairyfarm.sql
-mysql -u root esperon_dairy_farm < esperon_add_email.sql
+php migrate.php
 ```
+
+This reads every `.sql` file in `migrations/` in order, skips any that have already run, and records each successful migration in a `migrations` tracking table. It is safe to run multiple times.
+
+To add a future schema change, create a new numbered file in `migrations/` (e.g. `003_add_new_table.sql`) and run `php migrate.php` again — only the new file will be applied.
 
 ### 3. Configure `.env`
 Edit `esperon_final/.env` if your MySQL credentials differ:
@@ -165,6 +164,59 @@ Users can now log in with their Google account. If their email doesn't exist in 
 - **Logout** — destroys server session + clears localStorage
 - All database queries use **PDO prepared statements** — no SQL injection possible
 - Passwords are never returned in API responses
+
+---
+
+## 🧪 Running the Tests
+
+The test suite makes real HTTP calls to the local XAMPP server, so Apache and MySQL must be running before you execute it.
+
+### Prerequisites
+
+```bash
+# Install dev dependencies (PHPUnit) if you haven't already
+composer install
+```
+
+### Run all tests
+
+```bash
+composer test
+```
+
+### Run a single test file
+
+```bash
+vendor/bin/phpunit tests/AuthTest.php
+vendor/bin/phpunit tests/SignupTest.php
+vendor/bin/phpunit tests/ApprovalTest.php
+```
+
+### Base URL
+
+By default the tests hit `http://localhost/EsperonDairyFarm`.
+If your XAMPP project lives at a different path, override the variable:
+
+```bash
+APP_BASE_URL=http://localhost/my-path composer test
+```
+
+Or edit the `<env>` value in `phpunit.xml`.
+
+### What the tests cover
+
+| File | Endpoint | Scenarios |
+|---|---|---|
+| `tests/AuthTest.php` | `POST /api/auth.php?action=login` | Valid login (200 + user object), wrong password (401), pending account (403), rejected account (403), 6th failed attempt (429) |
+| `tests/SignupTest.php` | `POST /api/signup.php` | Valid signup (201 + pending status in DB), duplicate username (409), missing username / password / email (400) |
+| `tests/ApprovalTest.php` | `GET/POST /api/approval.php` | Non-admin blocked (403), admin approves pending worker (200 + DB verified), admin rejects pending worker (200 + DB verified) |
+
+### Notes
+
+- Tests use native PHP cURL — no Guzzle or other HTTP client required.
+- Each test class gets its own isolated cookie jar so sessions don't bleed between tests.
+- Temporary Worker rows created during tests are deleted in `tearDown` — the database is left clean after every run.
+- The reCAPTCHA check is automatically bypassed on `localhost` (non-HTTPS) by `verifyRecaptcha()` in `bootstrap.php`.
 
 ---
 

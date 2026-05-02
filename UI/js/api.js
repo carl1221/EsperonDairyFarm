@@ -5,7 +5,7 @@
 // ============================================================
 
 // Use relative path - works regardless of project location or XAMPP root
-const BASE_URL = '../dairy_farm_backend/api';
+const BASE_URL = '../dairy_farm_backend/api/v1';
 
 const API = {
 
@@ -106,6 +106,7 @@ const API = {
     search:        (q)           => API.request(`orders.php?search=${encodeURIComponent(q)}`),
     getById:       (id)          => API.request(`orders.php?id=${id}`),
     getByCustomer: (cid)         => API.request(`orders.php?customer=${cid}`),
+    getTypes:      ()            => API.request('orders.php?types=1'),
     create:        (data)        => API.request('orders.php', 'POST', data),
     update:        (id, d)       => API.request(`orders.php?id=${id}`, 'PUT', d),
     updateStatus:  (id, status)  => API.request(`orders.php?id=${id}`, 'PATCH', { status }),
@@ -140,10 +141,13 @@ const API = {
 
   // ── Notes (persistent DB) ─────────────────────────────────
   notes: {
-    getAll:   ()        => API.request('notes.php'),
-    post:     (text)    => API.request('notes.php', 'POST', { text }),
-    delete:   (id)      => API.request(`notes.php?id=${id}`, 'DELETE'),
-    clearAll: ()        => API.request('notes.php?all=1', 'DELETE'),
+    getAll:        ()                          => API.request('notes.php'),
+    getByEntity:   (entity_type, entity_id)    => API.request(`notes.php?entity_type=${encodeURIComponent(entity_type)}&entity_id=${entity_id}`),
+    getByCategory: (category)                  => API.request(`notes.php?category=${encodeURIComponent(category)}`),
+    post:          (data)                      => API.request('notes.php', 'POST', typeof data === 'string' ? { text: data } : data),
+    update:        (id, data)                  => API.request(`notes.php?id=${id}`, 'PUT', data),
+    delete:        (id)                        => API.request(`notes.php?id=${id}`, 'DELETE'),
+    clearAll:      ()                          => API.request('notes.php?all=1', 'DELETE'),
   },
 
   // ── Production Logs ───────────────────────────────────────
@@ -175,6 +179,15 @@ const API = {
     update:       (id, d)  => API.request(`products.php?id=${id}`, 'PUT', d),
     patch:        (id, d)  => API.request(`products.php?id=${id}`, 'PATCH', d),
     delete:       (id)     => API.request(`products.php?id=${id}`, 'DELETE'),
+  },
+
+  // ── Reviews ───────────────────────────────────────────────
+  reviews: {
+    getByProduct: (productId) => API.request(`reviews.php?product_id=${productId}`),
+    getMine:      ()           => API.request('reviews.php?mine=1'),
+    submit:       (data)       => API.request('reviews.php', 'POST', data),
+    update:       (id, data)   => API.request(`reviews.php?id=${id}`, 'PUT', data),
+    delete:       (id)         => API.request(`reviews.php?id=${id}`, 'DELETE'),
   },
 
   // ── Cart (Customer only) ───────────────────────────────────

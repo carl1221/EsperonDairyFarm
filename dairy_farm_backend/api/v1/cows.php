@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/cows.php
 // Endpoint: /api/cows.php
@@ -12,8 +12,8 @@
 // DELETE /api/cows.php?id=101       → hard-delete cow (Admin only)
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../models/Cow.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
+require_once __DIR__ . '/../../models/Cow.php';
 
 requireAuth();
 requireCsrf();

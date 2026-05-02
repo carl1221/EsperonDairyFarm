@@ -1,8 +1,8 @@
 <?php
 // ============================================================
 // models/Order.php
-// Orders now include quantity_liters, unit_price, total_price
-// (generated column), status, and notes.
+// 3NF: Order_Type (free-text) replaced by type_id FK → OrderTypes.
+// Order_Type name is derived at query time via vw_order_details.
 // ============================================================
 
 require_once __DIR__ . '/../config/database.php';
@@ -16,7 +16,7 @@ class Order {
 
     /**
      * Return all orders, optionally filtered by search term and/or worker.
-     * @param string|null $search  Searches Customer_Name, Order_Type, Cow, Worker_Name
+     * @param string|null $search    Searches Customer_Name, Order_Type, Cow, Worker_Name
      * @param int|null    $workerId  Filter to a specific worker (for Staff "my orders")
      */
     public function getAll(?string $search = null, ?int $workerId = null): array {
@@ -24,16 +24,16 @@ class Order {
         $params = [];
 
         if ($search !== null && $search !== '') {
-            $like     = '%' . $search . '%';
-            $where[]  = "(Customer_Name LIKE ? OR Order_Type LIKE ? OR Cow LIKE ? OR Worker_Name LIKE ?)";
-            $params   = array_merge($params, [$like, $like, $like, $like]);
+            $like    = '%' . $search . '%';
+            $where[] = "(Customer_Name LIKE ? OR Order_Type LIKE ? OR Cow LIKE ? OR Worker_Name LIKE ?)";
+            $params  = array_merge($params, [$like, $like, $like, $like]);
         }
         if ($workerId !== null) {
             $where[]  = "Worker_ID = ?";
             $params[] = $workerId;
         }
 
-        $sql  = "SELECT * FROM vw_order_details";
+        $sql = "SELECT * FROM vw_order_details";
         if ($where) $sql .= " WHERE " . implode(' AND ', $where);
         $sql .= " ORDER BY Order_ID DESC";
 
@@ -55,17 +55,35 @@ class Order {
     }
 
     /**
+     * Resolve an order type name to its type_id.
+     * If the name doesn't exist yet, insert it (auto-extend the lookup table).
+     */
+    private function resolveTypeId(string $typeName): int {
+        $stmt = $this->db->prepare("SELECT type_id FROM OrderTypes WHERE type_name = ?");
+        $stmt->execute([$typeName]);
+        $row = $stmt->fetch();
+        if ($row) return (int) $row['type_id'];
+
+        // Auto-insert unknown types so existing data isn't rejected
+        $ins = $this->db->prepare("INSERT INTO OrderTypes (type_name) VALUES (?)");
+        $ins->execute([$typeName]);
+        return (int) $this->db->lastInsertId();
+    }
+
+    /**
      * Create a new order.
-     * Required keys: CID, Cow_ID, Worker_ID, Order_Type, Order_Date,
-     *                quantity_liters, unit_price
-     * Optional keys: status, notes
-     *
-     * total_price is a GENERATED column — do NOT insert it.
+     * Accepts either type_id (int) or Order_Type (string — resolved to type_id).
+     * Required: CID, Cow_ID, Worker_ID, Order_Date, quantity_liters, unit_price
+     * Optional: status, notes
      */
     public function create(array $data): int {
+        $typeId = isset($data['type_id'])
+            ? (int) $data['type_id']
+            : $this->resolveTypeId($data['Order_Type'] ?? 'Custom Order');
+
         $stmt = $this->db->prepare("
             INSERT INTO Orders
-                (CID, Cow_ID, Worker_ID, Order_Type, Order_Date,
+                (CID, Cow_ID, Worker_ID, type_id, Order_Date,
                  quantity_liters, unit_price, status, notes)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
@@ -73,7 +91,7 @@ class Order {
             (int)   $data['CID'],
             (int)   $data['Cow_ID'],
             (int)   $data['Worker_ID'],
-                    $data['Order_Type'],
+                    $typeId,
                     $data['Order_Date'],
             (float) ($data['quantity_liters'] ?? 0),
             (float) ($data['unit_price']      ?? 0),
@@ -88,12 +106,16 @@ class Order {
      * Accepts the same keys as create().
      */
     public function update(int $id, array $data): bool {
+        $typeId = isset($data['type_id'])
+            ? (int) $data['type_id']
+            : $this->resolveTypeId($data['Order_Type'] ?? 'Custom Order');
+
         $stmt = $this->db->prepare("
             UPDATE Orders
             SET CID             = ?,
                 Cow_ID          = ?,
                 Worker_ID       = ?,
-                Order_Type      = ?,
+                type_id         = ?,
                 Order_Date      = ?,
                 quantity_liters = ?,
                 unit_price      = ?,
@@ -105,7 +127,7 @@ class Order {
             (int)   $data['CID'],
             (int)   $data['Cow_ID'],
             (int)   $data['Worker_ID'],
-                    $data['Order_Type'],
+                    $typeId,
                     $data['Order_Date'],
             (float) ($data['quantity_liters'] ?? 0),
             (float) ($data['unit_price']      ?? 0),
@@ -116,12 +138,10 @@ class Order {
         return $stmt->rowCount() > 0;
     }
 
-    /** Update only the status of an order (e.g. confirm, deliver, cancel). */
+    /** Update only the status of an order. */
     public function updateStatus(int $id, string $status): bool {
         $allowed = ['pending', 'confirmed', 'delivered', 'cancelled'];
-        if (!in_array($status, $allowed, true)) {
-            return false;
-        }
+        if (!in_array($status, $allowed, true)) return false;
         $stmt = $this->db->prepare("UPDATE Orders SET status = ? WHERE Order_ID = ?");
         $stmt->execute([$status, $id]);
         return $stmt->rowCount() > 0;
@@ -131,5 +151,10 @@ class Order {
         $stmt = $this->db->prepare("DELETE FROM Orders WHERE Order_ID = ?");
         $stmt->execute([$id]);
         return $stmt->rowCount() > 0;
+    }
+
+    /** Return all available order types for dropdowns. */
+    public function getTypes(): array {
+        return $this->db->query("SELECT type_id, type_name FROM OrderTypes ORDER BY type_name")->fetchAll();
     }
 }

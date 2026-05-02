@@ -165,6 +165,27 @@ CREATE TABLE IF NOT EXISTS Customer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- [LOOKUP TABLE] OrderTypes
+-- Normalizes Order_Type out of Orders (was a free-text VARCHAR).
+-- 3NF: removes the partial dependency on a non-key attribute.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS OrderTypes (
+    type_id   INT         NOT NULL AUTO_INCREMENT,
+    type_name VARCHAR(100) NOT NULL,
+    CONSTRAINT pk_order_types PRIMARY KEY (type_id),
+    CONSTRAINT uq_order_type  UNIQUE (type_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO OrderTypes (type_name) VALUES
+    ('Milk Delivery'),
+    ('Cheese Order'),
+    ('Butter Order'),
+    ('Yogurt Order'),
+    ('Cream Order'),
+    ('Custom Order')
+ON DUPLICATE KEY UPDATE type_name = VALUES(type_name);
+
+-- ============================================================
 -- [STRONG ENTITY] Orders
 -- Relationships:
 --   Orders →(N:1)→ Customer   (fk_ord_cust)
@@ -182,7 +203,7 @@ CREATE TABLE IF NOT EXISTS Orders (
     CID             INT           NOT NULL,   -- FK → Customer
     Cow_ID          INT           NOT NULL,   -- FK → Cow
     Worker_ID       INT           NOT NULL,   -- FK → Worker
-    Order_Type      VARCHAR(100)  NOT NULL,
+    type_id         INT           NOT NULL,   -- FK → OrderTypes (replaces free-text Order_Type)
     Order_Date      DATE          NOT NULL,
     quantity_liters DECIMAL(8,2)  NOT NULL DEFAULT 0.00,
     unit_price      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -196,6 +217,8 @@ CREATE TABLE IF NOT EXISTS Orders (
     CONSTRAINT fk_ord_cow    FOREIGN KEY (Cow_ID)    REFERENCES Cow (Cow_ID)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_ord_worker FOREIGN KEY (Worker_ID) REFERENCES Worker (Worker_ID)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_ord_type   FOREIGN KEY (type_id)   REFERENCES OrderTypes (type_id)
         ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -285,7 +308,7 @@ CREATE OR REPLACE VIEW vw_order_details AS
 SELECT
     -- Order identity
     o.Order_ID,
-    o.Order_Type,
+    ot.type_name      AS Order_Type,
     o.Order_Date,
     o.quantity_liters,
     o.unit_price,
@@ -311,11 +334,12 @@ SELECT
     w.Worker          AS Worker_Name,
     w.Worker_Role
 
-FROM       Orders   o
-JOIN       Customer c  ON o.CID       = c.CID
-JOIN       Address  a  ON c.Address_ID = a.Address_ID
-JOIN       Cow      cw ON o.Cow_ID    = cw.Cow_ID
-JOIN       Worker   w  ON o.Worker_ID  = w.Worker_ID;
+FROM       Orders     o
+JOIN       OrderTypes ot ON o.type_id     = ot.type_id
+JOIN       Customer   c  ON o.CID         = c.CID
+JOIN       Address    a  ON c.Address_ID  = a.Address_ID
+JOIN       Cow        cw ON o.Cow_ID      = cw.Cow_ID
+JOIN       Worker     w  ON o.Worker_ID   = w.Worker_ID;
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_staff_reports
@@ -382,6 +406,27 @@ SELECT
 FROM      reminders r
 JOIN      Worker creator  ON r.created_by  = creator.Worker_ID
 LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
+
+-- ============================================================
+-- [DERIVED STRUCTURE] VIEW: vw_notes
+-- Resolves author_id FK to worker name — satisfies 3NF by not
+-- storing the author name redundantly in the notes table.
+-- Also exposes category, entity_type, entity_id, and updated_at.
+-- ============================================================
+CREATE OR REPLACE VIEW vw_notes AS
+SELECT
+    n.note_id,
+    n.text,
+    n.category,
+    n.entity_type,
+    n.entity_id,
+    n.created_at,
+    n.updated_at,
+    n.author_id,
+    w.Worker      AS author,
+    w.Worker_Role AS author_role
+FROM notes n
+JOIN Worker w ON n.author_id = w.Worker_ID;
 
 -- ============================================================
 -- INDEXES
@@ -455,18 +500,40 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 -- ============================================================
 -- [STRONG ENTITY] notes
 -- Persistent announcements/notes shared across all staff.
--- Replaces the localStorage-only implementation.
+-- author_id FK → Worker satisfies 3NF — author name is derived
+-- at query time via JOIN, not stored redundantly here.
+--
+-- category    — classifies the note (General, Health, Feeding, etc.)
+-- entity_type — optional polymorphic link to a related entity
+--               ('Cow', 'Order', 'Customer', 'Worker', or NULL for general)
+-- entity_id   — the PK of the linked entity row (NULL when entity_type is NULL)
+-- updated_at  — audit trail for edits
+--
+-- Relationships:
+--   notes →(N:1)→ Worker  via author_id  (who wrote it)
+--   notes →(N:1)→ Cow     via entity_id  (when entity_type = 'Cow')
+--   notes →(N:1)→ Orders  via entity_id  (when entity_type = 'Order')
+--   notes →(N:1)→ Customer via entity_id (when entity_type = 'Customer')
 -- ============================================================
 CREATE TABLE IF NOT EXISTS notes (
-    note_id    INT          NOT NULL AUTO_INCREMENT,
-    author_id  INT          NOT NULL,
-    author     VARCHAR(100) NOT NULL,
-    text       TEXT         NOT NULL,
-    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_notes PRIMARY KEY (note_id)
+    note_id     INT          NOT NULL AUTO_INCREMENT,
+    author_id   INT          NOT NULL,   -- FK → Worker
+    text        TEXT         NOT NULL,
+    category    ENUM('General','Health','Feeding','Maintenance','Finance','Other')
+                             NOT NULL DEFAULT 'General',
+    entity_type ENUM('Cow','Order','Customer','Worker') NULL DEFAULT NULL,
+    entity_id   INT          NULL DEFAULT NULL,   -- FK to the entity identified by entity_type
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_notes       PRIMARY KEY (note_id),
+    CONSTRAINT fk_note_author FOREIGN KEY (author_id)
+        REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- entity_type + entity_id index for fast "notes about Cow #5" queries
+CREATE INDEX IF NOT EXISTS idx_notes_entity  ON notes(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at);
+CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
 
 -- ============================================================
 -- [STRONG ENTITY] production_logs
@@ -490,6 +557,30 @@ CREATE TABLE IF NOT EXISTS production_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX IF NOT EXISTS idx_prod_logs_date ON production_logs(log_date);
+
+-- ============================================================
+-- [STRONG ENTITY] product_reviews
+-- Customers can leave one review per product.
+-- is_verified_purchase = 1 when the customer has actually bought it.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS product_reviews (
+    review_id            INT           NOT NULL AUTO_INCREMENT,
+    product_id           INT           NOT NULL,
+    CID                  INT           NOT NULL,
+    rating               TINYINT       NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    title                VARCHAR(150)  NULL,
+    comment              TEXT          NULL,
+    is_verified_purchase TINYINT(1)    NOT NULL DEFAULT 0,
+    created_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_reviews         PRIMARY KEY (review_id),
+    CONSTRAINT uq_review_per_cust UNIQUE (product_id, CID),
+    CONSTRAINT fk_rev_product     FOREIGN KEY (product_id) REFERENCES Products (product_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rev_customer    FOREIGN KEY (CID)        REFERENCES Customer (CID)        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_cid     ON product_reviews(CID);
 
 -- ============================================================
 -- MIGRATION: Upgrade an existing live database
@@ -763,3 +854,90 @@ INSERT INTO Products (product_id, name, description, price, stock_qty, unit) VAL
     (6, 'Skim Milk',           'Low-fat skim milk for health-conscious customers.',        45.00,  80, 'L'),
     (7, 'Mozzarella Cheese',   'Soft, fresh mozzarella. Perfect for pizza and salads.',   160.00,  0, 'pcs')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- ── Normalization upgrades for existing databases ─────────────
+
+-- 7. OrderTypes lookup table (normalizes Orders.Order_Type)
+CREATE TABLE IF NOT EXISTS OrderTypes (
+    type_id   INT          NOT NULL AUTO_INCREMENT,
+    type_name VARCHAR(100) NOT NULL,
+    CONSTRAINT pk_order_types PRIMARY KEY (type_id),
+    CONSTRAINT uq_order_type  UNIQUE (type_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO OrderTypes (type_name) VALUES
+    ('Milk Delivery'),('Cheese Order'),('Butter Order'),
+    ('Yogurt Order'),('Cream Order'),('Custom Order')
+ON DUPLICATE KEY UPDATE type_name = VALUES(type_name);
+
+-- Add type_id column to Orders (default to 'Custom Order' for existing rows)
+ALTER TABLE Orders
+    ADD COLUMN IF NOT EXISTS type_id INT NULL AFTER Worker_ID;
+
+UPDATE Orders SET type_id = (SELECT type_id FROM OrderTypes WHERE type_name = 'Custom Order' LIMIT 1)
+WHERE type_id IS NULL;
+
+ALTER TABLE Orders MODIFY COLUMN type_id INT NOT NULL;
+
+SET @fk_ot = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'Orders' AND CONSTRAINT_NAME = 'fk_ord_type');
+SET @s_ot = IF(@fk_ot = 0,
+    'ALTER TABLE Orders ADD CONSTRAINT fk_ord_type FOREIGN KEY (type_id) REFERENCES OrderTypes (type_id) ON UPDATE CASCADE ON DELETE RESTRICT',
+    'SELECT 1');
+PREPARE p_ot FROM @s_ot; EXECUTE p_ot; DEALLOCATE PREPARE p_ot;
+
+-- 8. notes: drop redundant author column (3NF fix)
+--    author name is now derived via vw_notes JOIN Worker
+ALTER TABLE notes DROP COLUMN IF EXISTS author;
+
+SET @fk_na = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'notes' AND CONSTRAINT_NAME = 'fk_note_author');
+SET @s_na = IF(@fk_na = 0,
+    'ALTER TABLE notes ADD CONSTRAINT fk_note_author FOREIGN KEY (author_id) REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE',
+    'SELECT 1');
+PREPARE p_na FROM @s_na; EXECUTE p_na; DEALLOCATE PREPARE p_na;
+
+-- 9. notes: add category, entity_type, entity_id, updated_at (normalization upgrade)
+ALTER TABLE notes
+    ADD COLUMN IF NOT EXISTS category    ENUM('General','Health','Feeding','Maintenance','Finance','Other')
+                                         NOT NULL DEFAULT 'General' AFTER text,
+    ADD COLUMN IF NOT EXISTS entity_type ENUM('Cow','Order','Customer','Worker') NULL DEFAULT NULL AFTER category,
+    ADD COLUMN IF NOT EXISTS entity_id   INT NULL DEFAULT NULL AFTER entity_type,
+    ADD COLUMN IF NOT EXISTS updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
+
+CREATE INDEX IF NOT EXISTS idx_notes_entity   ON notes(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
+
+-- 10. product_reviews: drop is_verified_purchase (derived value — 3NF fix)
+--    Verified status is computed at query time from CartItems + Cart
+ALTER TABLE product_reviews DROP COLUMN IF EXISTS is_verified_purchase;
+
+-- Recreate views to reflect all normalization changes
+CREATE OR REPLACE VIEW vw_order_details AS
+SELECT o.Order_ID, ot.type_name AS Order_Type, o.Order_Date,
+       o.quantity_liters, o.unit_price, o.total_price,
+       o.status AS Order_Status, o.notes AS Order_Notes, o.updated_at AS Order_Updated,
+       o.CID, c.Customer_Name, c.Contact_Num, a.Address,
+       o.Cow_ID, cw.Cow, cw.Breed, cw.Production_Liters,
+       o.Worker_ID, w.Worker AS Worker_Name, w.Worker_Role
+FROM Orders o
+JOIN OrderTypes ot ON o.type_id    = ot.type_id
+JOIN Customer   c  ON o.CID        = c.CID
+JOIN Address    a  ON c.Address_ID = a.Address_ID
+JOIN Cow        cw ON o.Cow_ID     = cw.Cow_ID
+JOIN Worker     w  ON o.Worker_ID  = w.Worker_ID;
+
+CREATE OR REPLACE VIEW vw_notes AS
+SELECT
+    n.note_id,
+    n.text,
+    n.category,
+    n.entity_type,
+    n.entity_id,
+    n.created_at,
+    n.updated_at,
+    n.author_id,
+    w.Worker      AS author,
+    w.Worker_Role AS author_role
+FROM notes n
+JOIN Worker w ON n.author_id = w.Worker_ID;

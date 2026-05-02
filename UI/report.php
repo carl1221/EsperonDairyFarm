@@ -89,11 +89,16 @@ $isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
         <span class="material-symbols-outlined" style="color:var(--olive);font-size:1.2rem;">description</span>
         <?= $isAdmin ? 'All Staff Reports' : 'My Submitted Reports' ?>
       </span>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
         <button class="btn-xs btn-xs--ghost" onclick="setFilter('all',this)" style="background:rgba(78,96,64,0.12);border-color:var(--olive);color:var(--olive-dark);">All</button>
         <button class="btn-xs btn-xs--ghost" onclick="setFilter('pending',this)">Pending</button>
         <button class="btn-xs btn-xs--ghost" onclick="setFilter('reviewed',this)">Reviewed</button>
         <button class="btn-xs btn-xs--ghost" onclick="setFilter('acknowledged',this)">Acknowledged</button>
+        <?php if ($isAdmin): ?>
+        <button class="btn-xs btn-xs--ghost" onclick="exportCsv()" title="Export current view as CSV" style="margin-left:4px;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:0.9rem;">download</span> Export CSV
+        </button>
+        <?php endif; ?>
       </div>
     </div>
     <div id="reports-list" style="padding:16px 20px;min-height:100px;">
@@ -386,13 +391,22 @@ async function deleteReport(id) {
   });
 }
 
+// ── CSV Export ────────────────────────────────────────────
+function exportCsv() {
+  var params = new URLSearchParams({ action: 'export_csv' });
+  if (_filter !== 'all') {
+    params.set('status', _filter);
+  }
+  window.location.href = '../dairy_farm_backend/api/v1/reports.php?' + params.toString();
+}
+
 // ── Init ──────────────────────────────────────────────────
 var style = document.createElement('style');
 style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
 document.head.appendChild(style);
 
 (async function() {
-  var res  = await fetch('../dairy_farm_backend/api/auth.php?action=status', { credentials:'include' });
+  var res  = await fetch('../dairy_farm_backend/api/v1/auth.php?action=status', { credentials:'include' });
   var data = await res.json();
   if (data.success && data.data) {
     localStorage.setItem('csrf_token', data.data.csrf_token || '');

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/customers.php
 // Endpoint: /api/customers.php
@@ -10,8 +10,8 @@
 // DELETE /api/customers.php?id=1     → delete customer
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../models/Customer.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
+require_once __DIR__ . '/../../models/Customer.php';
 
 requireAuth();
 requireCsrf();
@@ -52,9 +52,7 @@ try {
                 'Address'       => validateString($data['Address'],       'Address',       255),
                 'Contact_Num'   => validateString($data['Contact_Num'],   'Contact_Num',   20),
             ];
-            // CID and Address_ID are optional — DB AUTO_INCREMENT handles CID,
-            // Customer model creates a new Address row if Address_ID is omitted.
-            if (!empty($data['CID']))        $validatedData['CID']        = validateInteger($data['CID'],        'CID');
+            // Address_ID is optional — Customer model creates a new Address row if omitted.
             if (!empty($data['Address_ID'])) $validatedData['Address_ID'] = validateInteger($data['Address_ID'], 'Address_ID');
 
             $customer->create($validatedData);

@@ -151,7 +151,6 @@ async function loadCows() {
 }
 
 const COW_COLS = [
-  { key: 'Cow_ID',            label: 'Cow ID'        },
   { key: 'Cow',               label: 'Name'          },
   { key: 'Breed',             label: 'Breed'         },
   { key: 'Date_Of_Birth',     label: 'Date of Birth' },

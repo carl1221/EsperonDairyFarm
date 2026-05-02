@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/reset_password.php
 // Password reset without email — uses registered email as
@@ -13,7 +13,7 @@
 //   → verifies token, updates password, clears token
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendError('Method not allowed.', 405);

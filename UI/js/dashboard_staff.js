@@ -220,7 +220,7 @@ async function logActivity(text) {
 
     // Also save to database so admin can see it in Staff Reports
     const csrf = localStorage.getItem('csrf_token') || '';
-    await fetch('../dairy_farm_backend/api/reports.php', {
+    await fetch('../dairy_farm_backend/api/v1/reports.php', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
@@ -320,47 +320,11 @@ function submitCustomLog() {
 }
 
 // ── REMINDERS (view-only) ─────────────────────────────────
+// getStatusInfo, formatDueDate, loadReminders, updateReminderBadge
+// are loaded from modules/reminders.js
 let reminders = [];
 
-function getStatusInfo(dueDate, status) {
-  if (status === 'completed') return { color:'var(--olive)', bg:'var(--olive-light)', label:'Completed', urgent:false };
-  const now = new Date(), due = new Date(dueDate), h = (due - now) / (1000 * 60 * 60);
-  if (h < 0)   return { color:'var(--danger)', bg:'var(--danger-lt)', label:'Overdue', urgent:true };
-  if (h <= 24) return { color:'#f39c12', bg:'#fef9e7', label:'Due Soon', urgent:true };
-  return { color:'var(--olive)', bg:'var(--olive-light)', label:'Pending', urgent:false };
-}
-
-function formatDueDate(dateStr) {
-  const date = new Date(dateStr), now = new Date(), tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const timeStr = date.toLocaleTimeString([], { hour:'numeric', minute:'2-digit', hour12:true });
-  if (date.toDateString() === now.toDateString())      return `Today, ${timeStr}`;
-  if (date.toDateString() === tomorrow.toDateString()) return `Tomorrow, ${timeStr}`;
-  const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${m[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()} \u2014 ${timeStr}`;
-}
-
-async function loadReminders() {
-  const list = document.getElementById('remindersList');
-  if (!list) return;
-  list.innerHTML = '<div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div>';
-  try {
-    const res  = await fetch('../dairy_farm_backend/api/reminders.php', { credentials:'include' });
-    const data = await res.json();
-    if (data.success) {
-      reminders = data.data || [];
-      renderReminders();
-      updateReminderBadge();
-      const overdue = reminders.filter(r => r.status === 'pending' && getStatusInfo(r.due_date, r.status).label === 'Overdue');
-      if (overdue.length) addAlert(`${overdue.length} overdue reminder(s) need attention.`, 'danger');
-    } else {
-      list.innerHTML = '<p style="color:var(--danger);font-size:0.84rem;">Failed to load reminders.</p>';
-    }
-  } catch(e) {
-    list.innerHTML = '<p style="color:var(--danger);font-size:0.84rem;">Error loading reminders.</p>';
-  }
-}
-
+// renderReminders — staff variant (view-only, no delete button)
 function renderReminders() {
   const list = document.getElementById('remindersList');
   if (!list) return;
@@ -386,10 +350,12 @@ function renderReminders() {
   }).join('');
 }
 
+// ── NOTES (DB-backed) ─────────────────────────────────────
+
 async function markReminderComplete(id) {
   try {
     const csrf = localStorage.getItem('csrf_token') || '';
-    const res  = await fetch('../dairy_farm_backend/api/reminders.php?id=' + id, {
+    const res  = await fetch('../dairy_farm_backend/api/v1/reminders.php?id=' + id, {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
@@ -406,16 +372,6 @@ async function markReminderComplete(id) {
     UI.toast('Network error.', 'error');
   }
 }
-
-function updateReminderBadge() {
-  const badge = document.getElementById('reminderBadge');
-  if (!badge) return;
-  const n = reminders.filter(r => r.status !== 'completed' && getStatusInfo(r.due_date, r.status).urgent).length;
-  badge.textContent = n; badge.style.display = n > 0 ? 'inline-block' : 'none';
-}
-
-// ── NOTES (DB-backed) ─────────────────────────────────────
-const NOTES_KEY = 'staff_notes_legacy'; // kept for backward compat, not used
 
 async function loadNotes() { await renderNotes(); }
 
@@ -600,7 +556,7 @@ function startStaffHeartbeat() {
   function ping() {
     var csrf = localStorage.getItem('csrf_token');
     if (!csrf) return;
-    fetch('../dairy_farm_backend/api/heartbeat.php', {
+    fetch('../dairy_farm_backend/api/v1/heartbeat.php', {
       method:'POST', credentials:'include',
       headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}
     }).catch(function(){});
@@ -637,7 +593,7 @@ async function loadMilkStat() {
   }
 
   try {
-    const res  = await fetch('../dairy_farm_backend/api/auth.php?action=status', { credentials:'include' });
+    const res  = await fetch('../dairy_farm_backend/api/v1/auth.php?action=status', { credentials:'include' });
     const data = await res.json();
     if (!data.success) { window.location.href = 'login.php'; return; }
     if (data.data) {
@@ -689,3 +645,4 @@ async function loadMilkStat() {
     if (lowCount > 0) qaInv.style.color = 'var(--danger)';
   }
 })();
+

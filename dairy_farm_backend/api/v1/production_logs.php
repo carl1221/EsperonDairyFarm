@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/production_logs.php  —  Daily milk production tracking
 //
@@ -7,29 +7,12 @@
 // POST /api/production_logs.php          → record today's production
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 requireCsrf();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db     = getConnection();
-
-// Ensure table exists
-$db->exec("
-    CREATE TABLE IF NOT EXISTS production_logs (
-        log_id     INT           NOT NULL AUTO_INCREMENT,
-        cow_id     INT           NOT NULL,
-        log_date   DATE          NOT NULL,
-        liters     DECIMAL(8,2)  NOT NULL DEFAULT 0.00,
-        notes      TEXT          NULL,
-        recorded_by INT          NOT NULL,
-        created_at DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT pk_prod_logs PRIMARY KEY (log_id),
-        CONSTRAINT uq_cow_date  UNIQUE (cow_id, log_date),
-        CONSTRAINT fk_pl_cow    FOREIGN KEY (cow_id)      REFERENCES Cow(Cow_ID)       ON DELETE CASCADE,
-        CONSTRAINT fk_pl_worker FOREIGN KEY (recorded_by) REFERENCES Worker(Worker_ID) ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-");
 
 try {
     if ($method === 'GET') {

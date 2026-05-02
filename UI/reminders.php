@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/guard.php';
 requireAuthPage();
 $isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
@@ -8,7 +8,7 @@ $isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reminders &amp; Tasks — Esperon Dairy Farm</title>
+  <title>Reminders &amp; Tasks � Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
@@ -43,7 +43,7 @@ $isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
       </button>
       <?php else: ?>
       <span style="font-size:0.78rem;color:var(--muted);font-style:italic;padding:6px 12px;background:rgba(255,255,255,0.4);border-radius:8px;">
-        <span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle;">visibility</span> View only — Admin manages tasks
+        <span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle;">visibility</span> View only � Admin manages tasks
       </span>
       <?php endif; ?>
     </div>
@@ -53,19 +53,19 @@ $isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
   <div class="stats-grid" style="margin-bottom:var(--spacing-xl);grid-template-columns:repeat(4,1fr);">
     <div class="stat-card stat-card--danger">
       <div class="stat-card__icon"><span class="material-symbols-outlined">warning</span></div>
-      <div class="stat-card__content"><div class="stat-card__val" id="stat-overdue">—</div><div class="stat-card__label">Overdue</div></div>
+      <div class="stat-card__content"><div class="stat-card__val" id="stat-overdue">�</div><div class="stat-card__label">Overdue</div></div>
     </div>
     <div class="stat-card stat-card--gold">
       <div class="stat-card__icon"><span class="material-symbols-outlined">schedule</span></div>
-      <div class="stat-card__content"><div class="stat-card__val" id="stat-due-soon">—</div><div class="stat-card__label">Due Soon</div></div>
+      <div class="stat-card__content"><div class="stat-card__val" id="stat-due-soon">�</div><div class="stat-card__label">Due Soon</div></div>
     </div>
     <div class="stat-card">
       <div class="stat-card__icon"><span class="material-symbols-outlined">pending_actions</span></div>
-      <div class="stat-card__content"><div class="stat-card__val" id="stat-pending">—</div><div class="stat-card__label">Pending</div></div>
+      <div class="stat-card__content"><div class="stat-card__val" id="stat-pending">�</div><div class="stat-card__label">Pending</div></div>
     </div>
     <div class="stat-card">
       <div class="stat-card__icon"><span class="material-symbols-outlined">check_circle</span></div>
-      <div class="stat-card__content"><div class="stat-card__val" id="stat-completed">—</div><div class="stat-card__label">Completed</div></div>
+      <div class="stat-card__content"><div class="stat-card__val" id="stat-completed">�</div><div class="stat-card__label">Completed</div></div>
     </div>
   </div>
 
@@ -84,7 +84,7 @@ $isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
       </div>
     </div>
     <div id="reminders-list" style="padding:16px 20px;min-height:120px;">
-      <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+      <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
     </div>
   </div>
 
@@ -113,14 +113,14 @@ function formatDue(dateStr) {
   if (d.toDateString()===now.toDateString()) return 'Today, '+t;
   if (d.toDateString()===tom.toDateString()) return 'Tomorrow, '+t;
   var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return m[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' — '+t;
+  return m[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' � '+t;
 }
 
 async function loadReminders() {
   var container = document.getElementById('reminders-list');
-  container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">Loading…</p>';
+  container.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">Loading�</p>';
   try {
-    var res  = await fetch('../dairy_farm_backend/api/reminders.php', { credentials:'include' });
+    var res  = await fetch('../dairy_farm_backend/api/v1/reminders.php', { credentials:'include' });
     var data = await res.json();
     _reminders = data.success ? (data.data || []) : [];
   } catch(e) {
@@ -144,8 +144,8 @@ function updateStats() {
   set('stat-overdue', overdue); set('stat-due-soon', dueSoon);
   set('stat-pending', pending); set('stat-completed', completed);
   var sub = document.getElementById('rem-subtitle');
-  if (sub && IS_ADMIN) sub.textContent = _reminders.length + ' total tasks · ' + (overdue+dueSoon) + ' need attention.';
-  if (sub && !IS_ADMIN) sub.textContent = _reminders.length + ' task(s) assigned · ' + (overdue+dueSoon) + ' need attention.';
+  if (sub && IS_ADMIN) sub.textContent = _reminders.length + ' total tasks � ' + (overdue+dueSoon) + ' need attention.';
+  if (sub && !IS_ADMIN) sub.textContent = _reminders.length + ' task(s) assigned � ' + (overdue+dueSoon) + ' need attention.';
 }
 
 function setFilter(f, btn) {
@@ -205,7 +205,7 @@ function renderList() {
 async function markComplete(id) {
   try {
     var csrf = localStorage.getItem('csrf_token') || '';
-    var res  = await fetch('../dairy_farm_backend/api/reminders.php?id='+id, {
+    var res  = await fetch('../dairy_farm_backend/api/v1/reminders.php?id='+id, {
       method:'PATCH', credentials:'include',
       headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
       body: JSON.stringify({status:'completed'})
@@ -222,7 +222,7 @@ async function deleteReminder(id) {
     if (!ok) return;
     try {
       var csrf = localStorage.getItem('csrf_token') || '';
-      var res  = await fetch('../dairy_farm_backend/api/reminders.php?id='+id, {
+      var res  = await fetch('../dairy_farm_backend/api/v1/reminders.php?id='+id, {
         method:'DELETE', credentials:'include', headers:{'X-CSRF-Token':csrf}
       });
       var data = await res.json();
@@ -233,7 +233,7 @@ async function deleteReminder(id) {
 }
 
 <?php if ($isAdmin): ?>
-// ── Add Reminder Modal (Admin only) ──────────────────────
+// -- Add Reminder Modal (Admin only) ----------------------
 (function() {
   var modalEl = document.createElement('div');
   modalEl.id = 'reminderModal';
@@ -296,10 +296,10 @@ async function deleteReminder(id) {
     if (!valid) return;
     var dueDate = date+' '+to24h(document.getElementById('rm_hour').value, document.getElementById('rm_min').value, document.getElementById('rm_ampm').value);
     var btn = document.getElementById('rmSubmit');
-    btn.disabled=true; btn.innerHTML='<span class="material-symbols-outlined" style="font-size:0.95rem;animation:rmSpin 0.7s linear infinite;">progress_activity</span> Saving…';
+    btn.disabled=true; btn.innerHTML='<span class="material-symbols-outlined" style="font-size:0.95rem;animation:rmSpin 0.7s linear infinite;">progress_activity</span> Saving�';
     try {
       var csrf = localStorage.getItem('csrf_token')||'';
-      var res  = await fetch('../dairy_farm_backend/api/reminders.php', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body: JSON.stringify({title:title, description:document.getElementById('rm_desc').value.trim()||null, due_date:dueDate, status:'pending'}) });
+      var res  = await fetch('../dairy_farm_backend/api/v1/reminders.php', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body: JSON.stringify({title:title, description:document.getElementById('rm_desc').value.trim()||null, due_date:dueDate, status:'pending'}) });
       var data = await res.json();
       if (data.success) { close(); loadReminders(); UI.toast('Reminder added!','success'); }
       else UI.toast('Failed: '+(data.message||'error'),'error');
@@ -310,7 +310,7 @@ async function deleteReminder(id) {
 <?php endif; ?>
 
 (async function() {
-  var res  = await fetch('../dairy_farm_backend/api/auth.php?action=status', { credentials:'include' });
+  var res  = await fetch('../dairy_farm_backend/api/v1/auth.php?action=status', { credentials:'include' });
   var data = await res.json();
   if (data.success && data.data) {
     localStorage.setItem('csrf_token', data.data.csrf_token||'');

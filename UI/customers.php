@@ -64,10 +64,6 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
         <input type="hidden" id="f-cid" />
         <input type="hidden" id="f-addr-id" />
         <div class="form-group">
-          <label for="f-name">Customer ID</label>
-          <input id="f-new-cid" type="number" placeholder="e.g. 3" />
-        </div>
-        <div class="form-group">
           <label for="f-name">Full Name</label>
           <input id="f-name" type="text" placeholder="e.g. Maria" required />
         </div>
@@ -161,7 +157,6 @@ async function loadCustomers() {
 
 // ── Import/Export setup ───────────────────────────────────
 const CUSTOMER_COLS = [
-  { key: 'CID',           label: 'Customer ID' },
   { key: 'Customer_Name', label: 'Name'        },
   { key: 'Address',       label: 'Address'     },
   { key: 'Contact_Num',   label: 'Contact No.' },
@@ -183,9 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (var r of records) {
           try {
             await API.customers.create({
-              CID:           parseInt(r.CID) || 0,
               Customer_Name: r.Customer_Name || r.Name || '',
-              Address_ID:    parseInt(r.Address_ID) || 1,
               Address:       r.Address || '',
               Contact_Num:   r.Contact_Num || r['Contact No.'] || '',
             });
@@ -206,22 +199,17 @@ function openModal(id = null) {
   editingId = id;
   document.getElementById('modal-title').textContent = id ? 'Edit Customer' : 'Add Customer';
 
-  // Hide Customer ID and Address ID fields for Staff — auto-assigned by DB
-  const cidRow    = document.getElementById('f-new-cid').closest('.form-group');
+  // Hide Address ID field for Staff — auto-assigned by DB
   const addrIdRow = document.getElementById('f-addr-id-new').closest('.form-group');
-  if (cidRow)    cidRow.style.display    = IS_ADMIN ? '' : 'none';
   if (addrIdRow) addrIdRow.style.display = IS_ADMIN ? '' : 'none';
 
-  document.getElementById('f-new-cid').disabled = !!id;
-
   if (!id) {
-    ['f-cid','f-addr-id','f-new-cid','f-name','f-addr-id-new','f-addr','f-contact']
+    ['f-cid','f-addr-id','f-name','f-addr-id-new','f-addr','f-contact']
       .forEach(i => document.getElementById(i).value = '');
   } else {
     API.customers.getById(id).then(c => {
       document.getElementById('f-cid').value         = c.CID;
       document.getElementById('f-addr-id').value     = c.Address_ID;
-      document.getElementById('f-new-cid').value     = c.CID;
       document.getElementById('f-name').value        = c.Customer_Name;
       document.getElementById('f-addr-id-new').value = c.Address_ID;
       document.getElementById('f-addr').value        = c.Address;
@@ -252,9 +240,7 @@ async function saveCustomer() {
       // and the backend will create a new Address row automatically.
       const payload = { Customer_Name: name, Address: addr, Contact_Num: contact };
       if (IS_ADMIN) {
-        const cid    = parseInt(document.getElementById('f-new-cid').value);
         const addrId = parseInt(document.getElementById('f-addr-id-new').value);
-        if (cid)    payload.CID        = cid;
         if (addrId) payload.Address_ID = addrId;
       }
       await API.customers.create(payload);

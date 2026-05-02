@@ -3,7 +3,7 @@
 // ============================================================
 (function () {
 
-  const BASE_API = '../dairy_farm_backend/api';
+  const BASE_API = '../dairy_farm_backend/api/v1';
 
   // ── Material Icons ────────────────────────────────────────
   if (!document.getElementById('material-icons-font')) {
@@ -106,17 +106,17 @@
     // Role-based nav sections
     + (isAdmin
       ? '<span class="nav__section">Records</span>'
-        + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'
-        + '<a href="cows.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">pets</span><span>Cows</span></a>'
-        + '<a href="workers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">badge</span><span>Staff</span></a>'
-        + '<a href="admins.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">admin_panel_settings</span><span>Admins</span></a>'
         + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
         + '<a href="approvals.php" class="nav__link" id="nav-approvals-link"><span class="nav__link-icon material-symbols-outlined">how_to_reg</span><span>Approvals</span><span id="nav-approval-badge" style="display:none;margin-left:auto;background:var(--danger);color:#fff;border-radius:20px;font-size:0.6rem;font-weight:700;padding:1px 6px;min-width:16px;text-align:center;"></span></a>'
-        + '<a href="online_staff.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">wifi</span><span>Online Staff</span></a>'
+        + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'
+        + '<a href="cows.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">pets</span><span>Cows</span></a>'
         + '<a href="inventory.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">inventory_2</span><span>Inventory</span></a>'
         + '<a href="reminders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">alarm</span><span>Reminders</span></a>'
-        + '<a href="notes.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">edit_note</span><span>Notes</span></a>'
+        + '<a href="workers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">badge</span><span>Staff</span></a>'
+        + '<a href="online_staff.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">wifi</span><span>Online Staff</span></a>'
         + '<a href="report.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">description</span><span>Staff Reports</span></a>'
+        + '<a href="notes.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">edit_note</span><span>Notes</span></a>'
+        + '<a href="admins.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">admin_panel_settings</span><span>Admins</span></a>'
         + '<span class="nav__section">Shop</span>'
         + '<a href="admin_products.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">storefront</span><span>Products</span></a>'
       : isCustomer
@@ -140,6 +140,53 @@
     + '<div class="nav__footer">Esperon Farm &copy; 2026</div>';
 
   UI.setActiveNav();
+
+  // ── Mobile top bar ────────────────────────────────────────
+  // Inject once; skip if already present (e.g. hot-reload)
+  if (!document.getElementById('mobile-topbar')) {
+    var topbar = document.createElement('div');
+    topbar.id = 'mobile-topbar';
+    topbar.className = 'mobile-topbar';
+    topbar.innerHTML =
+      '<button class="mobile-topbar__hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false">'
+      + '<span></span><span></span><span></span>'
+      + '</button>'
+      + '<span class="mobile-topbar__title">Esperon Dairy Farm</span>';
+    document.body.insertBefore(topbar, document.body.firstChild);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'nav-overlay';
+    overlay.className = 'nav-overlay';
+    document.body.appendChild(overlay);
+
+    function openNav() {
+      nav.classList.add('open');
+      overlay.classList.add('nav-overlay--show');
+      document.getElementById('nav-hamburger').setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeNav() {
+      nav.classList.remove('open');
+      overlay.classList.remove('nav-overlay--show');
+      document.getElementById('nav-hamburger').setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('nav-hamburger').addEventListener('click', function() {
+      nav.classList.contains('open') ? closeNav() : openNav();
+    });
+    overlay.addEventListener('click', closeNav);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && nav.classList.contains('open')) closeNav();
+    });
+
+    // Close nav when a link is tapped on mobile
+    nav.querySelectorAll('.nav__link').forEach(function(link) {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 750) closeNav();
+      });
+    });
+  }
 
   // Start session timeout warning — PHP default session lifetime is 24 min (1440s)
   // Warn the user 2 minutes before it expires.

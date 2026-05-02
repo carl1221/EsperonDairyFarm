@@ -803,7 +803,7 @@
 </div><!-- /fpOverlay -->
 
 <script>
-const API_BASE       = '../dairy_farm_backend/api'; // matches BASE_URL in api.js
+const API_BASE       = '../dairy_farm_backend/api/v1'; // matches BASE_URL in api.js
 const alertContainer = document.getElementById('alert-container');
 const loginBtn       = document.getElementById('login-btn');
 const form           = document.getElementById('login-form');
@@ -834,6 +834,10 @@ function resetRecaptcha() {
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('error') === 'google_user_not_found') {
   showError('Your Google account is not associated with any user in the system. Please contact your administrator.');
+} else if (urlParams.get('error') === 'pending_approval') {
+  showError('Your account is awaiting admin approval. You will be able to log in once approved.');
+} else if (urlParams.get('error') === 'account_rejected') {
+  showError('Your account registration was rejected. Please contact your administrator.');
 }
 
 // ── Google Login Handler ──────────────────────────────────
@@ -1021,7 +1025,7 @@ form.addEventListener('submit', async (e) => {
 // ══════════════════════════════════════════════════════════
 // FORGOT PASSWORD MODAL
 // ══════════════════════════════════════════════════════════
-const FP_API = '../dairy_farm_backend/api/reset_password.php';
+const FP_API = '../dairy_farm_backend/api/v1/reset_password.php';
 
 let fpCurrentStep  = 1;
 let fpResetToken   = null;

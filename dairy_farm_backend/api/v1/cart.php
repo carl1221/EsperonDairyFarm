@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/cart.php  —  Customer shopping cart
 //
@@ -10,7 +10,7 @@
 // POST   /api/cart.php?action=checkout → place order, deduct stock
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 requireCsrf();
 

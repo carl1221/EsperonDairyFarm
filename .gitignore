@@ -65,6 +65,8 @@ Thumbs.db
 # PHP
 composer.lock
 /vendor/
+phpunit.xml
+phpunit.xml.dist
 
 # Temporary files
 tmp/

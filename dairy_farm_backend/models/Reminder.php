@@ -3,7 +3,7 @@
 // models/Reminder.php
 //
 // reminders is a WEAK ENTITY — it depends on Worker.
-// Composite PK: (reminder_id, created_by)
+// Composite PK: (reminder_id, created_by)  
 //   • reminder_id  = partial key (unique only within one worker)
 //   • created_by   = identifying FK → Worker (ON DELETE CASCADE)
 //

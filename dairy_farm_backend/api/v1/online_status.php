@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/online_status.php
 // GET → list all approved workers with online/offline status
@@ -6,7 +6,7 @@
 // Admin only.
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 requireRole(['Admin']);
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') sendError('Method not allowed.', 405);

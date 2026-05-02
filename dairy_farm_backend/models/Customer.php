@@ -53,22 +53,12 @@ class Customer {
             $addressId = (int) $this->db->lastInsertId();
         }
 
-        // ── Customer insert ───────────────────────────────
-        // If CID is provided (Admin flow), use it explicitly.
-        // If not provided (Staff flow), let AUTO_INCREMENT assign it.
-        if (!empty($data['CID'])) {
-            $stmt = $this->db->prepare("
-                INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num)
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->execute([$data['CID'], $data['Customer_Name'], $addressId, $data['Contact_Num']]);
-        } else {
-            $stmt = $this->db->prepare("
-                INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num)
-                VALUES (?, ?, ?)
-            ");
-            $stmt->execute([$data['Customer_Name'], $addressId, $data['Contact_Num']]);
-        }
+        // ── Customer insert — always let AUTO_INCREMENT assign CID ──
+        $stmt = $this->db->prepare("
+            INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num)
+            VALUES (?, ?, ?)
+        ");
+        $stmt->execute([$data['Customer_Name'], $addressId, $data['Contact_Num']]);
 
         return (int) $this->db->lastInsertId();
     }

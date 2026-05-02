@@ -218,7 +218,7 @@ function renderTable() {
 
 // Init
 (async function() {
-  var res  = await fetch('../dairy_farm_backend/api/auth.php?action=status', { credentials:'include' });
+  var res  = await fetch('../dairy_farm_backend/api/v1/auth.php?action=status', { credentials:'include' });
   var data = await res.json();
   if (data.success && data.data) {
     localStorage.setItem('csrf_token', data.data.csrf_token || '');

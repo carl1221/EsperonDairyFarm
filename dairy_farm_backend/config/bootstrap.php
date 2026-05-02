@@ -73,14 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/response.php';
 
-// Configure session cookie for localhost (no domain restriction)
+// Configure session cookie — secure flags tighten in production
+$isProduction = ($_ENV['APP_ENV'] ?? 'local') === 'production';
 session_set_cookie_params([
     'lifetime' => 0,
-    'path' => '/',
-    'domain' => false,
-    'secure' => false,
+    'path'     => '/',
+    'domain'   => false,
+    'secure'   => $isProduction,
     'httponly' => true,
-    'samesite' => 'Lax'
+    'samesite' => $isProduction ? 'Strict' : 'Lax',
 ]);
 
 // Start session before any output (headers already sent above, which is fine
@@ -134,14 +135,27 @@ function validateCsrfToken(string $token): bool {
 
 /**
  * Abort with 403 on state-changing requests that lack a valid CSRF token.
+ *
+ * Token lookup order:
+ *   1. X-CSRF-Token request header  (used by fetch/XHR calls)
+ *   2. csrf_token field in the JSON request body (fallback for multipart/form-data)
  */
 function requireCsrf(): void {
     $method = $_SERVER['REQUEST_METHOD'];
     if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
         return;
     }
+
+    // 1. Check the X-CSRF-Token header first (preferred — no body parse needed)
     $headers = getallheaders();
     $token   = $headers['X-CSRF-Token'] ?? '';
+
+    // 2. Fall back to the csrf_token field in the JSON body
+    if ($token === '') {
+        $body  = json_decode(file_get_contents('php://input'), true);
+        $token = (is_array($body) ? ($body['csrf_token'] ?? '') : '');
+    }
+
     if ($token === '' || !validateCsrfToken($token)) {
         sendError('Invalid or missing CSRF token', 403);
     }

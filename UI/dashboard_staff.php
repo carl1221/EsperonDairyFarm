@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/guard.php';
 requireAuthPage();
 if (($_SESSION['user']['role'] ?? '') === 'Admin') {
@@ -12,7 +12,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Dashboard — Esperon Dairy Farm</title>
+  <title>Staff Dashboard � Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
@@ -54,7 +54,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
     .btn-sm--primary:hover { opacity:.88; }
     .btn-sm--ghost { background:rgba(255,255,255,.5); border:1.5px solid var(--border); color:var(--text); }
     .btn-sm--ghost:hover { background:rgba(255,255,255,.8); }
-    /* ── Tabs ── */
+    /* -- Tabs -- */
     .dash-tab { display:inline-flex; align-items:center; gap:5px; padding:11px 16px; background:none; border:none; border-bottom:2.5px solid transparent; cursor:pointer; font-size:0.82rem; font-weight:600; color:var(--muted); font-family:var(--font-sans); white-space:nowrap; transition:color .15s,border-color .15s; }
     .dash-tab:hover { color:var(--text); }
     .dash-tab--active { color:var(--olive-dark); border-bottom-color:var(--olive); }
@@ -66,7 +66,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
 <nav class="nav" id="app-nav"></nav>
 <main class="main">
 
-  <!-- ── Page Header ─────────────────────────────────────── -->
+  <!-- -- Page Header --------------------------------------- -->
   <div class="page-header">
     <div>
       <h1 class="page-title" id="page-greeting">Good morning!</h1>
@@ -80,12 +80,12 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
     </div>
   </div>
 
-  <!-- ── SECTION 1: Stat Cards ──────────────────────────── -->
+  <!-- -- SECTION 1: Stat Cards ---------------------------- -->
   <div class="stats-grid" style="margin-bottom:var(--spacing-xl);">
     <div class="stat-card">
       <div class="stat-card__icon"><span class="material-symbols-outlined">water_drop</span></div>
       <div class="stat-card__content">
-        <div class="stat-card__val" id="stat-milk">—</div>
+        <div class="stat-card__val" id="stat-milk">�</div>
         <div class="stat-card__label">Milk Production (L)</div>
       </div>
     </div>
@@ -112,7 +112,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
     </div>
   </div>
 
-  <!-- ── SECTION 2: Alerts + Inventory ─────────────────── -->
+  <!-- -- SECTION 2: Alerts + Inventory ------------------- -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-xl);">
 
     <!-- Alerts -->
@@ -125,7 +125,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
         <span id="alerts-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0</span>
       </div>
       <div id="alerts-list" style="padding:14px 20px;">
-        <p style="color:var(--muted);font-size:0.84rem;">Checking alerts…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Checking alerts�</p>
       </div>
     </div>
 
@@ -141,12 +141,12 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
         </button>
       </div>
       <div style="padding:16px 20px;" id="staff-inventory-bars">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
       </div>
     </div>
   </div>
 
-  <!-- ── SECTION 4: Tabbed Panel ────────────────────────── -->
+  <!-- -- SECTION 4: Tabbed Panel -------------------------- -->
   <div class="card" style="margin-bottom:var(--spacing-xl);">
 
     <!-- Tab bar -->
@@ -156,7 +156,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
       </button>
       <button class="dash-tab" onclick="switchStaffTab('tab-tasks',this)" id="sbtn-tasks">
         <span class="material-symbols-outlined" style="font-size:1rem;">checklist</span> Tasks
-        <span id="tasks-progress" class="badge badge--green" style="font-size:0.6rem;margin-left:3px;">—</span>
+        <span id="tasks-progress" class="badge badge--green" style="font-size:0.6rem;margin-left:3px;">�</span>
       </button>
       <button class="dash-tab" onclick="switchStaffTab('tab-livestock',this)" id="sbtn-livestock">
         <span class="material-symbols-outlined" style="font-size:1rem;">pets</span> Livestock
@@ -176,20 +176,20 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
     <!-- Tab: Orders -->
     <div id="tab-orders" class="dash-tab-panel">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.78rem;color:var(--muted);" id="qa-orders-sub">Loading…</span>
+        <span style="font-size:0.78rem;color:var(--muted);" id="qa-orders-sub">Loading�</span>
         <a href="orders.php" class="btn-sm btn-sm--primary" style="text-decoration:none;">
           <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> New Order
         </a>
       </div>
       <div id="orders-list" style="padding:4px 16px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders…</p>
+        <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders�</p>
       </div>
     </div>
 
     <!-- Tab: Tasks -->
     <div id="tab-tasks" class="dash-tab-panel" style="display:none;">
       <div id="tasks-list" style="padding:16px 20px;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading tasks…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading tasks�</p>
       </div>
     </div>
 
@@ -199,14 +199,14 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
         <span id="cow-count" style="font-size:0.78rem;color:var(--muted);"></span>
       </div>
       <div id="livestock-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading livestock…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading livestock�</p>
       </div>
     </div>
 
     <!-- Tab: Reminders -->
     <div id="tab-reminders" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.75rem;color:var(--muted);font-style:italic;">Assigned by admin · Mark tasks done when completed</span>
+        <span style="font-size:0.75rem;color:var(--muted);font-style:italic;">Assigned by admin � Mark tasks done when completed</span>
       </div>
       <div id="remindersList" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;"></div>
     </div>
@@ -226,7 +226,7 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
     <!-- Tab: Notes -->
     <div id="tab-notes" class="dash-tab-panel" style="display:none;">
       <div style="padding:16px 20px;">
-        <textarea class="note-input" id="note-input" rows="3" placeholder="Write a note for admin or other staff (e.g. Cow #3 seems unwell, needs vet check)…"></textarea>
+        <textarea class="note-input" id="note-input" rows="3" placeholder="Write a note for admin or other staff (e.g. Cow #3 seems unwell, needs vet check)�"></textarea>
         <div style="display:flex;justify-content:flex-end;margin-top:8px;">
           <button class="btn-sm btn-sm--primary" id="save-note-btn">
             <span class="material-symbols-outlined" style="font-size:0.9rem;">send</span> Submit Note
@@ -247,6 +247,8 @@ $staffName = $_SESSION['user']['name'] ?? 'Staff';
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/modules/reminders.js"></script>
 <script src="js/dashboard_staff.js"></script>
 </body>
 </html>

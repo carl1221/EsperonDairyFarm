@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/set_customer_password.php  —  Admin sets a customer password
 //
@@ -6,7 +6,7 @@
 // Admin only.
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 requireCsrf();
 requireRole(['Admin']);

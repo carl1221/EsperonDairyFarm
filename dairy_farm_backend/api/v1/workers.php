@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/workers.php
 // Endpoint: /api/workers.php
@@ -10,8 +10,8 @@
 // DELETE /api/workers.php?id=201   → delete worker
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../models/Worker.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
+require_once __DIR__ . '/../../models/Worker.php';
 
 requireAuth();
 requireCsrf();

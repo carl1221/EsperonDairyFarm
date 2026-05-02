@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/guard.php';
 requireAuthPage();
 requireAdminPage();
@@ -8,11 +8,11 @@ requireAdminPage();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard — Esperon Dairy Farm</title>
+  <title>Admin Dashboard � Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* ── Admin Dashboard extras ── */
+    /* -- Admin Dashboard extras -- */
     .dash-section-title {
       font-family: var(--font-serif);
       font-size: 1rem; font-weight: 700; color: var(--text);
@@ -65,7 +65,7 @@ requireAdminPage();
     .task-row.done span { color:var(--muted); text-decoration:line-through; }
     .task-row input[type=checkbox] { width:16px; height:16px; accent-color:var(--olive); cursor:pointer; flex-shrink:0; }
 
-    /* ── Dashboard Tabs ── */
+    /* -- Dashboard Tabs -- */
     .dash-tab {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 11px 16px; background: none; border: none;
@@ -84,7 +84,7 @@ requireAdminPage();
 <nav class="nav" id="app-nav"></nav>
 <main class="main">
 
-  <!-- ══ PAGE HEADER ══════════════════════════════════════ -->
+  <!-- -- PAGE HEADER -------------------------------------- -->
   <div class="page-header">
     <div>
       <h1 class="page-title" id="page-greeting">Welcome back!</h1>
@@ -93,7 +93,7 @@ requireAdminPage();
     <div class="dashboard-header__actions">
       <div class="header__search">
         <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--muted);">search</span>
-        <input type="text" id="global-search" placeholder="Search orders, cows, staff…" />
+        <input type="text" id="global-search" placeholder="Search orders, cows, staff�" />
       </div>
       <button class="header__icon-btn" title="Notifications" id="notif-btn" style="position:relative;">
         <span class="material-symbols-outlined">notifications</span>
@@ -102,12 +102,12 @@ requireAdminPage();
     </div>
   </div>
 
-  <!-- ══ SECTION 1: OVERVIEW STATS ════════════════════════ -->
+  <!-- -- SECTION 1: OVERVIEW STATS ------------------------ -->
   <div class="stats-grid" style="margin-bottom:var(--spacing-xl);">
     <div class="stat-card">
       <div class="stat-card__icon"><span class="material-symbols-outlined">water_drop</span></div>
       <div class="stat-card__content">
-        <div class="stat-card__val" id="stat-milk">—</div>
+        <div class="stat-card__val" id="stat-milk">�</div>
         <div class="stat-card__label">Total Milk (L)</div>
       </div>
     </div>
@@ -148,7 +148,7 @@ requireAdminPage();
     </div>
   </div>
 
-  <!-- ══ SECTION 2: ALERTS + INVENTORY ════════════════════ -->
+  <!-- -- SECTION 2: ALERTS + INVENTORY -------------------- -->
   <div class="two-col">
 
     <!-- Alerts & Notifications -->
@@ -166,7 +166,7 @@ requireAdminPage();
         </div>
       </div>
       <div id="alerts-list" style="padding:14px 20px;">
-        <p style="color:var(--muted);font-size:0.84rem;">Checking alerts…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Checking alerts�</p>
       </div>
     </div>
 
@@ -198,7 +198,7 @@ requireAdminPage();
     </div>
   </div>
 
-  <!-- ══ SECTION 3: REPORTS / ANALYTICS ══════════════════ -->
+  <!-- -- SECTION 3: REPORTS / ANALYTICS ------------------ -->
   <div class="card" style="margin-bottom:var(--spacing-xl);">
     <div class="card__header">
       <span class="dash-section-title">
@@ -213,33 +213,33 @@ requireAdminPage();
     </div>
     <div style="display:flex;align-items:stretch;flex-wrap:wrap;">
       <div class="report-stat" style="flex:1;min-width:120px;">
-        <div class="report-stat__val" id="rpt-milk">—</div>
+        <div class="report-stat__val" id="rpt-milk">�</div>
         <div class="report-stat__label">Milk Produced (L)</div>
       </div>
       <div class="report-divider"></div>
       <div class="report-stat" style="flex:1;min-width:120px;">
-        <div class="report-stat__val" id="rpt-orders">—</div>
+        <div class="report-stat__val" id="rpt-orders">�</div>
         <div class="report-stat__label">Orders</div>
       </div>
       <div class="report-divider"></div>
       <div class="report-stat" style="flex:1;min-width:120px;">
-        <div class="report-stat__val" id="rpt-customers">—</div>
+        <div class="report-stat__val" id="rpt-customers">�</div>
         <div class="report-stat__label">Customers Served</div>
       </div>
       <div class="report-divider"></div>
       <div class="report-stat" style="flex:1;min-width:120px;">
-        <div class="report-stat__val" id="rpt-cows">—</div>
+        <div class="report-stat__val" id="rpt-cows">�</div>
         <div class="report-stat__label">Active Cows</div>
       </div>
       <div class="report-divider"></div>
       <div class="report-stat" style="flex:1;min-width:120px;">
-        <div class="report-stat__val" id="rpt-staff">—</div>
+        <div class="report-stat__val" id="rpt-staff">�</div>
         <div class="report-stat__label">Staff Active</div>
       </div>
     </div>
   </div>
 
-  <!-- ══ SECTIONS 4–7: TABBED PANEL ══════════════════════ -->
+  <!-- -- SECTIONS 4�7: TABBED PANEL ---------------------- -->
   <div class="card" style="margin-bottom:var(--spacing-xl);">
 
     <!-- Tab bar -->
@@ -259,7 +259,7 @@ requireAdminPage();
       </button>
       <button class="dash-tab" onclick="switchTab('tab-tasks',this)" id="btn-tab-tasks">
         <span class="material-symbols-outlined" style="font-size:1rem;">checklist</span> Tasks
-        <span id="admin-tasks-progress" class="badge badge--green" style="font-size:0.6rem;margin-left:3px;">—</span>
+        <span id="admin-tasks-progress" class="badge badge--green" style="font-size:0.6rem;margin-left:3px;">�</span>
       </button>
       <button class="dash-tab" onclick="switchTab('tab-notes',this)" id="btn-tab-notes">
         <span class="material-symbols-outlined" style="font-size:1rem;">edit_note</span> Notes
@@ -274,23 +274,23 @@ requireAdminPage();
       </button>
     </div>
 
-    <!-- ── Tab: Orders ── -->
+    <!-- -- Tab: Orders -- -->
     <div id="tab-orders" class="dash-tab-panel">
       <div style="padding:8px 16px 4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('all',this)" style="background:rgba(78,96,64,0.12);border-color:var(--olive);color:var(--olive-dark);">All</button>
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('pending',this)">Pending</button>
-          <button class="btn-xs btn-xs--ghost" onclick="filterOrders('processing',this)">Processing</button>
+          <button class="btn-xs btn-xs--ghost" onclick="filterOrders('confirmed',this)">Processing</button>
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('delivered',this)">Delivered</button>
         </div>
-        <a href="orders.php" class="btn-xs btn-xs--ghost">Manage All →</a>
+        <a href="orders.php" class="btn-xs btn-xs--ghost">Manage All ?</a>
       </div>
       <div id="orders-list" style="padding:4px 16px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders…</p>
+        <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders�</p>
       </div>
     </div>
 
-    <!-- ── Tab: Staff ── -->
+    <!-- -- Tab: Staff -- -->
     <div id="tab-staff" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:flex-end;">
         <a href="workers.php" class="btn-xs btn-xs--primary">
@@ -298,41 +298,46 @@ requireAdminPage();
         </a>
       </div>
       <div id="staff-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading staff…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading staff�</p>
       </div>
     </div>
 
-    <!-- ── Tab: Livestock ── -->
+    <!-- -- Tab: Livestock -- -->
     <div id="tab-livestock" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
         <span id="sick-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0 sick</span>
-        <a href="cows.php" class="btn-xs btn-xs--ghost" style="margin-left:auto;">Manage All →</a>
+        <a href="cows.php" class="btn-xs btn-xs--ghost" style="margin-left:auto;">Manage All ?</a>
       </div>
       <div id="livestock-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading livestock…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading livestock�</p>
       </div>
     </div>
 
-    <!-- ── Tab: Reminders ── -->
+    <!-- -- Tab: Reminders -- -->
     <div id="tab-reminders" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <a href="reminders.php" class="btn-xs btn-xs--ghost">View All →</a>
+        <a href="reminders.php" class="btn-xs btn-xs--ghost">View All ?</a>
         <button id="addReminderBtn" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.75rem;font-weight:600;">+ Add Task</button>
       </div>
       <div id="remindersList" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;"></div>
     </div>
 
-    <!-- ── Tab: Tasks ── -->
+    <!-- -- Tab: Tasks -- -->
     <div id="tab-tasks" class="dash-tab-panel" style="display:none;">
-      <div id="admin-tasks-list" style="padding:16px 20px;"></div>
+      <div style="padding:12px 16px 4px;display:flex;justify-content:flex-end;">
+        <button class="btn-xs btn-xs--primary" onclick="openAddTaskModal()">
+          <span class="material-symbols-outlined" style="font-size:0.9rem;">add_task</span> Add Task
+        </button>
+      </div>
+      <div id="admin-tasks-list" style="padding:4px 20px 16px;"></div>
     </div>
 
-    <!-- ── Tab: Notes ── -->
+    <!-- -- Tab: Notes -- -->
     <div id="tab-notes" class="dash-tab-panel" style="display:none;">
       <div style="padding:16px 20px;">
-        <textarea class="note-input" id="note-input" rows="3" placeholder="Post an announcement or note for staff…"></textarea>
+        <textarea class="note-input" id="note-input" rows="3" placeholder="Post an announcement or note for staff�"></textarea>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-          <a href="notes.php" class="btn-xs btn-xs--ghost">View All →</a>
+          <a href="notes.php" class="btn-xs btn-xs--ghost">View All ?</a>
           <button class="btn-xs btn-xs--primary" id="save-note-btn">
             <span class="material-symbols-outlined" style="font-size:0.9rem;">send</span> Post Note
           </button>
@@ -341,27 +346,27 @@ requireAdminPage();
       </div>
     </div>
 
-    <!-- ── Tab: Approvals ── -->
+    <!-- -- Tab: Approvals -- -->
     <div id="tab-approvals" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <a href="approvals.php" class="btn-xs btn-xs--ghost">View All →</a>
+        <a href="approvals.php" class="btn-xs btn-xs--ghost">View All ?</a>
         <button class="btn-xs btn-xs--ghost" onclick="loadPendingApprovals()">
           <span class="material-symbols-outlined" style="font-size:0.9rem;">refresh</span> Refresh
         </button>
       </div>
       <div id="approvals-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
       </div>
     </div>
 
-    <!-- ── Tab: Online Staff ── -->
+    <!-- -- Tab: Online Staff -- -->
     <div id="tab-online" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <a href="online_staff.php" class="btn-xs btn-xs--ghost">View All →</a>
+        <a href="online_staff.php" class="btn-xs btn-xs--ghost">View All ?</a>
         <span id="online-last-refresh" style="font-size:0.72rem;color:var(--muted);"></span>
       </div>
       <div id="online-staff-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
       </div>
     </div>
 
@@ -387,10 +392,16 @@ requireAdminPage();
 
 </main>
 
-<script src="js/api.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/inventory.js"></script>
-<script src="js/dashboard_admin.js"></script>
+<script src="js/api.js" defer></script>
+<script src="js/ui.js" defer></script>
+<script src="js/nav.js" defer></script>
+<script src="js/inventory.js" defer></script>
+<script src="js/modules/reminders.js" defer></script>
+<script src="js/modules/greeting.js" defer></script>
+<script src="js/modules/alerts.js" defer></script>
+<script src="js/modules/orders.js" defer></script>
+<script src="js/modules/cows.js" defer></script>
+<script src="js/modules/production.js" defer></script>
+<script src="js/dashboard_admin.js" defer></script>
 </body>
 </html>

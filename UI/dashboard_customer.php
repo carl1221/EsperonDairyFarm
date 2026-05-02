@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/guard.php';
 requireAuthPage();
 requireCustomerPage();
@@ -12,18 +12,18 @@ $initial      = strtoupper(substr($customerName, 0, 1));
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Dashboard — Esperon Dairy Farm</title>
+  <title>My Dashboard � Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* ── Status pills ── */
+    /* -- Status pills -- */
     .order-pill { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em; }
     .order-pill--pending   { background:var(--warning-lt); color:#7a5a1e; }
     .order-pill--confirmed { background:var(--info-lt);    color:#2d4f5e; }
     .order-pill--delivered { background:var(--success-lt); color:var(--olive-dark); }
     .order-pill--cancelled { background:var(--danger-lt);  color:var(--danger); }
 
-    /* ── Profile card ── */
+    /* -- Profile card -- */
     .profile-card { background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.5);border-radius:var(--radius-xl);padding:22px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap; }
     .profile-avatar { width:64px;height:64px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#2980b9,#3498db);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,0.7);box-shadow:0 4px 16px rgba(0,0,0,0.12); }
     .profile-info { flex:1;min-width:0; }
@@ -32,12 +32,12 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     .profile-info__meta  { font-size:0.8rem;color:var(--muted);margin-top:6px;display:flex;flex-direction:column;gap:3px; }
     .profile-info__meta span { display:flex;align-items:center;gap:5px; }
 
-    /* ── Stat cards ── */
+    /* -- Stat cards -- */
     .cust-stat { background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.5);border-radius:var(--radius-xl);padding:18px 20px;text-align:center; }
     .cust-stat__val   { font-family:var(--font-serif);font-size:1.8rem;font-weight:700;color:var(--text);line-height:1; }
     .cust-stat__label { font-size:0.75rem;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.05em; }
 
-    /* ── Order rows ── */
+    /* -- Order rows -- */
     .order-row { display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-light);gap:12px;cursor:pointer;transition:background .12s;border-radius:6px;padding-left:6px;padding-right:6px; }
     .order-row:last-child { border-bottom:none; }
     .order-row:hover { background:rgba(255,255,255,0.4); }
@@ -47,17 +47,17 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     .order-row__total { font-weight:700;font-size:0.9rem;color:var(--olive-dark); }
     .order-row__qty   { font-size:0.72rem;color:var(--muted);margin-top:2px; }
 
-    /* ── Filter tabs ── */
+    /* -- Filter tabs -- */
     .filter-tab { background:none;border:none;border-bottom:2.5px solid transparent;padding:10px 14px;font-size:0.82rem;font-weight:600;color:var(--muted);cursor:pointer;font-family:var(--font-sans);transition:color .15s,border-color .15s;white-space:nowrap; }
     .filter-tab:hover { color:var(--text); }
     .filter-tab--active { color:#2980b9;border-bottom-color:#2980b9; }
 
-    /* ── Empty state ── */
+    /* -- Empty state -- */
     .empty-state { text-align:center;padding:40px 20px;color:var(--muted); }
     .empty-state .material-symbols-outlined { font-size:3rem;display:block;margin-bottom:10px;color:var(--border); }
     .empty-state p { font-size:0.88rem; }
 
-    /* ── Featured products ── */
+    /* -- Featured products -- */
     .feat-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--spacing-md); }
     .feat-card { background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.5);border-radius:var(--radius-xl);padding:16px;display:flex;flex-direction:column;gap:8px;transition:transform .2s,box-shadow .2s; }
     .feat-card:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.1); }
@@ -68,7 +68,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     .feat-card__btn   { width:100%;padding:7px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--olive),#6b8a5c);color:#fff;font-size:0.8rem;font-weight:700;font-family:var(--font-sans);cursor:pointer;transition:opacity .15s; }
     .feat-card__btn:hover { opacity:.88; }
 
-    /* ── Cart orders ── */
+    /* -- Cart orders -- */
     .cart-order-card { background:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.5);border-radius:var(--radius-xl);padding:14px 18px;margin-bottom:10px; }
     .cart-order-card:last-child { margin-bottom:0; }
     .cart-order__header { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px; }
@@ -78,7 +78,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     .cart-order__item  { font-size:0.8rem;color:var(--muted);display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border-light); }
     .cart-order__item:last-child { border-bottom:none; }
 
-    /* ── Edit profile modal ── */
+    /* -- Edit profile modal -- */
     @keyframes epSlide { from{opacity:0;transform:translateY(-16px) scale(0.97)} to{opacity:1;transform:none} }
     .ep-overlay { display:none;position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.5);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:16px; }
     .ep-overlay.open { display:flex; }
@@ -97,7 +97,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     .ep-btn--ghost   { background:#fff;color:#4a3f35;border:1.5px solid #d4c9b8 !important; }
     .ep-btn--primary { background:linear-gradient(135deg,#2980b9,#3498db);color:#fff;box-shadow:0 2px 8px rgba(41,128,185,0.25); }
 
-    /* ── Order detail modal ── */
+    /* -- Order detail modal -- */
     @keyframes odSlide { from{opacity:0;transform:translateY(-16px) scale(0.97)} to{opacity:1;transform:none} }
     .od-overlay { display:none;position:fixed;inset:0;z-index:9999;background:rgba(42,31,21,0.5);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:16px; }
     .od-overlay.open { display:flex; }
@@ -116,7 +116,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
 <nav class="nav" id="app-nav"></nav>
 <main class="main">
 
-  <!-- ── Greeting ── -->
+  <!-- -- Greeting -- -->
   <div class="page-header">
     <div>
       <h1 class="page-title" id="page-greeting">Welcome!</h1>
@@ -125,7 +125,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     <span id="current-date" style="font-size:0.82rem;color:var(--muted);align-self:center;"></span>
   </div>
 
-  <!-- ── Profile card ── -->
+  <!-- -- Profile card -- -->
   <div class="profile-card" style="margin-bottom:var(--spacing-xl);">
     <div class="profile-avatar"><?= htmlspecialchars($initial) ?></div>
     <div class="profile-info">
@@ -145,27 +145,27 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     </button>
   </div>
 
-  <!-- ── Stat cards ── -->
+  <!-- -- Stat cards -- -->
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--spacing-md);margin-bottom:var(--spacing-xl);">
     <div class="cust-stat">
-      <div class="cust-stat__val" id="stat-total">—</div>
+      <div class="cust-stat__val" id="stat-total">�</div>
       <div class="cust-stat__label">Total Orders</div>
     </div>
     <div class="cust-stat">
-      <div class="cust-stat__val" id="stat-pending">—</div>
+      <div class="cust-stat__val" id="stat-pending">�</div>
       <div class="cust-stat__label">Pending</div>
     </div>
     <div class="cust-stat">
-      <div class="cust-stat__val" id="stat-delivered">—</div>
+      <div class="cust-stat__val" id="stat-delivered">�</div>
       <div class="cust-stat__label">Delivered</div>
     </div>
     <div class="cust-stat">
-      <div class="cust-stat__val" id="stat-spent">—</div>
+      <div class="cust-stat__val" id="stat-spent">�</div>
       <div class="cust-stat__label">Total Spent</div>
     </div>
   </div>
 
-  <!-- ── Two-column layout: Orders + Shop ── -->
+  <!-- -- Two-column layout: Orders + Shop -- -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-xl);">
 
     <!-- Farm Orders -->
@@ -187,7 +187,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
         <button class="filter-tab" onclick="setFilter('cancelled',this)">Cancelled</button>
       </div>
       <div id="orders-container" style="padding:12px 16px;min-height:120px;max-height:380px;overflow-y:auto;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
       </div>
     </div>
 
@@ -199,16 +199,16 @@ $initial      = strtoupper(substr($customerName, 0, 1));
           Shop Products
         </span>
         <a href="shop.php" style="font-size:0.78rem;color:var(--olive);font-weight:700;text-decoration:none;padding:5px 12px;background:rgba(78,96,64,0.08);border-radius:8px;">
-          View All →
+          View All ?
         </a>
       </div>
       <div id="featured-container" style="padding:14px 16px;">
-        <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+        <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
       </div>
     </div>
   </div>
 
-  <!-- ── Shop Purchase History ── -->
+  <!-- -- Shop Purchase History -- -->
   <div class="card">
     <div class="card__header">
       <span style="font-family:var(--font-serif);font-size:1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;">
@@ -217,13 +217,13 @@ $initial      = strtoupper(substr($customerName, 0, 1));
       </span>
     </div>
     <div id="cart-orders-container" style="padding:14px 20px;min-height:80px;max-height:320px;overflow-y:auto;">
-      <p style="color:var(--muted);font-size:0.84rem;">Loading…</p>
+      <p style="color:var(--muted);font-size:0.84rem;">Loading�</p>
     </div>
   </div>
 
 </main>
 
-<!-- ── Edit Profile Modal ── -->
+<!-- -- Edit Profile Modal -- -->
 <div class="ep-overlay" id="epOverlay">
   <div class="ep-card">
     <div class="ep-header">
@@ -256,7 +256,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
   </div>
 </div>
 
-<!-- ── Order Detail Modal ── -->
+<!-- -- Order Detail Modal -- -->
 <div class="od-overlay" id="odOverlay">
   <div class="od-card">
     <div class="od-header">
@@ -273,9 +273,9 @@ $initial      = strtoupper(substr($customerName, 0, 1));
 <script src="js/ui.js"></script>
 <script src="js/nav.js"></script>
 <script>
-const PORTAL = '../dairy_farm_backend/api/customer_portal.php';
+const PORTAL = '../dairy_farm_backend/api/v1/customer_portal.php';
 
-// ── Greeting ──────────────────────────────────────────────
+// -- Greeting ----------------------------------------------
 (function() {
   const h   = new Date().getHours();
   const tod = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
@@ -286,7 +286,7 @@ const PORTAL = '../dairy_farm_backend/api/customer_portal.php';
   if (date)  date.textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 })();
 
-// ── Status pills ──────────────────────────────────────────
+// -- Status pills ------------------------------------------
 const STATUS_PILL = {
   pending:   '<span class="order-pill order-pill--pending">Pending</span>',
   confirmed: '<span class="order-pill order-pill--confirmed">Confirmed</span>',
@@ -294,21 +294,21 @@ const STATUS_PILL = {
   cancelled: '<span class="order-pill order-pill--cancelled">Cancelled</span>',
 };
 
-// ── Product emoji ─────────────────────────────────────────
-const EMOJI_MAP = { milk:'🥛', cheese:'🧀', butter:'🧈', yogurt:'🫙', cream:'🍶', skim:'🥛', mozzarella:'🧀' };
+// -- Product emoji -----------------------------------------
+const EMOJI_MAP = { milk:'??', cheese:'??', butter:'??', yogurt:'??', cream:'??', skim:'??', mozzarella:'??' };
 function getEmoji(name) {
   const l = name.toLowerCase();
   for (const [k,e] of Object.entries(EMOJI_MAP)) if (l.includes(k)) return e;
-  return '🛒';
+  return '??';
 }
 
-// ── Farm orders ───────────────────────────────────────────
+// -- Farm orders -------------------------------------------
 let _allOrders = [];
 let _filter    = 'all';
 
 async function loadOrders() {
   const c = document.getElementById('orders-container');
-  c.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">Loading…</p>';
+  c.innerHTML = '<p style="color:var(--muted);font-size:0.84rem;">Loading�</p>';
   try {
     const res  = await fetch(PORTAL + '?action=orders', { credentials:'include' });
     const data = await res.json();
@@ -330,7 +330,7 @@ function updateStats() {
   set('stat-total',     _allOrders.length);
   set('stat-pending',   pending);
   set('stat-delivered', delivered);
-  set('stat-spent',     '₱' + spent.toFixed(2));
+  set('stat-spent',     '?' + spent.toFixed(2));
 }
 
 function setFilter(f, btn) {
@@ -359,18 +359,18 @@ function renderOrders() {
     return `<div class="order-row" onclick="openOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
       <div style="flex:1;min-width:0;">
         <div class="order-row__id">Order #${o.Order_ID} &mdash; ${o.Order_Type}${recentDot}</div>
-        <div class="order-row__meta">${date} &nbsp;·&nbsp; 🐄 ${o.Cow}${o.Breed ? ' ('+o.Breed+')' : ''} &nbsp;·&nbsp; ${o.Worker_Name}</div>
+        <div class="order-row__meta">${date} &nbsp;�&nbsp; ?? ${o.Cow}${o.Breed ? ' ('+o.Breed+')' : ''} &nbsp;�&nbsp; ${o.Worker_Name}</div>
         <div style="margin-top:5px;">${pill}</div>
       </div>
       <div class="order-row__price">
-        <div class="order-row__total">₱${parseFloat(o.total_price||0).toFixed(2)}</div>
-        <div class="order-row__qty">${parseFloat(o.quantity_liters||0).toFixed(2)}L × ₱${parseFloat(o.unit_price||0).toFixed(2)}</div>
+        <div class="order-row__total">?${parseFloat(o.total_price||0).toFixed(2)}</div>
+        <div class="order-row__qty">${parseFloat(o.quantity_liters||0).toFixed(2)}L � ?${parseFloat(o.unit_price||0).toFixed(2)}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-// ── Order detail modal ────────────────────────────────────
+// -- Order detail modal ------------------------------------
 function openOrderDetail(o) {
   document.getElementById('od-title').textContent = `Order #${o.Order_ID}`;
   const status = (o.Order_Status || 'pending').toLowerCase();
@@ -378,11 +378,11 @@ function openOrderDetail(o) {
   document.getElementById('od-body').innerHTML = `
     <div class="od-row"><span class="od-row__label">Order Type</span><span class="od-row__val">${o.Order_Type}</span></div>
     <div class="od-row"><span class="od-row__label">Date</span><span class="od-row__val">${new Date(o.Order_Date).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span></div>
-    <div class="od-row"><span class="od-row__label">Cow</span><span class="od-row__val">🐄 ${o.Cow}${o.Breed?' ('+o.Breed+')':''}</span></div>
+    <div class="od-row"><span class="od-row__label">Cow</span><span class="od-row__val">?? ${o.Cow}${o.Breed?' ('+o.Breed+')':''}</span></div>
     <div class="od-row"><span class="od-row__label">Handled by</span><span class="od-row__val">${o.Worker_Name}</span></div>
     <div class="od-row"><span class="od-row__label">Quantity</span><span class="od-row__val">${parseFloat(o.quantity_liters||0).toFixed(2)} L</span></div>
-    <div class="od-row"><span class="od-row__label">Unit Price</span><span class="od-row__val">₱${parseFloat(o.unit_price||0).toFixed(2)} / L</span></div>
-    <div class="od-row"><span class="od-row__label">Total</span><span class="od-row__val" style="color:var(--olive-dark);font-size:1rem;">₱${parseFloat(o.total_price||0).toFixed(2)}</span></div>
+    <div class="od-row"><span class="od-row__label">Unit Price</span><span class="od-row__val">?${parseFloat(o.unit_price||0).toFixed(2)} / L</span></div>
+    <div class="od-row"><span class="od-row__label">Total</span><span class="od-row__val" style="color:var(--olive-dark);font-size:1rem;">?${parseFloat(o.total_price||0).toFixed(2)}</span></div>
     <div class="od-row"><span class="od-row__label">Status</span><span class="od-row__val">${pill}</span></div>
     ${o.Order_Notes ? `<div class="od-row"><span class="od-row__label">Notes</span><span class="od-row__val">${o.Order_Notes}</span></div>` : ''}
   `;
@@ -392,7 +392,7 @@ function closeOrderDetail() { document.getElementById('odOverlay').classList.rem
 document.getElementById('odOverlay').addEventListener('click', e => { if (e.target.id === 'odOverlay') closeOrderDetail(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeOrderDetail(); closeEditProfile(); } });
 
-// ── Featured products ─────────────────────────────────────
+// -- Featured products -------------------------------------
 async function loadFeatured() {
   const c = document.getElementById('featured-container');
   try {
@@ -406,7 +406,7 @@ async function loadFeatured() {
       <div class="feat-card">
         <div class="feat-card__emoji">${getEmoji(p.name)}</div>
         <div class="feat-card__name">${p.name}</div>
-        <div class="feat-card__price">₱${parseFloat(p.price).toFixed(2)} / ${p.unit}</div>
+        <div class="feat-card__price">?${parseFloat(p.price).toFixed(2)} / ${p.unit}</div>
         <div class="feat-card__stock">${p.stock_qty} in stock</div>
         <button class="feat-card__btn" onclick="quickAddToCart(${p.product_id}, '${p.name.replace(/'/g,"\\'")}')">
           Add to Cart
@@ -424,22 +424,22 @@ async function quickAddToCart(productId, name) {
   } catch(e) { UI.toast(e.message, 'error'); }
 }
 
-// ── Shop purchase history ─────────────────────────────────
+// -- Shop purchase history ---------------------------------
 async function loadCartOrders() {
   const c = document.getElementById('cart-orders-container');
   try {
     const res  = await fetch(PORTAL + '?action=cart_orders', { credentials:'include' });
     const data = await res.json();
     if (!data.success || !data.data.length) {
-      c.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">shopping_bag</span><p>No shop purchases yet. <a href="shop.php" style="color:var(--olive);font-weight:700;">Browse the shop →</a></p></div>`;
+      c.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">shopping_bag</span><p>No shop purchases yet. <a href="shop.php" style="color:var(--olive);font-weight:700;">Browse the shop ?</a></p></div>`;
       return;
     }
     c.innerHTML = data.data.map(cart => {
       const date  = new Date(cart.purchased_at).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
       const items = cart.items.map(i =>
         `<div class="cart-order__item">
-          <span>${getEmoji(i.product_name)} ${i.product_name} × ${i.quantity} ${i.unit}</span>
-          <span>₱${parseFloat(i.subtotal).toFixed(2)}</span>
+          <span>${getEmoji(i.product_name)} ${i.product_name} � ${i.quantity} ${i.unit}</span>
+          <span>?${parseFloat(i.subtotal).toFixed(2)}</span>
         </div>`
       ).join('');
       return `<div class="cart-order-card">
@@ -448,7 +448,7 @@ async function loadCartOrders() {
             <div class="cart-order__id">Purchase #${cart.cart_id}</div>
             <div class="cart-order__date">${date}</div>
           </div>
-          <div class="cart-order__total">₱${parseFloat(cart.total).toFixed(2)}</div>
+          <div class="cart-order__total">?${parseFloat(cart.total).toFixed(2)}</div>
         </div>
         ${items}
       </div>`;
@@ -458,7 +458,7 @@ async function loadCartOrders() {
   }
 }
 
-// ── Edit profile ──────────────────────────────────────────
+// -- Edit profile ------------------------------------------
 function openEditProfile() {
   document.getElementById('ep-name').value    = document.getElementById('profile-name').textContent.trim();
   document.getElementById('ep-address').value = document.getElementById('profile-address').textContent.trim();
@@ -484,7 +484,7 @@ async function saveProfile() {
   }
 
   saveBtn.disabled = true;
-  saveBtn.textContent = 'Saving…';
+  saveBtn.textContent = 'Saving�';
 
   try {
     const csrf = localStorage.getItem('csrf_token') || '';
@@ -525,7 +525,7 @@ async function saveProfile() {
   }
 }
 
-// ── Init ──────────────────────────────────────────────────
+// -- Init --------------------------------------------------
 loadOrders();
 loadFeatured();
 loadCartOrders();

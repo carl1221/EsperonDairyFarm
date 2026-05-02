@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/customer_portal.php  —  Customer self-service API
 //
@@ -9,7 +9,7 @@
 // POST ?action=update_profile → update name, address, contact
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 
 if (($_SESSION['user']['role'] ?? '') !== 'Customer') {

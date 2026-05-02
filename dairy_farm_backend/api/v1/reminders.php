@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================================
 // api/reminders.php
 // Endpoint: /api/reminders.php
@@ -12,8 +12,8 @@
 // DELETE /api/reminders.php?id=1          → delete reminder (Admin only)
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../models/Reminder.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
+require_once __DIR__ . '/../../models/Reminder.php';
 
 requireAuth();
 requireCsrf();
@@ -104,6 +104,13 @@ try {
             // Partial update — typically just flipping status to 'completed'
             if (!$id) sendError('Reminder ID required.');
             $data = getRequestBody();
+            // Validate status value if provided
+            if (isset($data['status'])) {
+                $allowedStatuses = ['pending', 'completed'];
+                if (!in_array($data['status'], $allowedStatuses, true)) {
+                    sendError("Invalid status value. Must be one of: " . implode(', ', $allowedStatuses), 400);
+                }
+            }
             $reminder->update($id, $data)
                 ? sendSuccess('Reminder updated.')
                 : sendError('Failed to update reminder.', 500);

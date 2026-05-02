@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 
 // ============================================================
@@ -12,7 +12,7 @@
 // GET  /api/auth.php?action=google_callback → handle Google OAuth callback
 // ============================================================
 
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 
 // ── Google OAuth Handler (without external dependencies) ──
 class SimpleGoogleOAuth {
@@ -276,32 +276,32 @@ try {
                 }
 
                 if (!$isCustomer) {
-                // Check approval status only if column exists
-                if ($hasApproval) {
-                    $approvalStatus = $user['approval_status'] ?? 'approved';
-                    if ($approvalStatus === 'pending') {
-                        sendError('Your account is awaiting admin approval.', 403);
+                    // Check approval status
+                    if ($hasApproval) {
+                        $approvalStatus = $user['approval_status'] ?? 'approved';
+                        if ($approvalStatus === 'pending') {
+                            sendError('Your account is awaiting admin approval.', 403);
+                        }
+                        if ($approvalStatus === 'rejected') {
+                            sendError('Your account registration was rejected.', 403);
+                        }
                     }
-                    if ($approvalStatus === 'rejected') {
-                        sendError('Your account registration was rejected.', 403);
-                    }
-                }
-                // Successful worker login — reset brute-force counter
-                $_SESSION[$attemptKey] = 0;
-                $_SESSION[$windowKey]  = 0;
-                session_regenerate_id(true);
-                $_SESSION['user'] = [
-                    'id'     => $user['Worker_ID'],
-                    'name'   => $user['Worker'],
-                    'role'   => $user['Worker_Role'],
-                    'email'  => $user['Email'] ?? '',
-                    'avatar' => $user['Avatar'] ?? '',
-                ];
-                $csrfToken = generateCsrfToken();
-                sendSuccess('Login successful', [
-                    'user'       => $_SESSION['user'],
-                    'csrf_token' => $csrfToken,
-                ]);
+                    // Successful worker login — reset brute-force counter
+                    $_SESSION[$attemptKey] = 0;
+                    $_SESSION[$windowKey]  = 0;
+                    session_regenerate_id(true);
+                    $_SESSION['user'] = [
+                        'id'     => $user['Worker_ID'],
+                        'name'   => $user['Worker'],
+                        'role'   => $user['Worker_Role'],
+                        'email'  => $user['Email'] ?? '',
+                        'avatar' => $user['Avatar'] ?? '',
+                    ];
+                    $csrfToken = generateCsrfToken();
+                    sendSuccess('Login successful', [
+                        'user'       => $_SESSION['user'],
+                        'csrf_token' => $csrfToken,
+                    ]);
                 } // end !$isCustomer
 
             } elseif ($action === 'logout') {
@@ -369,7 +369,7 @@ try {
 
                     // Check if user exists in database
                     $stmt = getConnection()->prepare(
-                        'SELECT Worker_ID, Worker, Worker_Role, Email
+                        'SELECT Worker_ID, Worker, Worker_Role, Email, approval_status
                          FROM Worker
                          WHERE Email = ?
                          LIMIT 1'
@@ -378,24 +378,36 @@ try {
                     $user = $stmt->fetch();
 
                     if (!$user) {
-                        // User not found - auto-create account with Staff role
+                        // User not found - auto-create account with Staff role (pending approval)
                         $username = generateUniqueUsername($name, $email);
                         
-                        // Insert new worker
+                        // Insert new worker with pending approval status
                         $insertStmt = getConnection()->prepare(
-                            'INSERT INTO Worker (Worker, Worker_Role, Email, Password) 
-                             VALUES (?, ?, ?, ?)'
+                            'INSERT INTO Worker (Worker, Worker_Role, Email, Password, approval_status) 
+                             VALUES (?, ?, ?, ?, ?)'
                         );
-                        $insertStmt->execute([$username, 'Staff', $email, '']);
+                        $insertStmt->execute([$username, 'Staff', $email, '', 'pending']);
                         
                         // Get the newly created user
                         $userId = getConnection()->lastInsertId();
                         $user = [
-                            'Worker_ID' => $userId,
-                            'Worker' => $username,
-                            'Worker_Role' => 'Staff',
-                            'Email' => $email
+                            'Worker_ID'       => $userId,
+                            'Worker'          => $username,
+                            'Worker_Role'     => 'Staff',
+                            'Email'           => $email,
+                            'approval_status' => 'pending',
                         ];
+                    }
+
+                    // Block pending or rejected accounts before creating a session
+                    $approvalStatus = $user['approval_status'] ?? 'approved';
+                    if ($approvalStatus === 'pending') {
+                        header('Location: ../../../UI/login.php?error=pending_approval');
+                        exit;
+                    }
+                    if ($approvalStatus === 'rejected') {
+                        header('Location: ../../../UI/login.php?error=account_rejected');
+                        exit;
                     }
 
                     // Regenerate session ID
@@ -410,7 +422,7 @@ try {
                     ];
 
                     // Redirect to dashboard
-                    header('Location: ../../UI/index.php');
+                    header('Location: ../../../UI/index.php');
                     exit;
                 } catch (Exception $e) {
                     error_log('Google OAuth callback error: ' . $e->getMessage());
