@@ -143,7 +143,7 @@ if (!empty($_ENV['GOOGLE_CLIENT_ID']) && !empty($_ENV['GOOGLE_CLIENT_SECRET']) &
         $googleOAuth = new SimpleGoogleOAuth(
             $_ENV['GOOGLE_CLIENT_ID'],
             $_ENV['GOOGLE_CLIENT_SECRET'],
-            'http://localhost/esperon_final/dairy_farm_backend/api/auth.php?action=google_callback'
+            $_ENV['GOOGLE_REDIRECT_URI']
         );
     } catch (Exception $e) {
         error_log('Google OAuth initialization failed: ' . $e->getMessage());

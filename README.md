@@ -115,11 +115,13 @@ Open **http://localhost/esperon_final/UI/login.php** in your browser to access t
    - Set authorized redirect URIs to: `http://localhost/esperon_final/dairy_farm_backend/api/auth.php?action=google_callback`
    - Copy the Client ID and Client Secret
 
-5. Update your `.env` file with the real credentials (replace the placeholder values):
+5. Update your `.env` file with the real credentials and your redirect URI:
    ```
    GOOGLE_CLIENT_ID=your_actual_client_id_here
    GOOGLE_CLIENT_SECRET=your_actual_client_secret_here
+   GOOGLE_REDIRECT_URI=http://localhost/EsperonDairyFarm/dairy_farm_backend/api/auth.php?action=google_callback
    ```
+   > **Note:** `GOOGLE_REDIRECT_URI` must exactly match the URI you registered in the Google Cloud Console. Update it to match your local path if it differs.
 
 Users can now log in with their Google account if their email matches a worker's email in the database.
 
