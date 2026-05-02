@@ -45,7 +45,11 @@ try {
             } elseif ($cid) {
                 sendSuccess('Orders retrieved.', $order->getByCustomer($cid));
             } else {
-                sendSuccess('Orders retrieved.', $order->getAll());
+                // Optional server-side search and worker filter
+                $search   = isset($_GET['search']) ? trim($_GET['search']) : null;
+                $myOrders = isset($_GET['mine']) && $_GET['mine'] === '1';
+                $workerFilter = $myOrders ? (int) $_SESSION['user']['id'] : null;
+                sendSuccess('Orders retrieved.', $order->getAll($search, $workerFilter));
             }
             break;
 

@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS Orders (
     total_price     DECIMAL(10,2) GENERATED ALWAYS AS (quantity_liters * unit_price) STORED,
     status          ENUM('pending','confirmed','delivered','cancelled') NOT NULL DEFAULT 'pending',
     notes           TEXT          NULL,
+    updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_order      PRIMARY KEY (Order_ID),
     CONSTRAINT fk_ord_cust   FOREIGN KEY (CID)       REFERENCES Customer (CID)
         ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -291,6 +292,7 @@ SELECT
     o.total_price,
     o.status          AS Order_Status,
     o.notes           AS Order_Notes,
+    o.updated_at      AS Order_Updated,
 
     -- Customer details (derived from Customer + Address via FK)
     o.CID,

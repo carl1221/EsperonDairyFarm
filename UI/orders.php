@@ -33,9 +33,17 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
   <div class="card">
     <div class="card__header">
       <span class="card__title">All Orders</span>
-      <input type="text" id="search" placeholder="🔍 Search orders…"
-        style="width:220px;padding:7px 12px;font-size:.83rem"
-        oninput="filterOrders()" />
+      <div style="display:flex;gap:8px;align-items:center;">
+        <?php if (!$_isAdmin): ?>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="my-orders-toggle" onchange="toggleMyOrders()" style="accent-color:var(--olive);" />
+          My orders only
+        </label>
+        <?php endif; ?>
+        <input type="text" id="search" placeholder="🔍 Search orders…"
+          style="width:200px;padding:7px 12px;font-size:.83rem"
+          oninput="debounceSearch()" />
+      </div>
     </div>
     <div class="tbl-wrap">
       <table>
@@ -179,7 +187,7 @@ async function init() {
     console.warn('Could not load modal data:', e.message);
   }
 
-  loadOrders();
+  runSearch();
 
   ImportExport.addButtons(
     document.getElementById('orders-header-actions'),
@@ -235,9 +243,19 @@ function renderOrders(rows) {
     cancelled: 'badge--danger',
   };
 
-  tbody.innerHTML = rows.map(o => `
+  // "Recently updated" = updated within the last 24 hours
+  const oneDayAgo = Date.now() - 86400000;
+
+  tbody.innerHTML = rows.map(o => {
+    const updatedAt  = o.Order_Updated ? new Date(o.Order_Updated).getTime() : 0;
+    const isRecent   = updatedAt > oneDayAgo;
+    const recentBadge = isRecent
+      ? `<span title="Updated recently" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27ae60;margin-left:6px;vertical-align:middle;"></span>`
+      : '';
+
+    return `
     <tr>
-      <td><strong>#${o.Order_ID}</strong></td>
+      <td><strong>#${o.Order_ID}</strong>${recentBadge}</td>
       <td>${o.Customer_Name}</td>
       <td>${o.Address}</td>
       <td>${o.Contact_Num}</td>
@@ -253,16 +271,44 @@ function renderOrders(rows) {
         <button class="btn btn--icon btn--edit admin-only" onclick="openModal(${o.Order_ID})">✏</button>
         <button class="btn btn--icon btn--del  admin-only" onclick="deleteOrder(${o.Order_ID})">🗑</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
-function filterOrders() {
-  const q = document.getElementById('search').value.toLowerCase();
-  renderOrders(allOrders.filter(o =>
-    Object.values(o).some(v => String(v).toLowerCase().includes(q))
-  ));
+// ── Server-side search with debounce ──────────────────────
+let _searchTimer = null;
+let _myOrdersOnly = false;
+
+function debounceSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(runSearch, 300);
 }
+
+function toggleMyOrders() {
+  _myOrdersOnly = document.getElementById('my-orders-toggle')?.checked || false;
+  runSearch();
+}
+
+async function runSearch() {
+  const q     = document.getElementById('search').value.trim();
+  const tbody = document.getElementById('orders-body');
+  UI.setLoading(tbody, 13);
+  try {
+    let endpoint = 'orders.php';
+    const params = [];
+    if (q)             params.push(`search=${encodeURIComponent(q)}`);
+    if (_myOrdersOnly) params.push('mine=1');
+    if (params.length) endpoint += '?' + params.join('&');
+
+    allOrders = await API.request(endpoint);
+    renderOrders(allOrders);
+  } catch(e) {
+    UI.toast(e.message, 'error');
+    UI.setEmpty(tbody, 13, 'Failed to load orders.');
+  }
+}
+
+function filterOrders() { debounceSearch(); } // keep backward compat
 
 function openModal(id = null) {
   // Staff can only create new orders, not edit existing ones
