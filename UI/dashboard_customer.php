@@ -110,6 +110,51 @@ $initial      = strtoupper(substr($customerName, 0, 1));
     .od-row:last-child { border-bottom:none; }
     .od-row__label { color:#8a7f72;font-weight:600; }
     .od-row__val   { color:#2a1f15;font-weight:700;text-align:right; }
+
+    /* -- Two-column layout (Orders + Shop) -- */
+    .cust-two-col { display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-xl); }
+
+    /* -- Mobile overrides -- */
+    @media (max-width: 750px) {
+      /* Stat cards: 2x2 grid */
+      .cust-stat__val { font-size:1.4rem; }
+
+      /* Profile card: stack on very small screens */
+      .profile-card { padding:16px; gap:14px; }
+      .profile-avatar { width:52px;height:52px;font-size:1.3rem; }
+
+      /* Orders + Shop: single column */
+      .cust-two-col { grid-template-columns:1fr; gap:var(--spacing-md); }
+
+      /* Featured products: 2 columns on mobile */
+      .feat-grid { grid-template-columns:repeat(2,1fr);gap:var(--spacing-sm); }
+      .feat-card { padding:12px; }
+      .feat-card__emoji { font-size:1.6rem; }
+
+      /* Order rows: tighter */
+      .order-row { padding:10px 4px; }
+      .order-row__id { font-size:0.82rem; }
+      .order-row__meta { font-size:0.7rem; }
+
+      /* Filter tabs: scrollable */
+      .filter-tabs-wrap { overflow-x:auto;-webkit-overflow-scrolling:touch; }
+    }
+
+    @media (max-width: 480px) {
+      /* Stat cards: 2 per row, smaller */
+      .cust-stat { padding:12px 10px; }
+      .cust-stat__val { font-size:1.2rem; }
+      .cust-stat__label { font-size:0.68rem; }
+
+      /* Featured products: 2 columns */
+      .feat-grid { grid-template-columns:repeat(2,1fr); }
+
+      /* Profile edit button: full width */
+      .profile-card > button { width:100%;justify-content:center; }
+
+      /* Cart order cards */
+      .cart-order-card { padding:12px 14px; }
+    }
   </style>
 </head>
 <body>
@@ -166,7 +211,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
   </div>
 
   <!-- -- Two-column layout: Orders + Shop -- -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-xl);">
+  <div class="cust-two-col">
 
     <!-- Farm Orders -->
     <div class="card">
@@ -179,7 +224,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
           <span class="material-symbols-outlined" style="font-size:0.85rem;">refresh</span>
         </button>
       </div>
-      <div style="display:flex;gap:0;border-bottom:1px solid var(--border-light);padding:0 8px;overflow-x:auto;">
+      <div class="filter-tabs-wrap" style="display:flex;gap:0;border-bottom:1px solid var(--border-light);padding:0 8px;overflow-x:auto;">
         <button class="filter-tab filter-tab--active" onclick="setFilter('all',this)">All</button>
         <button class="filter-tab" onclick="setFilter('pending',this)">Pending</button>
         <button class="filter-tab" onclick="setFilter('confirmed',this)">Confirmed</button>

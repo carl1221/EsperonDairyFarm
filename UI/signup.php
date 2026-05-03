@@ -26,16 +26,16 @@
       background: url('assets/bg.png') no-repeat center center fixed;
       background-size: cover;
       overflow: auto !important;
-      padding: 2rem 0;
+      padding: 2rem 1rem;
     }
     .auth-card {
-      width: 100%; max-width: 460px;
+      width: 100%; max-width: 520px;
       background: rgba(255,255,255,0.4);
       backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255,255,255,0.6);
-      border-radius: 24px;
-      box-shadow: 0 12px 48px rgba(0,0,0,0.15);
-      padding: 2.5rem 2rem;
+      border-radius: 28px;
+      box-shadow: 0 16px 56px rgba(0,0,0,0.18);
+      padding: 3rem 2.75rem;
     }
     .auth-card__logo { text-align: center; margin-bottom: 1.75rem; }
     .auth-card__logo-img { max-width: 100px; height: auto; border-radius: 16px; margin-bottom: 0.75rem; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
@@ -102,7 +102,11 @@
     .auth-footer a { color: #4e6040 !important; font-weight: 700; text-decoration: none; padding: 4px 12px; background: rgba(78,96,64,0.1); border-radius: 20px; transition: all 0.15s; }
     .auth-footer a:hover { background: rgba(78,96,64,0.2); }
     .g-recaptcha { margin: 1rem 0; display: flex; justify-content: center; }
-    @media (max-width: 480px) { .auth-card { padding: 1.5rem 1.25rem; } }
+    @media (max-width: 600px) {
+      body { padding: 1rem 0.75rem; align-items: flex-start; padding-top: 1.5rem; }
+      .auth-card { padding: 2rem 1.5rem; max-width: 100%; border-radius: 20px; }
+      h2 { font-size: 1.4rem; }
+    }
   </style>
 </head>
 <body>
