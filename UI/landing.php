@@ -319,6 +319,51 @@ try {
     .footer a { color: rgba(255,255,255,0.75); text-decoration: none; }
     .footer a:hover { color: #fff; }
 
+    /* Team */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .team-card {
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(200,184,152,0.5);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: all .2s;
+      text-align: center;
+    }
+    .team-card:hover { transform: translateY(-5px); box-shadow: 0 16px 48px rgba(0,0,0,0.1); }
+    .team-card__img-wrap {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      background: var(--cream);
+    }
+    .team-card__img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+      transition: transform .3s;
+    }
+    .team-card:hover .team-card__img { transform: scale(1.04); }
+    .team-card__placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--cream), var(--beige));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .team-card__placeholder .material-symbols-outlined { font-size: 4rem; color: var(--beige); }
+    .team-card__info { padding: 18px 16px 20px; }
+    .team-card__name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .team-card__role { font-size: 0.78rem; color: var(--maroon); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+
     /* Mobile */
     @media (max-width: 800px) {
       .hero__nav { padding: 24px 24px 0; }
@@ -329,6 +374,10 @@ try {
       .brand__name { font-size: 2.2rem; }
       .nav__pill { display: none; }
       .section, .stats-bar, .cta-section, .footer { padding-left: 24px; padding-right: 24px; }
+      .team-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .team-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
     }
   </style>
 </head>
@@ -354,6 +403,7 @@ try {
       <a href="login.php"  class="nav__link">Sign In</a>
       <a href="#features"  class="nav__link">Services</a>
       <a href="#products"  class="nav__link">Products</a>
+      <a href="#team"      class="nav__link">Meet Our Team</a>
       <a href="#contact"   class="nav__link nav__link--cta">Contact</a>
     </div>
   </nav>
@@ -479,6 +529,77 @@ try {
     <?php endforeach; ?>
   </div>
   <?php endif; ?>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     MEET THE TEAM
+══════════════════════════════════════ -->
+<section class="section" id="team">
+  <div class="section__head">
+    <div class="section__tag">The People Behind the Farm</div>
+    <h2 class="section__h2">Meet Our Team</h2>
+    <p class="section__desc">Dedicated individuals working together to bring you the finest dairy products from Esperon Farm.</p>
+  </div>
+  <div class="team-grid">
+
+    <div class="team-card">
+      <div class="team-card__img-wrap">
+        <img src="assets/team/member1.jpg" alt="Team Member 1" class="team-card__img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="team-card__placeholder" style="display:none;">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+      </div>
+      <div class="team-card__info">
+        <div class="team-card__name">Team Member 1</div>
+        <div class="team-card__role">Role</div>
+      </div>
+    </div>
+
+    <div class="team-card">
+      <div class="team-card__img-wrap">
+        <img src="assets/team/member2.jpg" alt="Team Member 2" class="team-card__img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="team-card__placeholder" style="display:none;">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+      </div>
+      <div class="team-card__info">
+        <div class="team-card__name">Team Member 2</div>
+        <div class="team-card__role">Role</div>
+      </div>
+    </div>
+
+    <div class="team-card">
+      <div class="team-card__img-wrap">
+        <img src="assets/team/member3.jpg" alt="Team Member 3" class="team-card__img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="team-card__placeholder" style="display:none;">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+      </div>
+      <div class="team-card__info">
+        <div class="team-card__name">Team Member 3</div>
+        <div class="team-card__role">Role</div>
+      </div>
+    </div>
+
+    <div class="team-card">
+      <div class="team-card__img-wrap">
+        <img src="assets/team/member4.jpg" alt="Team Member 4" class="team-card__img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="team-card__placeholder" style="display:none;">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+      </div>
+      <div class="team-card__info">
+        <div class="team-card__name">Team Member 4</div>
+        <div class="team-card__role">Role</div>
+      </div>
+    </div>
+
+  </div>
 </section>
 
 
