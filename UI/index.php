@@ -1,10 +1,15 @@
 <?php
 // ============================================================
-// UI/index.php  —  Dashboard router
-// Redirects to the correct dashboard based on the user's role.
+// UI/index.php  —  Entry point
+// Logged-in users → their dashboard
+// Guests → public landing page
 // ============================================================
 require_once __DIR__ . '/guard.php';
-requireAuthPage();
+
+if (!isset($_SESSION['user'])) {
+    header('Location: landing.php');
+    exit;
+}
 
 $role = $_SESSION['user']['role'] ?? 'Staff';
 
