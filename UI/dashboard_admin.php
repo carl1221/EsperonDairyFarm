@@ -8,7 +8,7 @@ requireAdminPage();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard � Esperon Dairy Farm</title>
+  <title>Admin Dashboard  Esperon Dairy Farm</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
@@ -93,7 +93,7 @@ requireAdminPage();
     <div class="dashboard-header__actions">
       <div class="header__search">
         <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--muted);">search</span>
-        <input type="text" id="global-search" placeholder="Search orders, cows, staff�" />
+        <input type="text" id="global-search" placeholder="Search orders, cows, staff" />
       </div>
       <button class="header__icon-btn" title="Notifications" id="notif-btn" style="position:relative;">
         <span class="material-symbols-outlined">notifications</span>
