@@ -226,7 +226,7 @@
 
 <script>
 // ── Config ────────────────────────────────────────────────
-const API_BASE       = '../dairy_farm_backend/api';
+const API_BASE       = '../dairy_farm_backend/api/v1';
 const form           = document.getElementById('signup-form');
 const submitBtn      = document.getElementById('submit-btn');
 const alertContainer = document.getElementById('alert-container');
