@@ -410,6 +410,44 @@ JOIN      Worker creator  ON r.created_by  = creator.Worker_ID
 LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
 
 -- ============================================================
+-- [STRONG ENTITY] notes
+-- Persistent announcements/notes shared across all staff.
+-- author_id FK â†’ Worker satisfies 3NF â€” author name is derived
+-- at query time via JOIN, not stored redundantly here.
+--
+-- category    â€” classifies the note (General, Health, Feeding, etc.)
+-- entity_type â€” optional polymorphic link to a related entity
+--               ('Cow', 'Order', 'Customer', 'Worker', or NULL for general)
+-- entity_id   â€” the PK of the linked entity row (NULL when entity_type is NULL)
+-- updated_at  â€” audit trail for edits
+--
+-- Relationships:
+--   notes â†’(N:1)â†’ Worker  via author_id  (who wrote it)
+--   notes â†’(N:1)â†’ Cow     via entity_id  (when entity_type = 'Cow')
+--   notes â†’(N:1)â†’ Orders  via entity_id  (when entity_type = 'Order')
+--   notes â†’(N:1)â†’ Customer via entity_id (when entity_type = 'Customer')
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notes (
+    note_id     INT          NOT NULL AUTO_INCREMENT,
+    author_id   INT          NOT NULL,   -- FK â†’ Worker
+    text        TEXT         NOT NULL,
+    category    ENUM('General','Health','Feeding','Maintenance','Finance','Other')
+                             NOT NULL DEFAULT 'General',
+    entity_type ENUM('Cow','Order','Customer','Worker') NULL DEFAULT NULL,
+    entity_id   INT          NULL DEFAULT NULL,   -- FK to the entity identified by entity_type
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_notes       PRIMARY KEY (note_id),
+    CONSTRAINT fk_note_author FOREIGN KEY (author_id)
+        REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- entity_type + entity_id index for fast "notes about Cow #5" queries
+CREATE INDEX IF NOT EXISTS idx_notes_entity  ON notes(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at);
+CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
+
+-- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_notes
 -- Resolves author_id FK to worker name â€” satisfies 3NF by not
 -- storing the author name redundantly in the notes table.
@@ -499,43 +537,6 @@ INSERT INTO Products (product_id, name, description, price, stock_qty, unit) VAL
     (7, 'Mozzarella Cheese',   'Soft, fresh mozzarella. Perfect for pizza and salads.',                 160.00, 0,  'pcs')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
--- ============================================================
--- [STRONG ENTITY] notes
--- Persistent announcements/notes shared across all staff.
--- author_id FK â†’ Worker satisfies 3NF â€” author name is derived
--- at query time via JOIN, not stored redundantly here.
---
--- category    â€” classifies the note (General, Health, Feeding, etc.)
--- entity_type â€” optional polymorphic link to a related entity
---               ('Cow', 'Order', 'Customer', 'Worker', or NULL for general)
--- entity_id   â€” the PK of the linked entity row (NULL when entity_type is NULL)
--- updated_at  â€” audit trail for edits
---
--- Relationships:
---   notes â†’(N:1)â†’ Worker  via author_id  (who wrote it)
---   notes â†’(N:1)â†’ Cow     via entity_id  (when entity_type = 'Cow')
---   notes â†’(N:1)â†’ Orders  via entity_id  (when entity_type = 'Order')
---   notes â†’(N:1)â†’ Customer via entity_id (when entity_type = 'Customer')
--- ============================================================
-CREATE TABLE IF NOT EXISTS notes (
-    note_id     INT          NOT NULL AUTO_INCREMENT,
-    author_id   INT          NOT NULL,   -- FK â†’ Worker
-    text        TEXT         NOT NULL,
-    category    ENUM('General','Health','Feeding','Maintenance','Finance','Other')
-                             NOT NULL DEFAULT 'General',
-    entity_type ENUM('Cow','Order','Customer','Worker') NULL DEFAULT NULL,
-    entity_id   INT          NULL DEFAULT NULL,   -- FK to the entity identified by entity_type
-    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT pk_notes       PRIMARY KEY (note_id),
-    CONSTRAINT fk_note_author FOREIGN KEY (author_id)
-        REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- entity_type + entity_id index for fast "notes about Cow #5" queries
-CREATE INDEX IF NOT EXISTS idx_notes_entity  ON notes(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at);
-CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
 
 -- ============================================================
 -- [STRONG ENTITY] production_logs
