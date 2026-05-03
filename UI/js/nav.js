@@ -123,7 +123,7 @@
       ? '<span class="nav__section">My Account</span>'
         + '<a href="dashboard_customer.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">home</span><span>My Dashboard</span></a>'
         + '<a href="shop.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">storefront</span><span>Shop</span></a>'
-        + '<a href="dashboard_customer.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">receipt_long</span><span>My Orders</span></a>'
+        + '<a href="dashboard_customer.php#orders" class="nav__link"><span class="nav__link-icon material-symbols-outlined">receipt_long</span><span>My Orders</span></a>'
       : '<span class="nav__section">My Work</span>'
         + '<a href="orders.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">shopping_cart</span><span>Orders</span></a>'
         + '<a href="customers.php" class="nav__link"><span class="nav__link-icon material-symbols-outlined">people</span><span>Customers</span></a>'

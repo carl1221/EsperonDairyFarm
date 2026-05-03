@@ -67,9 +67,16 @@ try {
         ");
         $stmt->execute([$cowId, $date, $liters, $notes, (int)$_SESSION['user']['id']]);
 
-        // Also update the cow's average Production_Liters
-        $db->prepare("UPDATE Cow SET Production_Liters = ? WHERE Cow_ID = ?")
-           ->execute([$liters, $cowId]);
+        // Also update the cow's rolling average Production_Liters
+        $db->prepare("
+            UPDATE Cow
+            SET Production_Liters = (
+                SELECT ROUND(AVG(liters), 2)
+                FROM production_logs
+                WHERE cow_id = ?
+            )
+            WHERE Cow_ID = ?
+        ")->execute([$cowId, $cowId]);
 
         sendSuccess('Production logged.', ['log_date' => $date, 'liters' => $liters]);
     }

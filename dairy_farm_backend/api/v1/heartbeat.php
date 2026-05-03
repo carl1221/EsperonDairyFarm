@@ -12,6 +12,7 @@ requireCsrf();
 // Customers don't have a Worker row — skip heartbeat silently
 if (($_SESSION['user']['role'] ?? '') === 'Customer') {
     sendSuccess('Heartbeat recorded.');
+    exit;
 }
 
 $db     = getConnection();

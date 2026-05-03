@@ -135,5 +135,6 @@ try {
             sendError('Method not allowed.', 405);
     }
 } catch (PDOException $e) {
+    error_log('Orders error: ' . $e->getMessage());
     sendError('A database error occurred. Please try again later.', 500);
 }

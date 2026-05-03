@@ -127,5 +127,6 @@ try {
             sendError('Method not allowed.', 405);
     }
 } catch (Exception $e) {
+    error_log('Reminders error: ' . $e->getMessage());
     sendError($e->getMessage(), 500);
 }
