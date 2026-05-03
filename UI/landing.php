@@ -1,8 +1,14 @@
-<?php
+﻿<?php
 // ============================================================
-// UI/landing.php — Public landing page
+// UI/landing.php — Public landing page (redesigned)
 // ============================================================
-session_start();
+
+// Start session only if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params(['lifetime'=>0,'path'=>'/','httponly'=>true,'samesite'=>'Lax']);
+    session_start();
+}
+
 if (isset($_SESSION['user'])) {
     $role = $_SESSION['user']['role'] ?? 'Staff';
     if ($role === 'Admin')    { header('Location: dashboard_admin.php');    exit; }
@@ -28,7 +34,7 @@ try {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Esperon Dairy Farm</title>
+  <title>Esperon Dairy Farm — Malaybalay City</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Lato:wght@300;400;600;700&display=swap" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <style>
@@ -49,19 +55,46 @@ try {
     html { scroll-behavior: smooth; }
     body { font-family: var(--font-sans); background: var(--cream-lt); color: var(--text); overflow-x: hidden; }
 
+    /* ── FADE-IN ANIMATION ── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fade-in-left {
+      opacity: 0;
+      transform: translateX(-32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in-left.visible { opacity: 1; transform: translateX(0); }
+    .fade-in-right {
+      opacity: 0;
+      transform: translateX(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in-right.visible { opacity: 1; transform: translateX(0); }
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+    .delay-5 { transition-delay: 0.5s; }
+    .delay-6 { transition-delay: 0.6s; }
+
     /* ══════════════════════════════════════
-       HERO — full viewport height
+       HERO
     ══════════════════════════════════════ */
     .hero {
       position: relative;
       width: 100%;
       height: 100vh;
-      min-height: 600px;
+      min-height: 640px;
       overflow: hidden;
       background: var(--cream);
     }
-
-    /* Full-bleed faded background */
     .hero__bg {
       position: absolute;
       inset: 0;
@@ -71,89 +104,46 @@ try {
       z-index: 0;
     }
 
-    /* ── NAV ── */
+    /* ── STICKY NAV PILL ── */
     .hero__nav {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      z-index: 20;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      padding: 32px 48px 0;
+      position: fixed;
+      top: 22px;
+      right: 40px;
+      z-index: 100;
     }
-
-    /* Brand block — top left */
-    .brand {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      text-decoration: none;
-      gap: 0;
-    }
-    .brand__top {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .brand__logo {
-      width: 54px;
-      height: 54px;
-      border-radius: 10px;
-      object-fit: cover;
-      border: 2px solid rgba(122,31,46,0.2);
-      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    }
-    .brand__name {
-      font-family: var(--font-serif);
-      font-size: 3.2rem;
-      font-weight: 900;
-      color: var(--maroon);
-      line-height: 1;
-      letter-spacing: -0.01em;
-    }
-    .brand__sub {
-      font-family: var(--font-serif);
-      font-size: 0.9rem;
-      font-weight: 400;
-      color: var(--maroon);
-      letter-spacing: 0.4em;
-      text-transform: uppercase;
-      margin-top: 4px;
-      padding-left: 2px;
-    }
-
-    /* Nav links — top right pill */
     .nav__pill {
       display: flex;
       align-items: center;
       gap: 2px;
-      background: rgba(255,255,255,0.55);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.62);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.75);
       border-radius: 50px;
       padding: 5px 6px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      box-shadow: 0 6px 28px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      transition: background 0.3s;
     }
+    .nav__pill:hover { background: rgba(255,255,255,0.82); }
     .nav__link {
       text-decoration: none;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 700;
       color: var(--text);
-      padding: 9px 20px;
+      padding: 9px 18px;
       border-radius: 50px;
       transition: all .15s;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       white-space: nowrap;
     }
-    .nav__link:hover { color: var(--maroon); background: rgba(122,31,46,0.06); }
+    .nav__link:hover { color: var(--maroon); background: rgba(122,31,46,0.07); }
     .nav__link--cta {
-      background: var(--text);
+      background: var(--maroon);
       color: #fff !important;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 10px rgba(122,31,46,0.35);
     }
-    .nav__link--cta:hover { background: var(--maroon) !important; }
+    .nav__link--cta:hover { background: var(--maroon-dk) !important; transform: translateY(-1px); }
 
     /* ── HERO CONTENT ── */
     .hero__content {
@@ -163,22 +153,65 @@ try {
       display: grid;
       grid-template-columns: 1fr 1.05fr;
       align-items: center;
-      padding: 0 48px;
-      gap: 40px;
+      padding: 0 56px;
+      gap: 48px;
     }
-
-    /* Left: tagline + CTA */
     .hero__left {
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      padding-top: 60px; /* push below nav */
+      gap: 0;
+      padding-top: 40px;
+    }
+    .hero__location {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--olive);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero__location::before {
+      content: '';
+      display: inline-block;
+      width: 28px;
+      height: 2px;
+      background: var(--olive);
+      border-radius: 2px;
+    }
+    .hero__brand-name {
+      font-family: var(--font-serif);
+      font-size: clamp(4rem, 7vw, 7rem);
+      font-weight: 900;
+      color: var(--maroon);
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .hero__brand-sub {
+      font-family: var(--font-serif);
+      font-size: clamp(1.1rem, 2vw, 1.6rem);
+      font-weight: 400;
+      font-style: italic;
+      color: var(--maroon);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      opacity: 0.75;
     }
     .hero__tagline {
-      font-size: 0.92rem;
+      font-size: 0.95rem;
       color: var(--muted);
-      line-height: 1.75;
-      max-width: 300px;
+      line-height: 1.8;
+      max-width: 340px;
+      margin-bottom: 36px;
+    }
+    .hero__btns {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
     }
     .hero__cta {
       display: inline-flex;
@@ -188,28 +221,38 @@ try {
       color: #fff;
       border: none;
       border-radius: 50px;
-      padding: 13px 28px;
+      padding: 14px 30px;
       font-family: var(--font-sans);
       font-size: 0.9rem;
       font-weight: 700;
       cursor: pointer;
       text-decoration: none;
-      transition: all .18s;
-      width: fit-content;
-      box-shadow: 0 4px 16px rgba(61,82,48,0.3);
+      transition: all .2s;
+      box-shadow: 0 4px 18px rgba(61,82,48,0.32);
     }
     .hero__cta:hover {
       background: var(--olive-lt);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(61,82,48,0.35);
+      box-shadow: 0 8px 28px rgba(61,82,48,0.38);
+    }
+    .hero__cta--ghost {
+      background: transparent;
+      border: 2px solid var(--maroon);
+      color: var(--maroon);
+      box-shadow: none;
+    }
+    .hero__cta--ghost:hover {
+      background: rgba(122,31,46,0.07);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(122,31,46,0.15);
     }
 
-    /* Right: rounded image card */
+    /* ── HERO RIGHT ── */
     .hero__right {
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      padding-top: 60px;
+      padding-top: 40px;
     }
     .hero__img-card {
       position: relative;
@@ -218,129 +261,217 @@ try {
     }
     .hero__img {
       width: 100%;
-      height: 400px;
+      height: 440px;
       object-fit: cover;
-      /* Asymmetric border-radius: big on top-left and bottom-left, smaller on right */
       border-radius: 32px 32px 32px 110px;
-      box-shadow:
-        0 24px 60px rgba(0,0,0,0.22),
-        0 4px 16px rgba(0,0,0,0.1);
+      box-shadow: 0 28px 70px rgba(0,0,0,0.24), 0 4px 18px rgba(0,0,0,0.1);
       display: block;
     }
-    /* Decorative diagonal lines */
     .hero__deco {
       position: absolute;
-      bottom: -28px;
-      right: -28px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      transform: rotate(0deg);
+      bottom: -32px;
+      right: -32px;
+      display: grid;
+      grid-template-columns: repeat(5, 10px);
+      grid-template-rows: repeat(5, 10px);
+      gap: 8px;
     }
     .hero__deco span {
       display: block;
-      height: 3.5px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
       background: var(--beige);
-      border-radius: 3px;
-      transform: rotate(-32deg);
-      opacity: 0.6;
+      opacity: 0.55;
     }
-    .hero__deco span:nth-child(1) { width: 50px; }
-    .hero__deco span:nth-child(2) { width: 70px; margin-left: 14px; }
-    .hero__deco span:nth-child(3) { width: 42px; margin-left: 26px; }
 
     /* ══════════════════════════════════════
-       SECTIONS BELOW HERO
+       SECTIONS
     ══════════════════════════════════════ */
-    .section { padding: 80px 48px; }
-    .section--alt { background: rgba(232,220,200,0.25); }
-    .section__head { text-align: center; margin-bottom: 52px; }
-    .section__tag  { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: var(--olive); margin-bottom: 10px; }
-    .section__h2   { font-family: var(--font-serif); font-size: clamp(1.6rem,3vw,2.3rem); font-weight: 700; color: var(--text); margin-bottom: 12px; }
-    .section__desc { font-size: 0.92rem; color: var(--muted); max-width: 540px; margin: 0 auto; line-height: 1.7; }
+    .section { padding: 88px 56px; }
+    .section--alt {
+      background: linear-gradient(160deg, rgba(237,227,208,0.55) 0%, rgba(245,240,232,0.9) 100%);
+    }
+    .section--features {
+      background: linear-gradient(160deg, #f8f4ee 0%, #ede3d0 100%);
+    }
+    .section__head { text-align: center; margin-bottom: 56px; }
+    .section__tag  {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: var(--olive);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .section__tag::before,
+    .section__tag::after {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 1.5px;
+      background: var(--olive);
+      opacity: 0.5;
+      border-radius: 2px;
+    }
+    .section__h2   { font-family: var(--font-serif); font-size: clamp(1.7rem,3vw,2.5rem); font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .section__desc { font-size: 0.93rem; color: var(--muted); max-width: 540px; margin: 0 auto; line-height: 1.75; }
 
-    /* Features grid */
-    .features { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }
+    /* ── FEATURES 3-COL GRID ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
     .feat {
-      background: rgba(255,255,255,0.75);
-      border: 1px solid rgba(200,184,152,0.5);
-      border-radius: 20px;
-      padding: 26px 22px;
-      transition: all .2s;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(200,184,152,0.45);
+      border-radius: 22px;
+      padding: 32px 26px;
+      transition: all .22s;
+      position: relative;
+      overflow: hidden;
     }
-    .feat:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,0.09); border-color: rgba(122,31,46,0.2); }
-    .feat__icon { width: 46px; height: 46px; border-radius: 12px; background: rgba(122,31,46,0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-    .feat__icon .material-symbols-outlined { font-size: 1.4rem; color: var(--maroon); }
-    .feat h3 { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-    .feat p  { font-size: 0.84rem; color: var(--muted); line-height: 1.65; }
+    .feat::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--maroon), var(--olive));
+      opacity: 0;
+      transition: opacity .22s;
+    }
+    .feat:hover { transform: translateY(-5px); box-shadow: 0 18px 48px rgba(0,0,0,0.10); border-color: rgba(122,31,46,0.18); }
+    .feat:hover::before { opacity: 1; }
+    .feat__icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(122,31,46,0.10), rgba(122,31,46,0.05));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      transition: transform .22s;
+    }
+    .feat:hover .feat__icon { transform: scale(1.08); }
+    .feat__icon .material-symbols-outlined { font-size: 1.8rem; color: var(--maroon); }
+    .feat h3 { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .feat p  { font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
 
-    /* Stats bar */
+    /* ── STATS BAR ── */
     .stats-bar {
-      background: linear-gradient(135deg, var(--maroon-dk) 0%, var(--maroon) 100%);
-      padding: 56px 48px;
+      background: linear-gradient(135deg, var(--maroon-dk) 0%, var(--maroon) 60%, #9a2f42 100%);
+      padding: 64px 56px;
+      position: relative;
+      overflow: hidden;
     }
-    .stats-bar__inner { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 32px; max-width: 1000px; margin: 0 auto; text-align: center; }
-    .stat__val { font-family: var(--font-serif); font-size: 3rem; font-weight: 700; color: #fff; line-height: 1; }
-    .stat__lbl { font-size: 0.72rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: .1em; margin-top: 8px; }
+    .stats-bar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('assets/bg.png') no-repeat center center / cover;
+      opacity: 0.05;
+      filter: saturate(0);
+    }
+    .stats-bar__inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      max-width: 1000px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .stat__val {
+      font-family: var(--font-serif);
+      font-size: 3.4rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      display: block;
+    }
+    .stat__lbl {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      margin-top: 10px;
+      display: block;
+    }
+    .stat-item {
+      padding: 20px 10px;
+      border-right: 1px solid rgba(255,255,255,0.12);
+    }
+    .stat-item:last-child { border-right: none; }
 
-    /* Products */
-    .products { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 18px; max-width: 1100px; margin: 0 auto; }
+    /* ── PRODUCTS ── */
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
     .prod {
-      background: rgba(255,255,255,0.85);
-      border: 1px solid rgba(200,184,152,0.5);
-      border-radius: 18px;
-      padding: 22px 20px;
-      display: flex; flex-direction: column; gap: 10px;
-      transition: all .2s;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(200,184,152,0.45);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all .22s;
     }
-    .prod:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(0,0,0,0.08); }
-    .prod__emoji { font-size: 2rem; text-align: center; }
-    .prod__name  { font-weight: 700; font-size: 0.95rem; color: var(--text); }
-    .prod__desc  { font-size: 0.82rem; color: var(--muted); line-height: 1.55; flex: 1; }
-    .prod__foot  { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-    .prod__price { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 700; color: var(--maroon); }
+    .prod:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,0.09); }
+    .prod__accent {
+      height: 5px;
+      width: 100%;
+    }
+    .prod__accent--0 { background: linear-gradient(90deg, #7a1f2e, #b04060); }
+    .prod__accent--1 { background: linear-gradient(90deg, #3d5230, #6a9a50); }
+    .prod__accent--2 { background: linear-gradient(90deg, #7a5a1f, #c09040); }
+    .prod__accent--3 { background: linear-gradient(90deg, #1f4a7a, #4080c0); }
+    .prod__accent--4 { background: linear-gradient(90deg, #4a1f7a, #8040c0); }
+    .prod__accent--5 { background: linear-gradient(90deg, #1f7a5a, #40c090); }
+    .prod__body { padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .prod__emoji { font-size: 2.2rem; }
+    .prod__name  { font-weight: 700; font-size: 1rem; color: var(--text); }
+    .prod__desc  { font-size: 0.83rem; color: var(--muted); line-height: 1.6; flex: 1; }
+    .prod__foot  { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 12px; border-top: 1px solid rgba(200,184,152,0.3); }
+    .prod__price { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; color: var(--maroon); }
     .prod__unit  { font-size: 0.7rem; color: var(--muted); }
-    .prod__stock { font-size: 0.7rem; color: var(--olive); font-weight: 700; background: rgba(61,82,48,0.1); padding: 3px 9px; border-radius: 20px; }
+    .prod__stock { font-size: 0.7rem; color: var(--olive); font-weight: 700; background: rgba(61,82,48,0.1); padding: 4px 10px; border-radius: 20px; }
 
-    /* CTA */
-    .cta-section { background: var(--cream); padding: 80px 48px; text-align: center; }
-    .cta-section__inner { max-width: 560px; margin: 0 auto; }
-    .cta-section h2 { font-family: var(--font-serif); font-size: clamp(1.6rem,3vw,2.2rem); font-weight: 700; color: var(--text); margin-bottom: 14px; }
-    .cta-section p  { font-size: 0.92rem; color: var(--muted); line-height: 1.7; margin-bottom: 32px; }
-    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .btn { padding: 12px 28px; border-radius: 50px; font-family: var(--font-sans); font-size: 0.9rem; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 7px; }
-    .btn--solid { background: var(--maroon); border: none; color: #fff; box-shadow: 0 3px 12px rgba(122,31,46,0.3); }
-    .btn--solid:hover { background: var(--maroon-dk); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(122,31,46,0.35); }
-    .btn--ghost { background: transparent; border: 2px solid var(--maroon); color: var(--maroon); }
-    .btn--ghost:hover { background: rgba(122,31,46,0.06); }
-
-    /* Footer */
-    .footer { background: var(--maroon-dk); color: rgba(255,255,255,0.5); padding: 28px 48px; text-align: center; font-size: 0.82rem; }
-    .footer a { color: rgba(255,255,255,0.75); text-decoration: none; }
-    .footer a:hover { color: #fff; }
-
-    /* Team */
+    /* ── TEAM ── */
     .team-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
+      gap: 26px;
       max-width: 1100px;
       margin: 0 auto;
     }
     .team-card {
-      background: rgba(255,255,255,0.8);
-      border: 1px solid rgba(200,184,152,0.5);
-      border-radius: 20px;
+      background: rgba(255,255,255,0.85);
+      border: 1px solid rgba(200,184,152,0.45);
+      border-radius: 22px;
       overflow: hidden;
-      transition: all .2s;
+      transition: all .22s;
       text-align: center;
     }
-    .team-card:hover { transform: translateY(-5px); box-shadow: 0 16px 48px rgba(0,0,0,0.1); }
+    .team-card:hover { transform: translateY(-6px); box-shadow: 0 20px 56px rgba(0,0,0,0.12); }
     .team-card__img-wrap {
       width: 100%;
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 3 / 4;
       overflow: hidden;
       background: var(--cream);
+      position: relative;
     }
     .team-card__img {
       width: 100%;
@@ -348,9 +479,28 @@ try {
       object-fit: cover;
       object-position: top;
       display: block;
-      transition: transform .3s;
+      transition: transform .35s;
     }
-    .team-card:hover .team-card__img { transform: scale(1.04); }
+    .team-card:hover .team-card__img { transform: scale(1.05); }
+    .team-card__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(122,31,46,0.82) 0%, transparent 55%);
+      opacity: 0;
+      transition: opacity .3s;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 18px;
+    }
+    .team-card:hover .team-card__overlay { opacity: 1; }
+    .team-card__overlay-role {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
     .team-card__placeholder {
       width: 100%;
       height: 100%;
@@ -360,278 +510,199 @@ try {
       justify-content: center;
     }
     .team-card__placeholder .material-symbols-outlined { font-size: 4rem; color: var(--beige); }
-    .team-card__info { padding: 18px 16px 20px; }
-    .team-card__name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-    .team-card__role { font-size: 0.78rem; color: var(--maroon); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-
-    /* Mobile */
-    @media (max-width: 800px) {
-      .hero__nav { padding: 24px 24px 0; }
-      .hero__content { grid-template-columns: 1fr; padding: 0 24px; gap: 24px; }
-      .hero__left { padding-top: 140px; }
-      .hero__right { padding-top: 0; justify-content: center; }
-      .hero__img { height: 280px; }
-      .brand__name { font-size: 2.2rem; }
-      .nav__pill { display: none; }
-      .section, .stats-bar, .cta-section, .footer { padding-left: 24px; padding-right: 24px; }
-      .team-grid { grid-template-columns: repeat(2, 1fr); }
+    .team-card__info { padding: 18px 16px 22px; }
+    .team-card__name {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      position: relative;
     }
-    @media (max-width: 480px) {
+    .team-card__name::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 2.5px;
+      background: var(--maroon);
+      border-radius: 2px;
+    }
+    .team-card__role {
+      font-size: 0.76rem;
+      color: var(--maroon);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-top: 8px;
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      position: relative;
+      background: var(--cream);
+      padding: 96px 56px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .cta-section__bg {
+      position: absolute;
+      inset: 0;
+      background: url('assets/bg.png') no-repeat center center / cover;
+      opacity: 0.08;
+      filter: saturate(0.3);
+    }
+    .cta-section__inner {
+      position: relative;
+      z-index: 1;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    .cta-section h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      font-size: 0.93rem;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 36px;
+    }
+    .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      padding: 13px 30px;
+      border-radius: 50px;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .btn--solid {
+      background: var(--maroon);
+      border: none;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(122,31,46,0.32);
+    }
+    .btn--solid:hover { background: var(--maroon-dk); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(122,31,46,0.38); }
+    .btn--ghost {
+      background: transparent;
+      border: 2px solid var(--maroon);
+      color: var(--maroon);
+    }
+    .btn--ghost:hover { background: rgba(122,31,46,0.07); transform: translateY(-2px); }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: var(--maroon-dk);
+      padding: 52px 56px 32px;
+    }
+    .footer__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      max-width: 1100px;
+      margin: 0 auto 36px;
+      align-items: start;
+    }
+    .footer__brand-name {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .footer__brand-sub {
+      font-family: var(--font-serif);
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .footer__tagline {
+      font-size: 0.84rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.7;
+      max-width: 280px;
+    }
+    .footer__links-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 16px;
+    }
+    .footer__links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer__links a {
+      text-decoration: none;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.65);
+      transition: color .15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer__links a:hover { color: #fff; }
+    .footer__links a::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 1.5px;
+      background: var(--beige);
+      opacity: 0.4;
+      border-radius: 2px;
+      transition: opacity .15s, width .15s;
+    }
+    .footer__links a:hover::before { opacity: 0.8; width: 22px; }
+    .footer__bottom {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 24px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 900px) {
+      .hero__nav { right: 20px; top: 16px; }
+      .hero__content { grid-template-columns: 1fr; padding: 0 28px; gap: 28px; }
+      .hero__left { padding-top: 120px; }
+      .hero__right { padding-top: 0; justify-content: center; }
+      .hero__img { height: 300px; }
+      .hero__brand-name { font-size: 3.8rem; }
+      .features { grid-template-columns: repeat(2, 1fr); }
+      .stats-bar__inner { grid-template-columns: repeat(2, 1fr); }
+      .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); }
+      .stat-item:nth-child(2n) { border-bottom: none; }
+      .team-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer__inner { grid-template-columns: 1fr; gap: 28px; }
+      .section, .stats-bar, .cta-section { padding-left: 28px; padding-right: 28px; }
+      .footer { padding-left: 28px; padding-right: 28px; }
+    }
+    @media (max-width: 560px) {
+      .nav__pill { display: none; }
+      .features { grid-template-columns: 1fr; }
       .team-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+      .hero__brand-name { font-size: 3rem; }
     }
   </style>
 </head>
 <body>
-
-<!-- ══════════════════════════════════════
-     HERO
-══════════════════════════════════════ -->
-<section class="hero">
-  <div class="hero__bg"></div>
-
-  <!-- NAV -->
-  <nav class="hero__nav">
-    <a href="landing.php" class="brand">
-      <div class="brand__top">
-        <img src="assets/logo.jpg" alt="Esperon logo" class="brand__logo" onerror="this.style.display='none'" />
-        <span class="brand__name">ESPERON</span>
-      </div>
-      <div class="brand__sub">Dairy</div>
-    </a>
-
-    <div class="nav__pill">
-      <a href="login.php"  class="nav__link">Sign In</a>
-      <a href="#features"  class="nav__link">Services</a>
-      <a href="#products"  class="nav__link">Products</a>
-      <a href="#team"      class="nav__link">Meet Our Team</a>
-      <a href="#contact"   class="nav__link nav__link--cta">Contact</a>
-    </div>
-  </nav>
-
-  <!-- CONTENT -->
-  <div class="hero__content">
-    <div class="hero__left">
-      <p class="hero__tagline">
-        The bridge that leads you to the gateway of the
-        Dairy Industry abroad, so sign up now and start
-        your journey today!
-      </p>
-      <a href="#features" class="hero__cta">Explore more</a>
-    </div>
-
-    <div class="hero__right">
-      <div class="hero__img-card">
-        <img src="assets/bg.png" alt="Esperon Dairy Farm cows" class="hero__img" />
-        <div class="hero__deco">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ══════════════════════════════════════
-     FEATURES
-══════════════════════════════════════ -->
-<section class="section" id="features">
-  <div class="section__head">
-    <div class="section__tag">Our Services</div>
-    <h2 class="section__h2">Everything You Need to Run the Farm</h2>
-    <p class="section__desc">From livestock tracking to customer orders, our platform covers every aspect of dairy farm management.</p>
-  </div>
-  <div class="features">
-    <div class="feat">
-      <div class="feat__icon"><span class="material-symbols-outlined">pets</span></div>
-      <h3>Livestock Management</h3>
-      <p>Track cow health, breed records, daily milk production, and get alerts for sick animals.</p>
-    </div>
-    <div class="feat">
-      <div class="feat__icon"><span class="material-symbols-outlined">receipt_long</span></div>
-      <h3>Order Tracking</h3>
-      <p>Manage milk delivery orders from creation to delivery with real-time status updates.</p>
-    </div>
-    <div class="feat">
-      <div class="feat__icon"><span class="material-symbols-outlined">storefront</span></div>
-      <h3>Online Shop</h3>
-      <p>Customers can browse and purchase dairy products directly through the customer portal.</p>
-    </div>
-    <div class="feat">
-      <div class="feat__icon"><span class="material-symbols-outlined">badge</span></div>
-      <h3>Staff Management</h3>
-      <p>Manage worker accounts, track online status, assign reminders, and review daily reports.</p>
-    </div>
-    <div class="feat">
-      <div class="feat__icon"><span class="material-symbols-outlined">inventory_2</span></div>
-      <h3>Inventory Control</h3>
-      <p>Monitor feed, milk stock, and supply levels with low-stock alerts and restock tracking.</p>
-    </div>
-    <div class="feat">
-      <div class="feat__icon"><span class="material-symbols-outlined">bar_chart</span></div>
-      <h3>Reports &amp; Analytics</h3>
-      <p>View production trends, order summaries, and staff activity reports in one place.</p>
-    </div>
-  </div>
-</section>
-
-
-<!-- ══════════════════════════════════════
-     STATS
-══════════════════════════════════════ -->
-<div class="stats-bar">
-  <div class="stats-bar__inner">
-    <div><div class="stat__val"><?= $stats['cows'] ?></div><div class="stat__lbl">Active Cows</div></div>
-    <div><div class="stat__val"><?= $stats['products'] ?></div><div class="stat__lbl">Products</div></div>
-    <div><div class="stat__val"><?= $stats['orders'] ?></div><div class="stat__lbl">Total Orders</div></div>
-    <div><div class="stat__val"><?= $stats['customers'] ?></div><div class="stat__lbl">Customers</div></div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════
-     PRODUCTS
-══════════════════════════════════════ -->
-<section class="section section--alt" id="products">
-  <div class="section__head">
-    <div class="section__tag">Fresh Products</div>
-    <h2 class="section__h2">From Our Farm to Your Table</h2>
-    <p class="section__desc">
-      Browse our available dairy products.
-      <a href="login.php"  style="color:var(--maroon);font-weight:700;">Log in</a> or
-      <a href="signup.php" style="color:var(--maroon);font-weight:700;">create an account</a>
-      to place an order.
-    </p>
-  </div>
-  <?php if (empty($products)): ?>
-    <p style="text-align:center;color:var(--muted);font-size:0.9rem;">No products available at the moment.</p>
-  <?php else: ?>
-  <div class="products">
-    <?php
-    $emojiMap = ['milk'=>'🥛','cheese'=>'🧀','butter'=>'🧈','yogurt'=>'🍦','cream'=>'🍨','skim'=>'🥛','mozzarella'=>'🧀'];
-    foreach ($products as $p):
-      $emoji = '🛒';
-      foreach ($emojiMap as $k => $e) { if (stripos($p['name'], $k) !== false) { $emoji = $e; break; } }
-    ?>
-    <div class="prod">
-      <div class="prod__emoji"><?= $emoji ?></div>
-      <div class="prod__name"><?= htmlspecialchars($p['name']) ?></div>
-      <?php if ($p['description']): ?>
-      <div class="prod__desc"><?= htmlspecialchars($p['description']) ?></div>
-      <?php endif; ?>
-      <div class="prod__foot">
-        <div>
-          <div class="prod__price">&#8369;<?= number_format($p['price'], 2) ?></div>
-          <div class="prod__unit">per <?= htmlspecialchars($p['unit']) ?></div>
-        </div>
-        <div class="prod__stock"><?= $p['stock_qty'] ?> in stock</div>
-      </div>
-    </div>
-    <?php endforeach; ?>
-  </div>
-  <?php endif; ?>
-</section>
-
-
-<!-- ══════════════════════════════════════
-     MEET THE TEAM
-══════════════════════════════════════ -->
-<section class="section" id="team">
-  <div class="section__head">
-    <div class="section__tag">The People Behind the Farm</div>
-    <h2 class="section__h2">Meet Our Team</h2>
-    <p class="section__desc">Dedicated individuals working together to bring you the finest dairy products from Esperon Farm.</p>
-  </div>
-  <div class="team-grid">
-
-    <div class="team-card">
-      <div class="team-card__img-wrap">
-        <img src="assets/team/PJ.jpg" alt="PJ" class="team-card__img"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <div class="team-card__placeholder" style="display:none;">
-          <span class="material-symbols-outlined">person</span>
-        </div>
-      </div>
-      <div class="team-card__info">
-        <div class="team-card__name">PJ</div>
-        <div class="team-card__role">Team Leader</div>
-      </div>
-    </div>
-
-    <div class="team-card">
-      <div class="team-card__img-wrap">
-        <img src="assets/team/Carl.jpg" alt="Carl" class="team-card__img"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <div class="team-card__placeholder" style="display:none;">
-          <span class="material-symbols-outlined">person</span>
-        </div>
-      </div>
-      <div class="team-card__info">
-        <div class="team-card__name">Carl</div>
-        <div class="team-card__role">Developer</div>
-      </div>
-    </div>
-
-    <div class="team-card">
-      <div class="team-card__img-wrap">
-        <img src="assets/team/Kurt.jpg" alt="Kurt" class="team-card__img"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <div class="team-card__placeholder" style="display:none;">
-          <span class="material-symbols-outlined">person</span>
-        </div>
-      </div>
-      <div class="team-card__info">
-        <div class="team-card__name">Kurt</div>
-        <div class="team-card__role">System Analyst</div>
-      </div>
-    </div>
-
-    <div class="team-card">
-      <div class="team-card__img-wrap">
-        <img src="assets/team/Justine.jpg" alt="Justine" class="team-card__img"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <div class="team-card__placeholder" style="display:none;">
-          <span class="material-symbols-outlined">person</span>
-        </div>
-      </div>
-      <div class="team-card__info">
-        <div class="team-card__name">Justine</div>
-        <div class="team-card__role">UI/UX Designer</div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-
-<!-- ══════════════════════════════════════
-     CTA
-══════════════════════════════════════ -->
-<section class="cta-section" id="contact">
-  <div class="cta-section__inner">
-    <h2>Ready to Get Started?</h2>
-    <p>Join Esperon Dairy Farm's management system. Staff and admins can log in directly. Customers can create an account to start ordering fresh dairy products.</p>
-    <div class="cta-btns">
-      <a href="login.php"  class="btn btn--solid">
-        <span class="material-symbols-outlined" style="font-size:1rem;">login</span> Sign In
-      </a>
-      <a href="signup.php" class="btn btn--ghost">
-        <span class="material-symbols-outlined" style="font-size:1rem;">person_add</span> Create Account
-      </a>
-    </div>
-  </div>
-</section>
-
-
-<!-- ══════════════════════════════════════
-     FOOTER
-══════════════════════════════════════ -->
-<footer class="footer">
-  <p>
-    &copy; 2026 Esperon Dairy Farm &mdash; Malaybalay City &nbsp;&middot;&nbsp;
-    <a href="login.php">Sign In</a> &nbsp;&middot;&nbsp;
-    <a href="signup.php">Sign Up</a>
-  </p>
-</footer>
-
-</body>
-</html>
