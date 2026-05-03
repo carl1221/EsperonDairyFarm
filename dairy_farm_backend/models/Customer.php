@@ -14,7 +14,7 @@ class Customer {
 
     public function getAll(): array {
         $stmt = $this->db->query("
-            SELECT c.CID, c.Customer_Name, c.Address_ID, a.Address, c.Contact_Num
+            SELECT c.CID, c.Customer_Name, c.Email, c.Address_ID, a.Address, c.Contact_Num
             FROM Customer c
             JOIN Address a ON c.Address_ID = a.Address_ID
             ORDER BY c.CID
@@ -24,7 +24,7 @@ class Customer {
 
     public function getById(int $id): array|false {
         $stmt = $this->db->prepare("
-            SELECT c.CID, c.Customer_Name, c.Address_ID, a.Address, c.Contact_Num
+            SELECT c.CID, c.Customer_Name, c.Email, c.Address_ID, a.Address, c.Contact_Num
             FROM Customer c
             JOIN Address a ON c.Address_ID = a.Address_ID
             WHERE c.CID = ?
@@ -55,10 +55,15 @@ class Customer {
 
         // ── Customer insert — always let AUTO_INCREMENT assign CID ──
         $stmt = $this->db->prepare("
-            INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num)
-            VALUES (?, ?, ?)
+            INSERT INTO Customer (Customer_Name, Email, Address_ID, Contact_Num)
+            VALUES (?, ?, ?, ?)
         ");
-        $stmt->execute([$data['Customer_Name'], $addressId, $data['Contact_Num']]);
+        $stmt->execute([
+            $data['Customer_Name'],
+            $data['Email'] ?? null,
+            $addressId,
+            $data['Contact_Num'],
+        ]);
 
         return (int) $this->db->lastInsertId();
     }
@@ -74,9 +79,18 @@ class Customer {
         }
 
         $stmt = $this->db->prepare("
-            UPDATE Customer SET Customer_Name = ?, Contact_Num = ? WHERE CID = ?
+            UPDATE Customer
+            SET Customer_Name = ?,
+                Email         = COALESCE(?, Email),
+                Contact_Num   = ?
+            WHERE CID = ?
         ");
-        $stmt->execute([$data['Customer_Name'], $data['Contact_Num'], $id]);
+        $stmt->execute([
+            $data['Customer_Name'],
+            $data['Email'] ?? null,
+            $data['Contact_Num'],
+            $id,
+        ]);
         return $stmt->rowCount() > 0;
     }
 

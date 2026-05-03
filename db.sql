@@ -153,12 +153,14 @@ CREATE TABLE IF NOT EXISTS Cow (
 CREATE TABLE IF NOT EXISTS Customer (
     CID           INT          NOT NULL AUTO_INCREMENT,
     Customer_Name VARCHAR(100) NOT NULL,
+    Email         VARCHAR(150) NULL,                 -- for login and password reset
     Address_ID    INT          NOT NULL,   -- FK → Address
     Contact_Num   VARCHAR(20)  NOT NULL,
     Password      VARCHAR(255) NOT NULL DEFAULT '',  -- bcrypt hash; set on signup
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_customer  PRIMARY KEY (CID),
-    CONSTRAINT fk_cust_addr FOREIGN KEY (Address_ID)
+    CONSTRAINT pk_customer       PRIMARY KEY (CID),
+    CONSTRAINT uq_customer_email UNIQUE (Email),
+    CONSTRAINT fk_cust_addr      FOREIGN KEY (Address_ID)
         REFERENCES Address (Address_ID)
         ON UPDATE CASCADE
         ON DELETE RESTRICT   -- cannot delete an address while a customer uses it
@@ -475,9 +477,9 @@ INSERT INTO Cow (Cow_ID, Cow, Breed, Date_Of_Birth, Production_Liters, Health_St
 ON DUPLICATE KEY UPDATE Cow = VALUES(Cow);
 
 -- Default customer password is 'Password1' — admin should change via Customers > 🔑 Password
-INSERT INTO Customer (CID, Customer_Name, Address_ID, Contact_Num, Password) VALUES
-    (1, 'Ana',  301, '09010000001', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m'),
-    (2, 'Juan', 302, '09020000002', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m')
+INSERT INTO Customer (CID, Customer_Name, Email, Address_ID, Contact_Num, Password) VALUES
+    (1, 'Ana',  'ana@esperon.farm',  301, '09010000001', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m'),
+    (2, 'Juan', 'juan@esperon.farm', 302, '09020000002', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m')
 ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name), Password = VALUES(Password);
 
 -- Orders are created by staff and customers through the system — no sample data.
@@ -727,7 +729,7 @@ PREPARE p_sr FROM @s_sr; EXECUTE p_sr; DEALLOCATE PREPARE p_sr;
 CREATE OR REPLACE VIEW vw_order_details AS
 SELECT
     o.Order_ID,
-    o.Order_Type,
+    ot.type_name      AS Order_Type,
     o.Order_Date,
     o.quantity_liters,
     o.unit_price,
@@ -745,11 +747,12 @@ SELECT
     o.Worker_ID,
     w.Worker          AS Worker_Name,
     w.Worker_Role
-FROM       Orders   o
-JOIN       Customer c  ON o.CID       = c.CID
-JOIN       Address  a  ON c.Address_ID = a.Address_ID
-JOIN       Cow      cw ON o.Cow_ID    = cw.Cow_ID
-JOIN       Worker   w  ON o.Worker_ID  = w.Worker_ID;
+FROM       Orders     o
+JOIN       OrderTypes ot ON o.type_id     = ot.type_id
+JOIN       Customer   c  ON o.CID         = c.CID
+JOIN       Address    a  ON c.Address_ID  = a.Address_ID
+JOIN       Cow        cw ON o.Cow_ID      = cw.Cow_ID
+JOIN       Worker     w  ON o.Worker_ID   = w.Worker_ID;
 
 CREATE OR REPLACE VIEW vw_staff_reports AS
 SELECT
@@ -796,6 +799,18 @@ LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
 -- 1. Customer: add Password column (for customer login)
 ALTER TABLE Customer
     ADD COLUMN IF NOT EXISTS Password VARCHAR(255) NOT NULL DEFAULT '' AFTER Contact_Num;
+
+-- 1b. Customer: add Email column (for login and password reset)
+ALTER TABLE Customer
+    ADD COLUMN IF NOT EXISTS Email VARCHAR(150) NULL AFTER Customer_Name;
+
+-- Add unique constraint on Customer.Email if not already present
+SET @uq_ce = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'Customer' AND CONSTRAINT_NAME = 'uq_customer_email');
+SET @s_ce = IF(@uq_ce = 0,
+    'ALTER TABLE Customer ADD CONSTRAINT uq_customer_email UNIQUE (Email)',
+    'SELECT 1');
+PREPARE p_ce FROM @s_ce; EXECUTE p_ce; DEALLOCATE PREPARE p_ce;
 
 -- 2. Products table (shop feature)
 CREATE TABLE IF NOT EXISTS Products (

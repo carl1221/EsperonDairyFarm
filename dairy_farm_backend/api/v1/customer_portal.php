@@ -31,13 +31,14 @@ try {
             // Farm orders (milk, cheese, etc.)
             case 'orders':
                 $stmt = $db->prepare("
-                    SELECT o.Order_ID, o.Order_Type, o.Order_Date,
+                    SELECT o.Order_ID, ot.type_name AS Order_Type, o.Order_Date,
                            o.quantity_liters, o.unit_price, o.total_price,
                            o.status AS Order_Status, o.notes AS Order_Notes,
                            cw.Cow, cw.Breed, w.Worker AS Worker_Name
                     FROM Orders o
-                    JOIN Cow    cw ON o.Cow_ID    = cw.Cow_ID
-                    JOIN Worker w  ON o.Worker_ID  = w.Worker_ID
+                    JOIN OrderTypes ot ON o.type_id    = ot.type_id
+                    JOIN Cow        cw ON o.Cow_ID     = cw.Cow_ID
+                    JOIN Worker     w  ON o.Worker_ID  = w.Worker_ID
                     WHERE o.CID = ?
                     ORDER BY o.Order_Date DESC, o.Order_ID DESC
                 ");

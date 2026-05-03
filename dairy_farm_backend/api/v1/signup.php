@@ -66,6 +66,13 @@ try {
             sendError('A customer with that name already exists.', 409);
         }
 
+        // Check for duplicate email in Customer table
+        $stmt = $db->prepare('SELECT CID FROM Customer WHERE Email = ?');
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            sendError('An account with that email already exists.', 409);
+        }
+
         $db->beginTransaction();
         try {
             // Insert address
@@ -75,9 +82,9 @@ try {
 
             // Insert customer — store hashed password so they can log in
             $custStmt = $db->prepare(
-                'INSERT INTO Customer (Customer_Name, Address_ID, Contact_Num, Password) VALUES (?, ?, ?, ?)'
+                'INSERT INTO Customer (Customer_Name, Email, Address_ID, Contact_Num, Password) VALUES (?, ?, ?, ?, ?)'
             );
-            $custStmt->execute([$username, $addressId, $contactNum, $hashedPassword]);
+            $custStmt->execute([$username, $email, $addressId, $contactNum, $hashedPassword]);
             $newId = $db->lastInsertId();
             $db->commit();
 

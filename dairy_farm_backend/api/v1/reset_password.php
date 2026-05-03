@@ -2,11 +2,12 @@
 // ============================================================
 // api/reset_password.php
 // Password reset with 6-digit verification code.
+// Supports both Worker and Customer accounts.
 //
 // POST ?action=verify_identity
 //   body: { username, email }
 //   → generates a 6-digit code stored in session (15 min TTL)
-//   → returns worker_name + code (display in UI; wire up email later)
+//   → returns account_name + code (display in UI; wire up email later)
 //
 // POST ?action=verify_code
 //   body: { code }
@@ -14,7 +15,7 @@
 //
 // POST ?action=reset
 //   body: { token, password, password_confirm }
-//   → verifies token, updates password, clears session
+//   → verifies token, updates password in correct table, clears session
 // ============================================================
 
 require_once __DIR__ . '/../../config/bootstrap.php';
@@ -38,18 +39,31 @@ try {
             sendError('Username and email are required.', 400);
         }
 
-        // Look up the worker — case-insensitive on both fields
+        // Try Worker table first
         $stmt = $db->prepare(
-            "SELECT Worker_ID, Worker, Email
+            "SELECT Worker_ID AS id, Worker AS name, 'worker' AS account_type, Email
              FROM Worker
              WHERE LOWER(Worker) = LOWER(?)
                AND LOWER(Email)  = LOWER(?)
              LIMIT 1"
         );
         $stmt->execute([$username, $email]);
-        $worker = $stmt->fetch();
+        $account = $stmt->fetch();
 
-        if (!$worker) {
+        // Fall back to Customer table
+        if (!$account) {
+            $stmt = $db->prepare(
+                "SELECT CID AS id, Customer_Name AS name, 'customer' AS account_type, Email
+                 FROM Customer
+                 WHERE LOWER(Customer_Name) = LOWER(?)
+                   AND LOWER(Email)         = LOWER(?)
+                 LIMIT 1"
+            );
+            $stmt->execute([$username, $email]);
+            $account = $stmt->fetch();
+        }
+
+        if (!$account) {
             // Deliberately vague — don't reveal whether username or email was wrong
             sendError('No account found with that username and email combination.', 404);
         }
@@ -59,25 +73,26 @@ try {
         $expiresAt = time() + 900; // 15 minutes
 
         $_SESSION['pw_reset'] = [
-            'stage'      => 'code',        // waiting for code verification
-            'code'       => $code,
-            'attempts'   => 0,
-            'worker_id'  => $worker['Worker_ID'],
-            'worker_name'=> $worker['Worker'],
-            'expires_at' => $expiresAt,
+            'stage'        => 'code',   // waiting for code verification
+            'code'         => $code,
+            'attempts'     => 0,
+            'account_id'   => $account['id'],
+            'account_name' => $account['name'],
+            'account_type' => $account['account_type'],
+            'expires_at'   => $expiresAt,
         ];
 
-        // TODO: send $code via email to $worker['Email']
+        // TODO: send $code via email to $account['Email']
         // For now the code is returned in the response so the UI can display it.
         sendSuccess('Verification code sent.', [
-            'worker_name' => $worker['Worker'],
+            'worker_name' => $account['name'],
             'code'        => $code,   // remove this line once real email is wired up
         ]);
     }
 
     // ── Step 2: verify the 6-digit code ──────────────────
     elseif ($action === 'verify_code') {
-        $code  = trim($data['code'] ?? '');
+        $code = trim($data['code'] ?? '');
 
         if ($code === '') {
             sendError('Verification code is required.', 400);
@@ -109,30 +124,30 @@ try {
         // Code is correct — upgrade session to password-reset stage
         $token = bin2hex(random_bytes(24));
         $_SESSION['pw_reset'] = [
-            'stage'      => 'reset',
-            'token'      => $token,
-            'worker_id'  => $reset['worker_id'],
-            'worker_name'=> $reset['worker_name'],
-            'expires_at' => $reset['expires_at'],
+            'stage'        => 'reset',
+            'token'        => $token,
+            'account_id'   => $reset['account_id'],
+            'account_name' => $reset['account_name'],
+            'account_type' => $reset['account_type'],
+            'expires_at'   => $reset['expires_at'],
         ];
 
         sendSuccess('Code verified.', [
             'token'      => $token,
-            'worker_name'=> $reset['worker_name'],
+            'worker_name'=> $reset['account_name'],
         ]);
     }
 
     // ── Step 3: reset password ────────────────────────────
     elseif ($action === 'reset') {
-        $token    = trim($data['token']            ?? '');
-        $password = $data['password']              ?? '';
-        $confirm  = $data['password_confirm']      ?? '';
+        $token    = trim($data['token']       ?? '');
+        $password = $data['password']         ?? '';
+        $confirm  = $data['password_confirm'] ?? '';
 
         if ($token === '' || $password === '' || $confirm === '') {
             sendError('All fields are required.', 400);
         }
 
-        // Validate token from session
         $reset = $_SESSION['pw_reset'] ?? null;
 
         if (!$reset || ($reset['stage'] ?? '') !== 'reset' || $reset['token'] !== $token) {
@@ -144,7 +159,6 @@ try {
             sendError('Reset token has expired (15 min limit). Please start over.', 400);
         }
 
-        // Use shared password validator from bootstrap.php
         $pwError = validatePasswordStrength($password);
         if ($pwError) sendError($pwError, 400);
 
@@ -152,10 +166,14 @@ try {
             sendError('Passwords do not match.', 400);
         }
 
-        // Update password
+        // Update password in the correct table
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('UPDATE Worker SET Password = ? WHERE Worker_ID = ?');
-        $stmt->execute([$hash, $reset['worker_id']]);
+        if ($reset['account_type'] === 'customer') {
+            $stmt = $db->prepare('UPDATE Customer SET Password = ? WHERE CID = ?');
+        } else {
+            $stmt = $db->prepare('UPDATE Worker SET Password = ? WHERE Worker_ID = ?');
+        }
+        $stmt->execute([$hash, $reset['account_id']]);
 
         // Clear the reset token so it can't be reused
         unset($_SESSION['pw_reset']);
