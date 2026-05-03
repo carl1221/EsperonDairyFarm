@@ -34,14 +34,14 @@
     /* Override auth-card styles for glassmorphism */
     .auth-card {
       width: 100%;
-      max-width: 440px;
+      max-width: 520px;
       background: rgba(255, 255, 255, 0.4);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.6);
-      border-radius: 24px;
-      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
-      padding: 2.5rem 2rem;
+      border-radius: 28px;
+      box-shadow: 0 16px 56px rgba(0, 0, 0, 0.18);
+      padding: 3rem 2.75rem;
     }
 
     .auth-card__logo {
@@ -50,32 +50,32 @@
     }
 
     .auth-card__logo-img {
-      max-width: 100px;
+      max-width: 120px;
       height: auto;
-      border-radius: 16px;
-      margin-bottom: 0.75rem;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      margin-bottom: 0.85rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
 
     .auth-card__logo-name {
       font-family: 'Playfair Display', serif;
-      font-size: 1.4rem;
+      font-size: 1.6rem;
       color: #7a1f2e !important;
       font-weight: 700;
     }
 
     .auth-card__logo-sub {
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: #5a4f45 !important;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      margin-top: 0.25rem;
+      margin-top: 0.3rem;
     }
 
     h2 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      margin-bottom: 1.25rem;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
       color: #2a1f15 !important;
       text-align: center;
     }
@@ -88,7 +88,7 @@
     }
 
     .form-group label {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: #2a1f15 !important;
     }
@@ -98,16 +98,16 @@
     }
 
     .form-group input {
-      padding: 0.7rem 1rem;
+      padding: 0.85rem 1.1rem;
       border: 1px solid #d4c9b8;
       border-radius: 12px;
-      font-size: 0.92rem;
+      font-size: 1rem;
       font-family: 'Lato', sans-serif;
       background: rgba(255, 255, 255, 0.7);
       color: #2a1f15 !important;
       transition: all 0.15s;
       width: 100%;
-      padding-right: 2.5rem;
+      padding-right: 2.8rem;
     }
 
     .form-group input:focus {
@@ -198,13 +198,13 @@
 
     .submit-btn {
       width: 100%;
-      padding: 0.8rem;
+      padding: 0.9rem;
       background: linear-gradient(135deg, #4e6040, #6b8a5c);
       color: #fff !important;
       border: none;
       border-radius: 12px;
-      font-size: 0.95rem;
-      font-weight: 600;
+      font-size: 1rem;
+      font-weight: 700;
       font-family: 'Lato', sans-serif;
       cursor: pointer;
       transition: all 0.15s;
@@ -250,12 +250,12 @@
 
     .google-btn {
       width: 100%;
-      padding: 0.8rem;
+      padding: 0.9rem;
       background: #fff;
       color: #3c4043;
       border: 1px solid #dadce0;
       border-radius: 12px;
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 500;
       font-family: 'Lato', sans-serif;
       cursor: pointer;
@@ -654,7 +654,7 @@
     }
 
     @media (max-width: 480px) {
-      .auth-card { padding: 1.5rem 1.25rem; }
+      .auth-card { padding: 2rem 1.5rem; max-width: 100%; }
       .form-options { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
     }
   </style>
