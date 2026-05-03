@@ -545,57 +545,57 @@ try {
 
     <div class="team-card">
       <div class="team-card__img-wrap">
-        <img src="assets/team/member1.jpg" alt="Team Member 1" class="team-card__img"
+        <img src="assets/team/PJ.jpg" alt="PJ" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
       <div class="team-card__info">
-        <div class="team-card__name">Team Member 1</div>
-        <div class="team-card__role">Role</div>
+        <div class="team-card__name">PJ</div>
+        <div class="team-card__role">Team Leader</div>
       </div>
     </div>
 
     <div class="team-card">
       <div class="team-card__img-wrap">
-        <img src="assets/team/member2.jpg" alt="Team Member 2" class="team-card__img"
+        <img src="assets/team/Carl.jpg" alt="Carl" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
       <div class="team-card__info">
-        <div class="team-card__name">Team Member 2</div>
-        <div class="team-card__role">Role</div>
+        <div class="team-card__name">Carl</div>
+        <div class="team-card__role">Developer</div>
       </div>
     </div>
 
     <div class="team-card">
       <div class="team-card__img-wrap">
-        <img src="assets/team/member3.jpg" alt="Team Member 3" class="team-card__img"
+        <img src="assets/team/Kurt.jpg" alt="Kurt" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
       <div class="team-card__info">
-        <div class="team-card__name">Team Member 3</div>
-        <div class="team-card__role">Role</div>
+        <div class="team-card__name">Kurt</div>
+        <div class="team-card__role">System Analyst</div>
       </div>
     </div>
 
     <div class="team-card">
       <div class="team-card__img-wrap">
-        <img src="assets/team/member4.jpg" alt="Team Member 4" class="team-card__img"
+        <img src="assets/team/Justine.jpg" alt="Justine" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
       <div class="team-card__info">
-        <div class="team-card__name">Team Member 4</div>
-        <div class="team-card__role">Role</div>
+        <div class="team-card__name">Justine</div>
+        <div class="team-card__role">UI/UX Designer</div>
       </div>
     </div>
 
