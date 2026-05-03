@@ -28,7 +28,7 @@
       background: url('assets/bg.png') no-repeat center center fixed;
       background-size: cover;
       overflow: auto !important;
-      padding: 2rem 0;
+      padding: 2rem 1rem;
     }
 
     /* Override auth-card styles for glassmorphism */
@@ -653,8 +653,18 @@
       margin-bottom: 12px;
     }
 
-    @media (max-width: 480px) {
-      .auth-card { padding: 2rem 1.5rem; max-width: 100%; }
+    @media (max-width: 600px) {
+      body { padding: 1rem 0.75rem; align-items: flex-start; padding-top: 1.5rem; }
+      .auth-card {
+        padding: 2rem 1.5rem;
+        max-width: 100%;
+        border-radius: 20px;
+      }
+      .auth-card__logo-img { max-width: 90px; }
+      .auth-card__logo-name { font-size: 1.35rem; }
+      h2 { font-size: 1.4rem; margin-bottom: 1.1rem; }
+      .form-group input { font-size: 0.95rem; padding: 0.8rem 1rem; padding-right: 2.8rem; }
+      .submit-btn, .google-btn { font-size: 0.95rem; padding: 0.8rem; }
       .form-options { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
     }
   </style>
