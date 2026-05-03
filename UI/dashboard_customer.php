@@ -295,11 +295,11 @@ const STATUS_PILL = {
 };
 
 // -- Product emoji -----------------------------------------
-const EMOJI_MAP = { milk:'??', cheese:'??', butter:'??', yogurt:'??', cream:'??', skim:'??', mozzarella:'??' };
+const EMOJI_MAP = { milk:'\uD83E\uDD5B', cheese:'\uD83E\uDDC0', butter:'\uD83E\uDDC8', yogurt:'\uD83C\uDF6C', cream:'\uD83C\uDF68', skim:'\uD83C\uDF76', mozzarella:'\uD83E\uDDC0' };
 function getEmoji(name) {
   const l = name.toLowerCase();
   for (const [k,e] of Object.entries(EMOJI_MAP)) if (l.includes(k)) return e;
-  return '??';
+  return '\uD83D\uDED2'; // 🛒 shopping cart as fallback
 }
 
 // -- Farm orders -------------------------------------------
@@ -330,7 +330,7 @@ function updateStats() {
   set('stat-total',     _allOrders.length);
   set('stat-pending',   pending);
   set('stat-delivered', delivered);
-  set('stat-spent',     '?' + spent.toFixed(2));
+  set('stat-spent',     '\u20B1' + spent.toFixed(2));
 }
 
 function setFilter(f, btn) {
@@ -359,12 +359,12 @@ function renderOrders() {
     return `<div class="order-row" onclick="openOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
       <div style="flex:1;min-width:0;">
         <div class="order-row__id">Order #${o.Order_ID} &mdash; ${o.Order_Type}${recentDot}</div>
-        <div class="order-row__meta">${date} &nbsp;�&nbsp; ?? ${o.Cow}${o.Breed ? ' ('+o.Breed+')' : ''} &nbsp;�&nbsp; ${o.Worker_Name}</div>
+        <div class="order-row__meta">${date} &nbsp;&middot;&nbsp; \uD83D\uDC04 ${o.Cow}${o.Breed ? ' ('+o.Breed+')' : ''} &nbsp;&middot;&nbsp; ${o.Worker_Name}</div>
         <div style="margin-top:5px;">${pill}</div>
       </div>
       <div class="order-row__price">
-        <div class="order-row__total">?${parseFloat(o.total_price||0).toFixed(2)}</div>
-        <div class="order-row__qty">${parseFloat(o.quantity_liters||0).toFixed(2)}L � ?${parseFloat(o.unit_price||0).toFixed(2)}</div>
+        <div class="order-row__total">&#8369;${parseFloat(o.total_price||0).toFixed(2)}</div>
+        <div class="order-row__qty">${parseFloat(o.quantity_liters||0).toFixed(2)}L &middot; &#8369;${parseFloat(o.unit_price||0).toFixed(2)}</div>
       </div>
     </div>`;
   }).join('');
@@ -378,11 +378,11 @@ function openOrderDetail(o) {
   document.getElementById('od-body').innerHTML = `
     <div class="od-row"><span class="od-row__label">Order Type</span><span class="od-row__val">${o.Order_Type}</span></div>
     <div class="od-row"><span class="od-row__label">Date</span><span class="od-row__val">${new Date(o.Order_Date).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span></div>
-    <div class="od-row"><span class="od-row__label">Cow</span><span class="od-row__val">?? ${o.Cow}${o.Breed?' ('+o.Breed+')':''}</span></div>
+    <div class="od-row"><span class="od-row__label">Cow</span><span class="od-row__val">\uD83D\uDC04 ${o.Cow}${o.Breed?' ('+o.Breed+')':''}</span></div>
     <div class="od-row"><span class="od-row__label">Handled by</span><span class="od-row__val">${o.Worker_Name}</span></div>
     <div class="od-row"><span class="od-row__label">Quantity</span><span class="od-row__val">${parseFloat(o.quantity_liters||0).toFixed(2)} L</span></div>
-    <div class="od-row"><span class="od-row__label">Unit Price</span><span class="od-row__val">?${parseFloat(o.unit_price||0).toFixed(2)} / L</span></div>
-    <div class="od-row"><span class="od-row__label">Total</span><span class="od-row__val" style="color:var(--olive-dark);font-size:1rem;">?${parseFloat(o.total_price||0).toFixed(2)}</span></div>
+    <div class="od-row"><span class="od-row__label">Unit Price</span><span class="od-row__val">&#8369;${parseFloat(o.unit_price||0).toFixed(2)} / L</span></div>
+    <div class="od-row"><span class="od-row__label">Total</span><span class="od-row__val" style="color:var(--olive-dark);font-size:1rem;">&#8369;${parseFloat(o.total_price||0).toFixed(2)}</span></div>
     <div class="od-row"><span class="od-row__label">Status</span><span class="od-row__val">${pill}</span></div>
     ${o.Order_Notes ? `<div class="od-row"><span class="od-row__label">Notes</span><span class="od-row__val">${o.Order_Notes}</span></div>` : ''}
   `;
@@ -406,7 +406,7 @@ async function loadFeatured() {
       <div class="feat-card">
         <div class="feat-card__emoji">${getEmoji(p.name)}</div>
         <div class="feat-card__name">${p.name}</div>
-        <div class="feat-card__price">?${parseFloat(p.price).toFixed(2)} / ${p.unit}</div>
+        <div class="feat-card__price">&#8369;${parseFloat(p.price).toFixed(2)} / ${p.unit}</div>
         <div class="feat-card__stock">${p.stock_qty} in stock</div>
         <button class="feat-card__btn" onclick="quickAddToCart(${p.product_id}, '${p.name.replace(/'/g,"\\'")}')">
           Add to Cart
@@ -438,8 +438,8 @@ async function loadCartOrders() {
       const date  = new Date(cart.purchased_at).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
       const items = cart.items.map(i =>
         `<div class="cart-order__item">
-          <span>${getEmoji(i.product_name)} ${i.product_name} � ${i.quantity} ${i.unit}</span>
-          <span>?${parseFloat(i.subtotal).toFixed(2)}</span>
+          <span>${getEmoji(i.product_name)} ${i.product_name} &times; ${i.quantity} ${i.unit}</span>
+          <span>&#8369;${parseFloat(i.subtotal).toFixed(2)}</span>
         </div>`
       ).join('');
       return `<div class="cart-order-card">
@@ -448,7 +448,7 @@ async function loadCartOrders() {
             <div class="cart-order__id">Purchase #${cart.cart_id}</div>
             <div class="cart-order__date">${date}</div>
           </div>
-          <div class="cart-order__total">?${parseFloat(cart.total).toFixed(2)}</div>
+          <div class="cart-order__total">&#8369;${parseFloat(cart.total).toFixed(2)}</div>
         </div>
         ${items}
       </div>`;
