@@ -184,7 +184,8 @@ INSERT INTO OrderTypes (type_name) VALUES
     ('Butter Order'),
     ('Yogurt Order'),
     ('Cream Order'),
-    ('Custom Order')
+    ('Custom Order'),
+    ('Shop Purchase')
 ON DUPLICATE KEY UPDATE type_name = VALUES(type_name);
 
 -- ============================================================
@@ -203,7 +204,7 @@ ON DUPLICATE KEY UPDATE type_name = VALUES(type_name);
 CREATE TABLE IF NOT EXISTS Orders (
     Order_ID        INT           NOT NULL AUTO_INCREMENT,
     CID             INT           NOT NULL,   -- FK â†’ Customer
-    Cow_ID          INT           NOT NULL,   -- FK â†’ Cow
+    Cow_ID          INT           NULL,       -- FK -> Cow (NULL for shop purchases)
     Worker_ID       INT           NOT NULL,   -- FK â†’ Worker
     type_id         INT           NOT NULL,   -- FK â†’ OrderTypes (replaces free-text Order_Type)
     Order_Date      DATE          NOT NULL,
@@ -327,9 +328,9 @@ SELECT
 
     -- Cow details (derived from Cow via FK)
     o.Cow_ID,
-    cw.Cow,
-    cw.Breed,
-    cw.Production_Liters,
+    COALESCE(cw.Cow, '--') AS Cow,
+    COALESCE(cw.Breed, '--') AS Breed,
+    COALESCE(cw.Production_Liters, 0) AS Production_Liters,
 
     -- Worker details (derived from Worker via FK)
     o.Worker_ID,
@@ -340,7 +341,7 @@ FROM       Orders     o
 JOIN       OrderTypes ot ON o.type_id     = ot.type_id
 JOIN       Customer   c  ON o.CID         = c.CID
 JOIN       Address    a  ON c.Address_ID  = a.Address_ID
-JOIN       Cow        cw ON o.Cow_ID      = cw.Cow_ID
+LEFT JOIN  Cow        cw ON o.Cow_ID      = cw.Cow_ID
 JOIN       Worker     w  ON o.Worker_ID   = w.Worker_ID;
 
 -- ============================================================
