@@ -25,11 +25,8 @@
 --   See the MIGRATION section at the bottom.
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS esperon_dairy_farm
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE esperon_dairy_farm;
+-- CREATE DATABASE and USE removed for shared hosting compatibility
+-- Import this file directly into your existing database via phpMyAdmin
 
 -- ============================================================
 -- [STRONG ENTITY] Address
@@ -162,9 +159,9 @@ CREATE TABLE IF NOT EXISTS CartItems (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Indexes for shop queries
-CREATE INDEX IF NOT EXISTS idx_products_active  ON Products(is_active);
-CREATE INDEX IF NOT EXISTS idx_cart_cid_status  ON Cart(CID, status);
-CREATE INDEX IF NOT EXISTS idx_cart_items_cart  ON CartItems(cart_id);
+CREATE INDEX idx_products_active  ON Products(is_active);
+CREATE INDEX idx_cart_cid_status  ON Cart(CID, status);
+CREATE INDEX idx_cart_items_cart  ON CartItems(cart_id);
 
 -- ============================================================
 -- [LOOKUP TABLE] OrderTypes
@@ -306,42 +303,6 @@ CREATE TABLE IF NOT EXISTS staff_reports (
 -- Worker name) in the Orders table itself.
 -- The view is recomputed on every query from live table data.
 -- ============================================================
-CREATE OR REPLACE VIEW vw_order_details AS
-SELECT
-    -- Order identity
-    o.Order_ID,
-    ot.type_name      AS Order_Type,
-    o.Order_Date,
-    o.quantity_liters,
-    o.unit_price,
-    o.total_price,
-    o.status          AS Order_Status,
-    o.notes           AS Order_Notes,
-    o.updated_at      AS Order_Updated,
-
-    -- Customer details (derived from Customer + Address via FK)
-    o.CID,
-    c.Customer_Name,
-    c.Contact_Num,
-    a.Address,
-
-    -- Cow details (derived from Cow via FK)
-    o.Cow_ID,
-    cw.Cow,
-    cw.Breed,
-    cw.Production_Liters,
-
-    -- Worker details (derived from Worker via FK)
-    o.Worker_ID,
-    w.Worker          AS Worker_Name,
-    w.Worker_Role
-
-FROM       Orders     o
-JOIN       OrderTypes ot ON o.type_id     = ot.type_id
-JOIN       Customer   c  ON o.CID         = c.CID
-JOIN       Address    a  ON c.Address_ID  = a.Address_ID
-JOIN       Cow        cw ON o.Cow_ID      = cw.Cow_ID
-JOIN       Worker     w  ON o.Worker_ID   = w.Worker_ID;
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_staff_reports
@@ -354,27 +315,6 @@ JOIN       Worker     w  ON o.Worker_ID   = w.Worker_ID;
 -- data without storing those fields redundantly in staff_reports.
 -- Satisfies 3NF â€” no transitive dependency in the base table.
 -- ============================================================
-CREATE OR REPLACE VIEW vw_staff_reports AS
-SELECT
-    -- Report fields (from strong entity staff_reports)
-    r.report_id,
-    r.report_type,
-    r.title,
-    r.content,
-    r.status,
-    r.admin_note,
-    r.created_at,
-    r.updated_at,
-
-    -- Worker identity (FK stored in staff_reports)
-    r.worker_id,
-
-    -- Worker details (derived via JOIN â€” not stored in staff_reports)
-    w.Worker      AS worker_name,
-    w.Worker_Role AS worker_role
-
-FROM staff_reports r
-JOIN Worker w ON r.worker_id = w.Worker_ID;
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_reminders
@@ -386,28 +326,6 @@ JOIN Worker w ON r.worker_id = w.Worker_ID;
 -- Purpose: resolve created_by and assigned_to integer FKs to
 -- human-readable worker names without storing names in reminders.
 -- ============================================================
-CREATE OR REPLACE VIEW vw_reminders AS
-SELECT
-    -- Reminder fields (from weak entity reminders)
-    r.reminder_id,
-    r.title,
-    r.description,
-    r.due_date,
-    r.status,
-    r.created_at,
-
-    -- Creator (identifying owner â€” NOT NULL FK)
-    r.created_by,
-    creator.Worker        AS created_by_name,
-    creator.Worker_Role   AS created_by_role,
-
-    -- Assignee (optional FK â€” may be NULL)
-    r.assigned_to,
-    assignee.Worker       AS assigned_to_name
-
-FROM      reminders r
-JOIN      Worker creator  ON r.created_by  = creator.Worker_ID
-LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
 
 -- ============================================================
 -- [STRONG ENTITY] notes
@@ -443,9 +361,9 @@ CREATE TABLE IF NOT EXISTS notes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- entity_type + entity_id index for fast "notes about Cow #5" queries
-CREATE INDEX IF NOT EXISTS idx_notes_entity  ON notes(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at);
-CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
+CREATE INDEX idx_notes_entity  ON notes(entity_type, entity_id);
+CREATE INDEX idx_notes_created ON notes(created_at);
+CREATE INDEX idx_notes_category ON notes(category);
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_notes
@@ -453,42 +371,28 @@ CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
 -- storing the author name redundantly in the notes table.
 -- Also exposes category, entity_type, entity_id, and updated_at.
 -- ============================================================
-CREATE OR REPLACE VIEW vw_notes AS
-SELECT
-    n.note_id,
-    n.text,
-    n.category,
-    n.entity_type,
-    n.entity_id,
-    n.created_at,
-    n.updated_at,
-    n.author_id,
-    w.Worker      AS author,
-    w.Worker_Role AS author_role
-FROM notes n
-JOIN Worker w ON n.author_id = w.Worker_ID;
 
 -- ============================================================
 -- INDEXES
 -- Covering indexes on the most common filter/join columns.
 -- ============================================================
-CREATE INDEX IF NOT EXISTS idx_worker_name        ON Worker(Worker);
-CREATE INDEX IF NOT EXISTS idx_worker_role        ON Worker(Worker_Role);
-CREATE INDEX IF NOT EXISTS idx_worker_approval    ON Worker(approval_status);
-CREATE INDEX IF NOT EXISTS idx_customer_address   ON Customer(Address_ID);
-CREATE INDEX IF NOT EXISTS idx_customer_name      ON Customer(Customer_Name);
-CREATE INDEX IF NOT EXISTS idx_orders_cid         ON Orders(CID);
-CREATE INDEX IF NOT EXISTS idx_orders_cow_id      ON Orders(Cow_ID);
-CREATE INDEX IF NOT EXISTS idx_orders_worker_id   ON Orders(Worker_ID);
-CREATE INDEX IF NOT EXISTS idx_orders_date        ON Orders(Order_Date);
-CREATE INDEX IF NOT EXISTS idx_orders_status      ON Orders(status);
-CREATE INDEX IF NOT EXISTS idx_reminders_due      ON reminders(due_date);
-CREATE INDEX IF NOT EXISTS idx_reminders_status   ON reminders(status);
-CREATE INDEX IF NOT EXISTS idx_reminders_assignee ON reminders(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_reports_worker     ON staff_reports(worker_id);
-CREATE INDEX IF NOT EXISTS idx_reports_status     ON staff_reports(status);
-CREATE INDEX IF NOT EXISTS idx_cow_active         ON Cow(is_active);
-CREATE INDEX IF NOT EXISTS idx_cow_health         ON Cow(Health_Status);
+CREATE INDEX idx_worker_name        ON Worker(Worker);
+CREATE INDEX idx_worker_role        ON Worker(Worker_Role);
+CREATE INDEX idx_worker_approval    ON Worker(approval_status);
+CREATE INDEX idx_customer_address   ON Customer(Address_ID);
+CREATE INDEX idx_customer_name      ON Customer(Customer_Name);
+CREATE INDEX idx_orders_cid         ON Orders(CID);
+CREATE INDEX idx_orders_cow_id      ON Orders(Cow_ID);
+CREATE INDEX idx_orders_worker_id   ON Orders(Worker_ID);
+CREATE INDEX idx_orders_date        ON Orders(Order_Date);
+CREATE INDEX idx_orders_status      ON Orders(status);
+CREATE INDEX idx_reminders_due      ON reminders(due_date);
+CREATE INDEX idx_reminders_status   ON reminders(status);
+CREATE INDEX idx_reminders_assignee ON reminders(assigned_to);
+CREATE INDEX idx_reports_worker     ON staff_reports(worker_id);
+CREATE INDEX idx_reports_status     ON staff_reports(status);
+CREATE INDEX idx_cow_active         ON Cow(is_active);
+CREATE INDEX idx_cow_health         ON Cow(Health_Status);
 
 -- ============================================================
 -- SAMPLE DATA
@@ -559,7 +463,7 @@ CREATE TABLE IF NOT EXISTS production_logs (
         REFERENCES Worker (Worker_ID) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX IF NOT EXISTS idx_prod_logs_date ON production_logs(log_date);
+CREATE INDEX idx_prod_logs_date ON production_logs(log_date);
 
 -- ============================================================
 -- [STRONG ENTITY] product_reviews
@@ -582,8 +486,8 @@ CREATE TABLE IF NOT EXISTS product_reviews (
     CONSTRAINT fk_rev_customer    FOREIGN KEY (CID)        REFERENCES Customer (CID)        ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews(product_id);
-CREATE INDEX IF NOT EXISTS idx_reviews_cid     ON product_reviews(CID);
+CREATE INDEX idx_reviews_product ON product_reviews(product_id);
+CREATE INDEX idx_reviews_cid     ON product_reviews(CID);
 
 -- ============================================================
 -- END OF SCRIPT
