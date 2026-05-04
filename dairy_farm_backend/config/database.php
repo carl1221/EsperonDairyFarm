@@ -41,6 +41,13 @@ function getConnection(): PDO {
         // Log full details internally — do NOT expose them to the client
         error_log('Database connection failed: ' . $e->getMessage());
 
+        // If this is being called from a UI page (not an API endpoint),
+        // throw so the caller can handle it gracefully instead of outputting JSON
+        $calledFromApi = defined('API_REQUEST') && API_REQUEST === true;
+        if (!$calledFromApi) {
+            throw new RuntimeException('Database connection failed.');
+        }
+
         http_response_code(500);
         header('Content-Type: application/json');
         echo json_encode([

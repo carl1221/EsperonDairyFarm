@@ -5,6 +5,8 @@
 // Sets CORS headers, starts the session, and defines shared helpers.
 // ============================================================
 
+define('API_REQUEST', true);
+
 // Conditionally load Composer autoload if it exists
 $vendorAutoload = __DIR__ . '/../../vendor/autoload.php';
 if (file_exists($vendorAutoload)) {
