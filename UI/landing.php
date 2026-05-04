@@ -16,6 +16,17 @@ if (isset($_SESSION['user'])) {
 $stats = ['products' => 0, 'cows' => 0, 'orders' => 0, 'customers' => 0];
 $products = [];
 try {
+    // Load .env manually so database.php can read credentials
+    $envFile = __DIR__ . '/../.env';
+    if (file_exists($envFile)) {
+        foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;
+            [$k, $v] = explode('=', $line, 2);
+            $k = trim($k); $v = trim($v);
+            if (!array_key_exists($k, $_ENV)) { putenv("$k=$v"); $_ENV[$k] = $v; }
+        }
+    }
     require_once __DIR__ . '/../dairy_farm_backend/config/database.php';
     $db = getConnection();
     $stats['products']  = $db->query("SELECT COUNT(*) FROM Products WHERE is_active = 1")->fetchColumn();
