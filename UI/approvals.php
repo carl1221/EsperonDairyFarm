@@ -21,9 +21,14 @@ requireAdminPage();
       <h1 class="page-title">Pending Approvals</h1>
       <p class="page-subtitle">Review and manage new user registration requests.</p>
     </div>
-    <button class="btn btn--ghost" onclick="loadApprovals()" id="refresh-btn">
-      <span class="material-symbols-outlined" style="font-size:1rem;">refresh</span> Refresh
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a href="login.php" class="btn btn--ghost" style="text-decoration:none;">
+        <span class="material-symbols-outlined" style="font-size:1rem;">arrow_back</span> Back to Login
+      </a>
+      <button class="btn btn--ghost" onclick="loadApprovals()" id="refresh-btn">
+        <span class="material-symbols-outlined" style="font-size:1rem;">refresh</span> Refresh
+      </button>
+    </div>
   </div>
 
   <!-- Stats row -->

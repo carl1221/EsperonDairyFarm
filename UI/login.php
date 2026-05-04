@@ -756,6 +756,11 @@
   <div class="auth-footer">
     Don't have an account? <a href="signup.php">Sign up</a>
   </div>
+  <div class="auth-footer" style="margin-top:0.6rem;">
+    <a href="landing.php" style="display:inline-flex;align-items:center;gap:5px;">
+      <span class="material-symbols-outlined" style="font-size:0.95rem;">arrow_back</span> Back to Home
+    </a>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
