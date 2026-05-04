@@ -39,12 +39,20 @@ if ($method === 'GET' && $action === 'export_csv') {
         sendError('Invalid status filter.', 400);
     }
 
-    // Build query — same view used by the GET list action
+    // Build query — join staff_reports with Worker directly
     if ($statusFilter !== '') {
-        $stmt = $db->prepare("SELECT * FROM vw_staff_reports WHERE status = ? ORDER BY created_at DESC");
+        $stmt = $db->prepare("
+            SELECT r.*, w.Worker AS worker_name, w.Worker_Role AS worker_role
+            FROM staff_reports r JOIN Worker w ON r.worker_id = w.Worker_ID
+            WHERE r.status = ? ORDER BY r.created_at DESC
+        ");
         $stmt->execute([$statusFilter]);
     } else {
-        $stmt = $db->query("SELECT * FROM vw_staff_reports ORDER BY created_at DESC");
+        $stmt = $db->query("
+            SELECT r.*, w.Worker AS worker_name, w.Worker_Role AS worker_role
+            FROM staff_reports r JOIN Worker w ON r.worker_id = w.Worker_ID
+            ORDER BY r.created_at DESC
+        ");
     }
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -100,7 +108,11 @@ try {
 
         case 'GET':
             if ($id) {
-                $stmt = $db->prepare("SELECT * FROM vw_staff_reports WHERE report_id = ?");
+                $stmt = $db->prepare("
+                    SELECT r.*, w.Worker AS worker_name, w.Worker_Role AS worker_role
+                    FROM staff_reports r JOIN Worker w ON r.worker_id = w.Worker_ID
+                    WHERE r.report_id = ?
+                ");
                 $stmt->execute([$id]);
                 $row = $stmt->fetch();
                 if (!$row) sendError('Report not found.', 404);
@@ -110,9 +122,17 @@ try {
                 sendSuccess('Report found.', $row);
             } else {
                 if ($isAdmin) {
-                    $stmt = $db->query("SELECT * FROM vw_staff_reports ORDER BY created_at DESC");
+                    $stmt = $db->query("
+                        SELECT r.*, w.Worker AS worker_name, w.Worker_Role AS worker_role
+                        FROM staff_reports r JOIN Worker w ON r.worker_id = w.Worker_ID
+                        ORDER BY r.created_at DESC
+                    ");
                 } else {
-                    $stmt = $db->prepare("SELECT * FROM vw_staff_reports WHERE worker_id = ? ORDER BY created_at DESC");
+                    $stmt = $db->prepare("
+                        SELECT r.*, w.Worker AS worker_name, w.Worker_Role AS worker_role
+                        FROM staff_reports r JOIN Worker w ON r.worker_id = w.Worker_ID
+                        WHERE r.worker_id = ? ORDER BY r.created_at DESC
+                    ");
                     $stmt->execute([$user['id']]);
                 }
                 sendSuccess('Reports retrieved.', $stmt->fetchAll());

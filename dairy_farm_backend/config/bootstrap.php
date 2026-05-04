@@ -52,13 +52,19 @@ if (file_exists($envFile)) {
 header('Content-Type: application/json');
 
 // ── CORS ──────────────────────────────────────────────────
-// Allow any localhost origin (handles subdirectories and different ports).
-// Restrict to your actual frontend origin in production.
-$allowedOrigins = ['http://localhost', 'http://127.0.0.1'];
-$requestOrigin  = $_SERVER['HTTP_ORIGIN'] ?? '';
-// Accept any localhost/127.0.0.1 origin (with or without port)
-if (preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#', $requestOrigin)) {
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$productionDomain = $_ENV['APP_DOMAIN'] ?? '';
+
+$isLocalOrigin = preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#', $requestOrigin);
+$isProdOrigin  = $productionDomain !== '' && (
+    $requestOrigin === 'https://' . $productionDomain ||
+    $requestOrigin === 'http://'  . $productionDomain
+);
+
+if ($isLocalOrigin || $isProdOrigin) {
     header('Access-Control-Allow-Origin: ' . $requestOrigin);
+} elseif ($productionDomain !== '') {
+    header('Access-Control-Allow-Origin: https://' . $productionDomain);
 } else {
     header('Access-Control-Allow-Origin: http://localhost');
 }
@@ -85,9 +91,6 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => $isProduction ? 'Strict' : 'Lax',
 ]);
-
-// Start session before any output (headers already sent above, which is fine
-// because Content-Type is not a Set-Cookie header and sessions use cookies)
 session_start();
 
 // ── Auth helpers ──────────────────────────────────────────
@@ -221,7 +224,7 @@ function verifyRecaptcha(string $token): bool {
         return true; // fail-open if curl missing in production
     }
 
-    $secretKey = '6LdTbcssAAAAAB89F9NK3vQZHI_C6unG9SI6zwk7';
+    $secretKey = $_ENV['RECAPTCHA_SECRET_KEY'] ?? '';
 
     $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

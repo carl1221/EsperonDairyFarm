@@ -283,7 +283,7 @@ requireAdminPage();
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('confirmed',this)">Processing</button>
           <button class="btn-xs btn-xs--ghost" onclick="filterOrders('delivered',this)">Delivered</button>
         </div>
-        <a href="orders.php" class="btn-xs btn-xs--ghost">Manage All ?</a>
+        <a href="orders.php" class="btn-xs btn-xs--ghost">Manage All</a>
       </div>
       <div id="orders-list" style="padding:4px 16px 16px;max-height:340px;overflow-y:auto;">
         <p style="color:var(--muted);font-size:0.84rem;padding:8px 0;">Loading orders�</p>
@@ -306,7 +306,7 @@ requireAdminPage();
     <div id="tab-livestock" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
         <span id="sick-badge" class="badge badge--red" style="display:none;font-size:0.68rem;">0 sick</span>
-        <a href="cows.php" class="btn-xs btn-xs--ghost" style="margin-left:auto;">Manage All ?</a>
+        <a href="cows.php" class="btn-xs btn-xs--ghost" style="margin-left:auto;">Manage All</a>
       </div>
       <div id="livestock-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">
         <p style="color:var(--muted);font-size:0.84rem;">Loading livestock�</p>
@@ -316,7 +316,7 @@ requireAdminPage();
     <!-- -- Tab: Reminders -- -->
     <div id="tab-reminders" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <a href="reminders.php" class="btn-xs btn-xs--ghost">View All ?</a>
+        <a href="reminders.php" class="btn-xs btn-xs--ghost">View All</a>
         <button id="addReminderBtn" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.75rem;font-weight:600;">+ Add Task</button>
       </div>
       <div id="remindersList" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;"></div>
@@ -337,7 +337,7 @@ requireAdminPage();
       <div style="padding:16px 20px;">
         <textarea class="note-input" id="note-input" rows="3" placeholder="Post an announcement or note for staff�"></textarea>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-          <a href="notes.php" class="btn-xs btn-xs--ghost">View All ?</a>
+          <a href="notes.php" class="btn-xs btn-xs--ghost">View All</a>
           <button class="btn-xs btn-xs--primary" id="save-note-btn">
             <span class="material-symbols-outlined" style="font-size:0.9rem;">send</span> Post Note
           </button>
@@ -349,7 +349,7 @@ requireAdminPage();
     <!-- -- Tab: Approvals -- -->
     <div id="tab-approvals" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <a href="approvals.php" class="btn-xs btn-xs--ghost">View All ?</a>
+        <a href="approvals.php" class="btn-xs btn-xs--ghost">View All</a>
         <button class="btn-xs btn-xs--ghost" onclick="loadPendingApprovals()">
           <span class="material-symbols-outlined" style="font-size:0.9rem;">refresh</span> Refresh
         </button>
@@ -362,7 +362,7 @@ requireAdminPage();
     <!-- -- Tab: Online Staff -- -->
     <div id="tab-online" class="dash-tab-panel" style="display:none;">
       <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
-        <a href="online_staff.php" class="btn-xs btn-xs--ghost">View All ?</a>
+        <a href="online_staff.php" class="btn-xs btn-xs--ghost">View All</a>
         <span id="online-last-refresh" style="font-size:0.72rem;color:var(--muted);"></span>
       </div>
       <div id="online-staff-list" style="padding:4px 20px 16px;max-height:340px;overflow-y:auto;">

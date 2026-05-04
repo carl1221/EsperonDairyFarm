@@ -22,60 +22,40 @@ class Reminder {
 
     // ── READ ─────────────────────────────────────────────────
 
-    /** All reminders with creator and assignee names resolved via vw_reminders. */
+    private const REMINDER_SELECT = "
+        SELECT r.reminder_id, r.title, r.description, r.due_date, r.status, r.created_at,
+               r.created_by, creator.Worker AS created_by_name, creator.Worker_Role AS created_by_role,
+               r.assigned_to, assignee.Worker AS assigned_to_name
+        FROM reminders r
+        JOIN Worker creator ON r.created_by = creator.Worker_ID
+        LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID";
+
+    /** All reminders with creator and assignee names resolved. */
     public function getAll(): array {
-        $stmt = $this->db->query(
-            "SELECT * FROM vw_reminders ORDER BY due_date ASC"
-        );
+        $stmt = $this->db->query(self::REMINDER_SELECT . " ORDER BY r.due_date ASC");
         return $stmt->fetchAll();
     }
 
-    /**
-     * Reminders assigned to a specific worker.
-     * Used by staff to see their own task list.
-     */
     public function getByAssignee(int $workerId): array {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM vw_reminders WHERE assigned_to = ? ORDER BY due_date ASC"
-        );
+        $stmt = $this->db->prepare(self::REMINDER_SELECT . " WHERE r.assigned_to = ? ORDER BY r.due_date ASC");
         $stmt->execute([$workerId]);
         return $stmt->fetchAll();
     }
 
-    /**
-     * All reminders created by a specific worker.
-     * Reflects the weak entity ownership relationship.
-     */
     public function getByCreator(int $workerId): array {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM vw_reminders WHERE created_by = ? ORDER BY due_date ASC"
-        );
+        $stmt = $this->db->prepare(self::REMINDER_SELECT . " WHERE r.created_by = ? ORDER BY r.due_date ASC");
         $stmt->execute([$workerId]);
         return $stmt->fetchAll();
     }
 
-    /**
-     * Fetch a single reminder by its composite PK.
-     * Both reminder_id AND created_by are required because
-     * reminder_id alone is only a partial key.
-     */
     public function getById(int $reminderId, int $createdBy): array|false {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM vw_reminders
-             WHERE reminder_id = ? AND created_by = ?"
-        );
+        $stmt = $this->db->prepare(self::REMINDER_SELECT . " WHERE r.reminder_id = ? AND r.created_by = ?");
         $stmt->execute([$reminderId, $createdBy]);
         return $stmt->fetch();
     }
 
-    /**
-     * Convenience lookup by reminder_id only (for API routes that
-     * don't pass created_by). Returns the first match.
-     */
     public function getByReminderId(int $reminderId): array|false {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM vw_reminders WHERE reminder_id = ? LIMIT 1"
-        );
+        $stmt = $this->db->prepare(self::REMINDER_SELECT . " WHERE r.reminder_id = ? LIMIT 1");
         $stmt->execute([$reminderId]);
         return $stmt->fetch();
     }
@@ -155,30 +135,17 @@ class Reminder {
     // ── FILTERED READS ───────────────────────────────────────
 
     public function getPending(): array {
-        $stmt = $this->db->query(
-            "SELECT * FROM vw_reminders
-             WHERE status = 'pending'
-             ORDER BY due_date ASC"
-        );
+        $stmt = $this->db->query(self::REMINDER_SELECT . " WHERE r.status = 'pending' ORDER BY r.due_date ASC");
         return $stmt->fetchAll();
     }
 
     public function getOverdue(): array {
-        $stmt = $this->db->query(
-            "SELECT * FROM vw_reminders
-             WHERE status = 'pending' AND due_date < NOW()
-             ORDER BY due_date ASC"
-        );
+        $stmt = $this->db->query(self::REMINDER_SELECT . " WHERE r.status = 'pending' AND r.due_date < NOW() ORDER BY r.due_date ASC");
         return $stmt->fetchAll();
     }
 
     public function getDueSoon(): array {
-        $stmt = $this->db->query(
-            "SELECT * FROM vw_reminders
-             WHERE status = 'pending'
-               AND due_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR)
-             ORDER BY due_date ASC"
-        );
+        $stmt = $this->db->query(self::REMINDER_SELECT . " WHERE r.status = 'pending' AND r.due_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR) ORDER BY r.due_date ASC");
         return $stmt->fetchAll();
     }
 }

@@ -88,10 +88,13 @@ $_isAdmin = ($_SESSION['user']['role'] ?? '') === 'Admin';
         <div class="form-group">
           <label>Order Type</label>
           <select id="f-type">
-            <option>Milk</option>
-            <option>Cheese</option>
-            <option>Butter</option>
-            <option>Yogurt</option>
+            <option value="Milk Delivery">Milk Delivery</option>
+            <option value="Cheese Order">Cheese Order</option>
+            <option value="Butter Order">Butter Order</option>
+            <option value="Yogurt Order">Yogurt Order</option>
+            <option value="Cream Order">Cream Order</option>
+            <option value="Custom Order">Custom Order</option>
+            <option value="Shop Purchase">Shop Purchase</option>
           </select>
         </div>
         <div class="form-group">
@@ -319,7 +322,7 @@ function openModal(id = null) {
 
   if (!id) {
     document.getElementById('f-date').value   = new Date().toISOString().split('T')[0];
-    document.getElementById('f-type').value   = 'Milk';
+    document.getElementById('f-type').value   = 'Milk Delivery';
     document.getElementById('f-qty').value    = '';
     document.getElementById('f-price').value  = '';
     document.getElementById('f-status').value = 'pending';

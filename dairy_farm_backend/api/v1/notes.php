@@ -66,11 +66,12 @@ try {
                 $params[] = $filterCat;
             }
 
-            $sql = "SELECT note_id, text, category, entity_type, entity_id,
-                           created_at, updated_at, author_id, author, author_role
-                    FROM vw_notes"
+            $sql = "SELECT n.note_id, n.text, n.category, n.entity_type, n.entity_id,
+                           n.created_at, n.updated_at, n.author_id,
+                           w.Worker AS author, w.Worker_Role AS author_role
+                    FROM notes n JOIN Worker w ON n.author_id = w.Worker_ID"
                  . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
-                 . " ORDER BY created_at DESC LIMIT 100";
+                 . " ORDER BY n.created_at DESC LIMIT 100";
 
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
@@ -105,9 +106,11 @@ try {
             $noteId = $db->lastInsertId();
 
             $new = $db->prepare("
-                SELECT note_id, text, category, entity_type, entity_id,
-                       created_at, updated_at, author_id, author, author_role
-                FROM vw_notes WHERE note_id = ?
+                SELECT n.note_id, n.text, n.category, n.entity_type, n.entity_id,
+                       n.created_at, n.updated_at, n.author_id,
+                       w.Worker AS author, w.Worker_Role AS author_role
+                FROM notes n JOIN Worker w ON n.author_id = w.Worker_ID
+                WHERE n.note_id = ?
             ");
             $new->execute([$noteId]);
             sendSuccess('Note posted.', $new->fetch(), 201);
@@ -150,9 +153,11 @@ try {
             ")->execute([$text, $category, $entType, $entId, $id]);
 
             $updated = $db->prepare("
-                SELECT note_id, text, category, entity_type, entity_id,
-                       created_at, updated_at, author_id, author, author_role
-                FROM vw_notes WHERE note_id = ?
+                SELECT n.note_id, n.text, n.category, n.entity_type, n.entity_id,
+                       n.created_at, n.updated_at, n.author_id,
+                       w.Worker AS author, w.Worker_Role AS author_role
+                FROM notes n JOIN Worker w ON n.author_id = w.Worker_ID
+                WHERE n.note_id = ?
             ");
             $updated->execute([$id]);
             sendSuccess('Note updated.', $updated->fetch());

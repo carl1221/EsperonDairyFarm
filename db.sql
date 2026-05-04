@@ -1,35 +1,34 @@
 ﻿-- ============================================================
--- db.sql â€” Esperon Dairy Farm
+-- db.sql - Esperon Dairy Farm
 -- Normalized to 3NF (Third Normal Form)
 -- Database: esperon_dairy_farm
 --
 -- ENTITY CLASSIFICATION
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- ---------------------
 -- Strong Entities (exist independently, have their own PK):
 --   Address, Worker, Cow, Customer, Orders, staff_reports
 --
 -- Weak Entities (depend on a strong entity, use composite PK):
---   reminders  â†’  depends on Worker (created_by)
---                 PK: (reminder_id, created_by)
---                 Cannot exist without a Worker row
+--   reminders  ->  depends on Worker (created_by)
+--                  PK: (reminder_id, created_by)
+--                  Cannot exist without a Worker row
 --
--- Derived Structures (views â€” no stored data, computed on demand):
---   vw_order_details  â†’  derived from Orders + Customer + Address + Cow + Worker
---   vw_staff_reports  â†’  derived from staff_reports + Worker
---   vw_reminders      â†’  derived from reminders + Worker (creator + assignee)
+-- Derived Structures (views - no stored data, computed on demand):
+--   vw_order_details  ->  derived from Orders + Customer + Address + Cow + Worker
+--   vw_staff_reports  ->  derived from staff_reports + Worker
+--   vw_reminders      ->  derived from reminders + Worker (creator + assignee)
 --
 -- Run on a fresh install:
 --   mysql -u root < db.sql
---
--- Run on an existing database (upgrade):
---   See the MIGRATION section at the bottom.
+-- On cPanel hosting, import via phpMyAdmin (the DB already exists — skip the CREATE/USE lines)
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS esperon_dairy_farm
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE esperon_dairy_farm;
+-- NOTE: On shared hosting (cPanel/phpMyAdmin), comment out or skip the two lines below.
+-- The database is pre-created by cPanel and you cannot CREATE it yourself.
+-- CREATE DATABASE IF NOT EXISTS esperon_dairy_farm
+--   CHARACTER SET utf8mb4
+--   COLLATE utf8mb4_unicode_ci;
+-- USE esperon_dairy_farm;
 
 -- ============================================================
 -- [STRONG ENTITY] Address
@@ -86,15 +85,15 @@ CREATE TABLE IF NOT EXISTS Cow (
 -- ============================================================
 -- [STRONG ENTITY] Customer
 -- Contact_Num belongs to the customer, not the address (3NF).
--- Address_ID is a FK to Address â€” one address can serve many
+-- Address_ID is a FK to Address - one address can serve many
 -- customers (e.g. same barangay).
--- Relationship: Customer â†’(N:1)â†’ Address
+-- Relationship: Customer ->(N:1)-> Address
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Customer (
     CID           INT          NOT NULL AUTO_INCREMENT,
     Customer_Name VARCHAR(100) NOT NULL,
     Email         VARCHAR(150) NULL,                 -- for login and password reset
-    Address_ID    INT          NOT NULL,   -- FK â†’ Address
+    Address_ID    INT          NOT NULL,             -- FK -> Address
     Contact_Num   VARCHAR(20)  NOT NULL,
     Password      VARCHAR(255) NOT NULL DEFAULT '',  -- bcrypt hash; set on signup
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -133,7 +132,7 @@ CREATE TABLE IF NOT EXISTS Products (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Cart (
     cart_id     INT      NOT NULL AUTO_INCREMENT,
-    CID         INT      NOT NULL,   -- FK â†’ Customer
+    CID         INT      NOT NULL,   -- FK -> Customer
     status      ENUM('active','checked_out') NOT NULL DEFAULT 'active',
     created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -149,16 +148,16 @@ CREATE TABLE IF NOT EXISTS Cart (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS CartItems (
     item_id     INT            NOT NULL AUTO_INCREMENT,
-    cart_id     INT            NOT NULL,   -- FK â†’ Cart
-    product_id  INT            NOT NULL,   -- FK â†’ Products
+    cart_id     INT            NOT NULL,   -- FK -> Cart
+    product_id  INT            NOT NULL,   -- FK -> Products
     quantity    INT            NOT NULL DEFAULT 1,
     unit_price  DECIMAL(10,2)  NOT NULL DEFAULT 0.00,  -- price snapshot
-    CONSTRAINT pk_cart_items      PRIMARY KEY (item_id),
-    CONSTRAINT fk_ci_cart         FOREIGN KEY (cart_id)
+    CONSTRAINT pk_cart_items   PRIMARY KEY (item_id),
+    CONSTRAINT fk_ci_cart      FOREIGN KEY (cart_id)
         REFERENCES Cart (cart_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_ci_product      FOREIGN KEY (product_id)
+    CONSTRAINT fk_ci_product   FOREIGN KEY (product_id)
         REFERENCES Products (product_id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT uq_cart_product    UNIQUE (cart_id, product_id)  -- one row per product per cart
+    CONSTRAINT uq_cart_product UNIQUE (cart_id, product_id)  -- one row per product per cart
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Indexes for shop queries
@@ -172,7 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_cart  ON CartItems(cart_id);
 -- 3NF: removes the partial dependency on a non-key attribute.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS OrderTypes (
-    type_id   INT         NOT NULL AUTO_INCREMENT,
+    type_id   INT          NOT NULL AUTO_INCREMENT,
     type_name VARCHAR(100) NOT NULL,
     CONSTRAINT pk_order_types PRIMARY KEY (type_id),
     CONSTRAINT uq_order_type  UNIQUE (type_name)
@@ -191,22 +190,22 @@ ON DUPLICATE KEY UPDATE type_name = VALUES(type_name);
 -- ============================================================
 -- [STRONG ENTITY] Orders
 -- Relationships:
---   Orders â†’(N:1)â†’ Customer   (fk_ord_cust)
---   Orders â†’(N:1)â†’ Cow        (fk_ord_cow)
---   Orders â†’(N:1)â†’ Worker     (fk_ord_worker)
+--   Orders ->(N:1)-> Customer   (fk_ord_cust)
+--   Orders ->(N:1)-> Cow        (fk_ord_cow)
+--   Orders ->(N:1)-> Worker     (fk_ord_worker)
 --
--- quantity_liters  â€” how many liters were ordered
--- unit_price       â€” price per liter at time of order (snapshot)
--- total_price      â€” GENERATED column: quantity_liters Ã— unit_price
+-- quantity_liters  - how many liters were ordered
+-- unit_price       - price per liter at time of order (snapshot)
+-- total_price      - GENERATED column: quantity_liters x unit_price
 --                    Computed by MySQL; never inserted/updated manually
--- status           â€” order lifecycle
+-- status           - order lifecycle
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Orders (
     Order_ID        INT           NOT NULL AUTO_INCREMENT,
-    CID             INT           NOT NULL,   -- FK â†’ Customer
+    CID             INT           NOT NULL,   -- FK -> Customer
     Cow_ID          INT           NULL,       -- FK -> Cow (NULL for shop purchases)
-    Worker_ID       INT           NOT NULL,   -- FK â†’ Worker
-    type_id         INT           NOT NULL,   -- FK â†’ OrderTypes (replaces free-text Order_Type)
+    Worker_ID       INT           NOT NULL,   -- FK -> Worker
+    type_id         INT           NOT NULL,   -- FK -> OrderTypes (replaces free-text Order_Type)
     Order_Date      DATE          NOT NULL,
     quantity_liters DECIMAL(8,2)  NOT NULL DEFAULT 0.00,
     unit_price      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -227,25 +226,25 @@ CREATE TABLE IF NOT EXISTS Orders (
 
 -- ============================================================
 -- [WEAK ENTITY] reminders
--- Depends on Worker â€” a reminder cannot exist without the
+-- Depends on Worker - a reminder cannot exist without the
 -- worker who created it.
 --
 -- Weak entity rules applied:
---   â€¢ created_by is NOT NULL and FK â†’ Worker ON DELETE CASCADE
+--   - created_by is NOT NULL and FK -> Worker ON DELETE CASCADE
 --     (deleting the worker deletes all their reminders)
---   â€¢ Composite PRIMARY KEY (reminder_id, created_by) formally
+--   - Composite PRIMARY KEY (reminder_id, created_by) formally
 --     declares the partial key (reminder_id) + identifying owner
---   â€¢ assigned_to is nullable FK â†’ Worker ON DELETE SET NULL
+--   - assigned_to is nullable FK -> Worker ON DELETE SET NULL
 --     (assigning a reminder to a worker is optional)
 --
 -- Relationships:
---   reminders â†’(N:1, identifying)â†’ Worker  via created_by
---   reminders â†’(N:1, optional)â†’   Worker  via assigned_to
+--   reminders ->(N:1, identifying)-> Worker  via created_by
+--   reminders ->(N:1, optional)->   Worker  via assigned_to
 -- ============================================================
 CREATE TABLE IF NOT EXISTS reminders (
     reminder_id INT          NOT NULL AUTO_INCREMENT,
-    created_by  INT          NOT NULL,   -- identifying FK â†’ Worker (weak entity owner)
-    assigned_to INT          NULL,       -- optional FK â†’ Worker
+    created_by  INT          NOT NULL,   -- identifying FK -> Worker (weak entity owner)
+    assigned_to INT          NULL,       -- optional FK -> Worker
     title       VARCHAR(255) NOT NULL,
     description TEXT         NULL,
     due_date    DATETIME     NOT NULL,
@@ -273,14 +272,14 @@ CREATE TABLE IF NOT EXISTS reminders (
 -- it has business meaning independent of any single worker
 -- (reports are kept for audit even if a worker is removed).
 --
--- worker_name and worker_role are NOT stored here â€” they are
+-- worker_name and worker_role are NOT stored here - they are
 -- derived at query time via vw_staff_reports (3NF compliance).
 --
--- Relationship: staff_reports â†’(N:1)â†’ Worker  via worker_id
+-- Relationship: staff_reports ->(N:1)-> Worker  via worker_id
 -- ============================================================
 CREATE TABLE IF NOT EXISTS staff_reports (
     report_id   INT          NOT NULL AUTO_INCREMENT,
-    worker_id   INT          NOT NULL,   -- FK â†’ Worker
+    worker_id   INT          NOT NULL,   -- FK -> Worker
     report_type VARCHAR(50)  NOT NULL DEFAULT 'Daily Report',
     title       VARCHAR(255) NOT NULL,
     content     TEXT         NOT NULL,
@@ -298,18 +297,12 @@ CREATE TABLE IF NOT EXISTS staff_reports (
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_order_details
 --
--- This is NOT a stored entity â€” it is a derived structure.
--- Source (strong entity): Orders
--- Joined entities: Customer, Address, Cow, Worker
---
 -- Purpose: expose complete order information without storing
--- any redundant fields (Customer_Name, Address, Cow name,
--- Worker name) in the Orders table itself.
--- The view is recomputed on every query from live table data.
+-- redundant fields (Customer_Name, Address, Cow name, Worker name)
+-- in the Orders table itself.
 -- ============================================================
 CREATE OR REPLACE VIEW vw_order_details AS
 SELECT
-    -- Order identity
     o.Order_ID,
     ot.type_name      AS Order_Type,
     o.Order_Date,
@@ -319,45 +312,33 @@ SELECT
     o.status          AS Order_Status,
     o.notes           AS Order_Notes,
     o.updated_at      AS Order_Updated,
-
-    -- Customer details (derived from Customer + Address via FK)
     o.CID,
     c.Customer_Name,
     c.Contact_Num,
     a.Address,
-
-    -- Cow details (derived from Cow via FK)
     o.Cow_ID,
-    COALESCE(cw.Cow, '--') AS Cow,
-    COALESCE(cw.Breed, '--') AS Breed,
-    COALESCE(cw.Production_Liters, 0) AS Production_Liters,
-
-    -- Worker details (derived from Worker via FK)
+    COALESCE(cw.Cow, '--')              AS Cow,
+    COALESCE(cw.Breed, '--')            AS Breed,
+    COALESCE(cw.Production_Liters, 0)   AS Production_Liters,
     o.Worker_ID,
     w.Worker          AS Worker_Name,
     w.Worker_Role
-
-FROM       Orders     o
-JOIN       OrderTypes ot ON o.type_id     = ot.type_id
-JOIN       Customer   c  ON o.CID         = c.CID
-JOIN       Address    a  ON c.Address_ID  = a.Address_ID
-LEFT JOIN  Cow        cw ON o.Cow_ID      = cw.Cow_ID
-JOIN       Worker     w  ON o.Worker_ID   = w.Worker_ID;
+FROM      Orders     o
+JOIN      OrderTypes ot ON o.type_id    = ot.type_id
+JOIN      Customer   c  ON o.CID        = c.CID
+JOIN      Address    a  ON c.Address_ID = a.Address_ID
+LEFT JOIN Cow        cw ON o.Cow_ID     = cw.Cow_ID
+JOIN      Worker     w  ON o.Worker_ID  = w.Worker_ID;
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_staff_reports
 --
--- This is NOT a stored entity â€” it is a derived structure.
--- Source (strong entity): staff_reports
--- Joined entity: Worker
---
 -- Purpose: expose worker_name and worker_role alongside report
 -- data without storing those fields redundantly in staff_reports.
--- Satisfies 3NF â€” no transitive dependency in the base table.
+-- Satisfies 3NF - no transitive dependency in the base table.
 -- ============================================================
 CREATE OR REPLACE VIEW vw_staff_reports AS
 SELECT
-    -- Report fields (from strong entity staff_reports)
     r.report_id,
     r.report_type,
     r.title,
@@ -366,46 +347,31 @@ SELECT
     r.admin_note,
     r.created_at,
     r.updated_at,
-
-    -- Worker identity (FK stored in staff_reports)
     r.worker_id,
-
-    -- Worker details (derived via JOIN â€” not stored in staff_reports)
     w.Worker      AS worker_name,
     w.Worker_Role AS worker_role
-
 FROM staff_reports r
 JOIN Worker w ON r.worker_id = w.Worker_ID;
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_reminders
 --
--- This is NOT a stored entity â€” it is a derived structure.
--- Source (weak entity): reminders
--- Joined entity: Worker (twice â€” creator and assignee)
---
 -- Purpose: resolve created_by and assigned_to integer FKs to
 -- human-readable worker names without storing names in reminders.
 -- ============================================================
 CREATE OR REPLACE VIEW vw_reminders AS
 SELECT
-    -- Reminder fields (from weak entity reminders)
     r.reminder_id,
     r.title,
     r.description,
     r.due_date,
     r.status,
     r.created_at,
-
-    -- Creator (identifying owner â€” NOT NULL FK)
     r.created_by,
-    creator.Worker        AS created_by_name,
-    creator.Worker_Role   AS created_by_role,
-
-    -- Assignee (optional FK â€” may be NULL)
+    creator.Worker      AS created_by_name,
+    creator.Worker_Role AS created_by_role,
     r.assigned_to,
-    assignee.Worker       AS assigned_to_name
-
+    assignee.Worker     AS assigned_to_name
 FROM      reminders r
 JOIN      Worker creator  ON r.created_by  = creator.Worker_ID
 LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
@@ -413,29 +379,22 @@ LEFT JOIN Worker assignee ON r.assigned_to = assignee.Worker_ID;
 -- ============================================================
 -- [STRONG ENTITY] notes
 -- Persistent announcements/notes shared across all staff.
--- author_id FK â†’ Worker satisfies 3NF â€” author name is derived
+-- author_id FK -> Worker satisfies 3NF - author name is derived
 -- at query time via JOIN, not stored redundantly here.
 --
--- category    â€” classifies the note (General, Health, Feeding, etc.)
--- entity_type â€” optional polymorphic link to a related entity
---               ('Cow', 'Order', 'Customer', 'Worker', or NULL for general)
--- entity_id   â€” the PK of the linked entity row (NULL when entity_type is NULL)
--- updated_at  â€” audit trail for edits
---
--- Relationships:
---   notes â†’(N:1)â†’ Worker  via author_id  (who wrote it)
---   notes â†’(N:1)â†’ Cow     via entity_id  (when entity_type = 'Cow')
---   notes â†’(N:1)â†’ Orders  via entity_id  (when entity_type = 'Order')
---   notes â†’(N:1)â†’ Customer via entity_id (when entity_type = 'Customer')
+-- category    - classifies the note (General, Health, Feeding, etc.)
+-- entity_type - optional polymorphic link to a related entity
+-- entity_id   - the PK of the linked entity row (NULL when entity_type is NULL)
+-- updated_at  - audit trail for edits
 -- ============================================================
 CREATE TABLE IF NOT EXISTS notes (
     note_id     INT          NOT NULL AUTO_INCREMENT,
-    author_id   INT          NOT NULL,   -- FK â†’ Worker
+    author_id   INT          NOT NULL,   -- FK -> Worker
     text        TEXT         NOT NULL,
     category    ENUM('General','Health','Feeding','Maintenance','Finance','Other')
                              NOT NULL DEFAULT 'General',
     entity_type ENUM('Cow','Order','Customer','Worker') NULL DEFAULT NULL,
-    entity_id   INT          NULL DEFAULT NULL,   -- FK to the entity identified by entity_type
+    entity_id   INT          NULL DEFAULT NULL,
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_notes       PRIMARY KEY (note_id),
@@ -443,16 +402,14 @@ CREATE TABLE IF NOT EXISTS notes (
         REFERENCES Worker (Worker_ID) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- entity_type + entity_id index for fast "notes about Cow #5" queries
-CREATE INDEX IF NOT EXISTS idx_notes_entity  ON notes(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at);
+CREATE INDEX IF NOT EXISTS idx_notes_entity   ON notes(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_notes_created  ON notes(created_at);
 CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category);
 
 -- ============================================================
 -- [DERIVED STRUCTURE] VIEW: vw_notes
--- Resolves author_id FK to worker name â€” satisfies 3NF by not
+-- Resolves author_id FK to worker name - satisfies 3NF by not
 -- storing the author name redundantly in the notes table.
--- Also exposes category, entity_type, entity_id, and updated_at.
 -- ============================================================
 CREATE OR REPLACE VIEW vw_notes AS
 SELECT
@@ -471,7 +428,6 @@ JOIN Worker w ON n.author_id = w.Worker_ID;
 
 -- ============================================================
 -- INDEXES
--- Covering indexes on the most common filter/join columns.
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_worker_name        ON Worker(Worker);
 CREATE INDEX IF NOT EXISTS idx_worker_role        ON Worker(Worker_Role);
@@ -499,7 +455,7 @@ INSERT INTO Address (Address_ID, Address) VALUES
     (302, 'San Jose, Malaybalay City')
 ON DUPLICATE KEY UPDATE Address = VALUES(Address);
 
--- Default password is 'password' â€” hash generated with PHP password_hash('password', PASSWORD_DEFAULT)
+-- Default password is 'password'
 INSERT INTO Worker (Worker_ID, Worker, Worker_Role, Email, Password, approval_status) VALUES
     (201, 'Mark',    'Staff', 'mark@esperon.farm',    '$2y$10$wsIsunJBcBMNSwjt6Ptz6Owr9n3bqHi9IihvpiTTz7Tmhd4wWJNLC', 'approved'),
     (202, 'Patrick', 'Admin', 'patrick@esperon.farm', '$2y$10$wsIsunJBcBMNSwjt6Ptz6Owr9n3bqHi9IihvpiTTz7Tmhd4wWJNLC', 'approved')
@@ -515,33 +471,32 @@ INSERT INTO Cow (Cow_ID, Cow, Breed, Date_Of_Birth, Production_Liters, Health_St
     (102, 'Cow2', 'Jersey',   '2019-07-22', 15.00, 'Healthy')
 ON DUPLICATE KEY UPDATE Cow = VALUES(Cow);
 
--- Default customer password is 'Password1' â€” admin should change via Customers > ðŸ”‘ Password
+-- Default customer password is 'Password1' - admin should change via Customers > Password
 INSERT INTO Customer (CID, Customer_Name, Email, Address_ID, Contact_Num, Password) VALUES
     (1, 'Ana',  'ana@esperon.farm',  301, '09010000001', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m'),
     (2, 'Juan', 'juan@esperon.farm', 302, '09020000002', '$2y$10$EFHPolUb1knDjjLE3e9jq.60aKM0QVoukG87pbn8OYu0WOSz4Wx7m')
 ON DUPLICATE KEY UPDATE Customer_Name = VALUES(Customer_Name), Password = VALUES(Password);
 
--- Orders are created by staff and customers through the system â€” no sample data.
+-- Orders are created by staff and customers through the system - no sample data.
 
 INSERT INTO reminders (created_by, assigned_to, title, description, due_date, status) VALUES
-    (202, 201, 'Morning Feeding',  'Feed all cows at 6AM',          '2026-05-02 06:00:00', 'pending'),
-    (202, NULL, 'Vet Checkup',     'Schedule quarterly vet visit',  '2026-05-10 09:00:00', 'pending');
+    (202, 201,  'Morning Feeding', 'Feed all cows at 6AM',         '2026-05-02 06:00:00', 'pending'),
+    (202, NULL, 'Vet Checkup',     'Schedule quarterly vet visit', '2026-05-10 09:00:00', 'pending');
 
--- â”€â”€ Sample Products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- Sample Products
 INSERT INTO Products (product_id, name, description, price, stock_qty, unit) VALUES
-    (1, 'Fresh Whole Milk',    'Farm-fresh whole milk, collected daily from our healthy herd.',         55.00, 100, 'L'),
-    (2, 'Aged Cheddar Cheese', 'Rich, sharp cheddar aged for 3 months. Perfect for cooking or snacking.', 180.00, 40, 'pcs'),
-    (3, 'Creamy Butter',       'Pure churned butter made from fresh cream. Unsalted.',                  120.00, 60, 'pcs'),
-    (4, 'Natural Yogurt',      'Thick, creamy yogurt with live cultures. No added sugar.',              75.00, 50, 'pcs'),
-    (5, 'Fresh Cream',         'Heavy whipping cream, ideal for desserts and cooking.',                 90.00, 35, 'L'),
-    (6, 'Skim Milk',           'Low-fat skim milk, great for health-conscious customers.',              45.00, 80, 'L'),
-    (7, 'Mozzarella Cheese',   'Soft, fresh mozzarella. Perfect for pizza and salads.',                 160.00, 0,  'pcs')
+    (1, 'Fresh Whole Milk',    'Farm-fresh whole milk, collected daily from our healthy herd.',            55.00, 100, 'L'),
+    (2, 'Aged Cheddar Cheese', 'Rich, sharp cheddar aged for 3 months. Perfect for cooking or snacking.', 180.00,  40, 'pcs'),
+    (3, 'Creamy Butter',       'Pure churned butter made from fresh cream. Unsalted.',                    120.00,  60, 'pcs'),
+    (4, 'Natural Yogurt',      'Thick, creamy yogurt with live cultures. No added sugar.',                 75.00,  50, 'pcs'),
+    (5, 'Fresh Cream',         'Heavy whipping cream, ideal for desserts and cooking.',                    90.00,  35, 'L'),
+    (6, 'Skim Milk',           'Low-fat skim milk, great for health-conscious customers.',                 45.00,  80, 'L'),
+    (7, 'Mozzarella Cheese',   'Soft, fresh mozzarella. Perfect for pizza and salads.',                   160.00,   0, 'pcs')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
-
 
 -- ============================================================
 -- [STRONG ENTITY] production_logs
--- Daily milk production per cow â€” enables trend tracking.
+-- Daily milk production per cow - enables trend tracking.
 -- Composite unique key prevents duplicate entries per cow per day.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS production_logs (

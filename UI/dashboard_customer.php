@@ -244,7 +244,7 @@ $initial      = strtoupper(substr($customerName, 0, 1));
           Shop Products
         </span>
         <a href="shop.php" style="font-size:0.78rem;color:var(--olive);font-weight:700;text-decoration:none;padding:5px 12px;background:rgba(78,96,64,0.08);border-radius:8px;">
-          View All ?
+          View All
         </a>
       </div>
       <div id="featured-container" style="padding:14px 16px;">
@@ -476,7 +476,7 @@ async function loadCartOrders() {
     const res  = await fetch(PORTAL + '?action=cart_orders', { credentials:'include' });
     const data = await res.json();
     if (!data.success || !data.data.length) {
-      c.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">shopping_bag</span><p>No shop purchases yet. <a href="shop.php" style="color:var(--olive);font-weight:700;">Browse the shop ?</a></p></div>`;
+      c.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">shopping_bag</span><p>No shop purchases yet. <a href="shop.php" style="color:var(--olive);font-weight:700;">Browse the shop</a></p></div>`;
       return;
     }
     c.innerHTML = data.data.map(cart => {
