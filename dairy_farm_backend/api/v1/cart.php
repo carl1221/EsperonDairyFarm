@@ -171,6 +171,20 @@ try {
             try {
                 $purchased = [];
 
+                // Resolve the "Shop Purchase" order type ID
+                $typeRow = $db->prepare("SELECT type_id FROM OrderTypes WHERE type_name = 'Shop Purchase' LIMIT 1");
+                $typeRow->execute();
+                $shopTypeId = $typeRow->fetchColumn();
+                if (!$shopTypeId) {
+                    $db->prepare("INSERT INTO OrderTypes (type_name) VALUES ('Shop Purchase')")->execute();
+                    $shopTypeId = (int) $db->lastInsertId();
+                }
+
+                // Find the first available Admin worker to assign shop orders to
+                $workerRow = $db->prepare("SELECT Worker_ID FROM Worker WHERE Worker_Role = 'Admin' AND approval_status = 'approved' ORDER BY Worker_ID ASC LIMIT 1");
+                $workerRow->execute();
+                $assignedWorker = $workerRow->fetchColumn() ?: 1;
+
                 foreach ($cart['items'] as $item) {
                     // Re-check stock inside transaction
                     $stockRow = $db->prepare(
@@ -191,6 +205,21 @@ try {
                     $db->prepare(
                         "UPDATE Products SET stock_qty = stock_qty - ? WHERE product_id = ?"
                     )->execute([$item['quantity'], $item['product_id']]);
+
+                    // Create an Orders row so admin/staff can see and manage this purchase
+                    $db->prepare("
+                        INSERT INTO Orders
+                            (CID, Cow_ID, Worker_ID, type_id, Order_Date,
+                             quantity_liters, unit_price, status, notes)
+                        VALUES (?, NULL, ?, ?, CURDATE(), ?, ?, 'pending', ?)
+                    ")->execute([
+                        $customerId,
+                        $assignedWorker,
+                        $shopTypeId,
+                        (float) $item['quantity'],
+                        (float) $item['unit_price'],
+                        'Shop purchase: ' . $item['name'],
+                    ]);
 
                     $purchased[] = [
                         'product'  => $item['name'],
