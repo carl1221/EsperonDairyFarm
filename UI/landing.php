@@ -853,50 +853,50 @@ try {
 
     <div class="team-card fade-in fade-in-delay-1">
       <div class="team-card__avatar">
-        <img src="assets/team/PJ.jpg" alt="PJ" class="team-card__img"
+        <img src="assets/team/PJ.jpg" alt="PJ Asombrado" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
-      <div class="team-card__name">PJ</div>
-      <div class="team-card__role">Team Leader</div>
+      <div class="team-card__name">PJ Asombrado</div>
+      <div class="team-card__role">Team Leader &amp; Web Developer</div>
     </div>
 
     <div class="team-card fade-in fade-in-delay-2">
       <div class="team-card__avatar">
-        <img src="assets/team/Carl.jpg" alt="Carl" class="team-card__img"
+        <img src="assets/team/Carl.jpg" alt="Carl Ian Pepito" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
-      <div class="team-card__name">Carl</div>
-      <div class="team-card__role">Developer</div>
+      <div class="team-card__name">Carl Ian Pepito</div>
+      <div class="team-card__role">Web Developer &amp; Documenter</div>
     </div>
 
     <div class="team-card fade-in fade-in-delay-3">
       <div class="team-card__avatar">
-        <img src="assets/team/Kurt.jpg" alt="Kurt" class="team-card__img"
+        <img src="assets/team/Kurt.jpg" alt="Kurt Yandrie Arangcon" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
-      <div class="team-card__name">Kurt</div>
-      <div class="team-card__role">System Analyst</div>
+      <div class="team-card__name">Kurt Yandrie Arangcon</div>
+      <div class="team-card__role">UI/UX Designer</div>
     </div>
 
     <div class="team-card fade-in fade-in-delay-4">
       <div class="team-card__avatar">
-        <img src="assets/team/Justine.jpg" alt="Justine" class="team-card__img"
+        <img src="assets/team/Justine.jpg" alt="Justine Barsana" class="team-card__img"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="team-card__placeholder" style="display:none;">
           <span class="material-symbols-outlined">person</span>
         </div>
       </div>
-      <div class="team-card__name">Justine</div>
-      <div class="team-card__role">UI/UX Designer</div>
+      <div class="team-card__name">Justine Barsana</div>
+      <div class="team-card__role">System Analyst</div>
     </div>
 
   </div>
